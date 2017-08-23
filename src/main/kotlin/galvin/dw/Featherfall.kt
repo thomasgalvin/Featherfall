@@ -22,7 +22,10 @@ import io.dropwizard.assets.AssetsBundle
  *
  * Usage will look something like this:
  *
- * val server: FeatherfallServer( ... )
+ * val config = File( "path/t/config )
+ * val resources = listOf( UserResource(), SomeOtherResource() )
+ * 
+ * val server = FeatherfallServer( configFile=config, apiResources=resources  )
  * server.start()
  */
 class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
