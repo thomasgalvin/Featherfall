@@ -33,10 +33,10 @@ class FeatherfallServer<T: Configuration>( private val configFile: File? = null,
                                            private val jsonPrettyPrint: Boolean = true,
                                            private val disableSameSiteOriginPolicy: Boolean = false,
                                            private val displayWADL: Boolean = true,
-                                           private val swagger: SwaggerBundleConfiguration? = null,
-                                           private val resources: ArrayList<Any> = ArrayList<Any>(),
-                                           private val healthChecks: ArrayList<HealthCheckContext> = ArrayList<HealthCheckContext>(),
-                                           private val staticDirectories: ArrayList<StaticResource> = ArrayList<StaticResource>())
+                                           private val swaggerPackages: List<String> = listOf<String>(),
+                                           private val resources: List<Any> = listOf<String>(),
+                                           private val healthChecks: List<HealthCheckContext> = listOf<HealthCheckContext>(),
+                                           private val staticDirectories: List<StaticResource> = listOf<StaticResource>())
     : Application<T>() {
     init {
         if (serverRootPath != null) System.setProperty("dw.server.rootPath", serverRootPath)
@@ -62,8 +62,8 @@ class FeatherfallServer<T: Configuration>( private val configFile: File? = null,
     override fun initialize( bootstrap : Bootstrap<T>){
         super.initialize( bootstrap )
 
-        if (swagger != null){
-            bootstrap.addBundle( ConfiguredSwaggerBundle(swagger) )
+        if ( !swaggerPackages.isEmpty() ){
+            bootstrap.addBundle( ConfiguredSwaggerBundle(swaggerPackages) )
         }
 
         for ( (location, context, index, uuid) in staticDirectories ){
@@ -124,9 +124,16 @@ class AllHostsValid : HostnameVerifier {
     override fun verify(hostname: String, session: SSLSession): Boolean { return true }
 }
 
-class ConfiguredSwaggerBundle<T: Configuration>(val swaggerBundleConfiguration: SwaggerBundleConfiguration): SwaggerBundle<T>() {
+class ConfiguredSwaggerBundle<T: Configuration>(val swaggerPackages: List<String>): SwaggerBundle<T>() {
+    private val swaggerConfig: SwaggerBundleConfiguration = SwaggerBundleConfiguration();
+
+    init{
+        val packageNames = swaggerPackages.joinToString()
+        swaggerConfig.resourcePackage = packageNames
+    }
+
     override fun getSwaggerBundleConfiguration(p0: T): SwaggerBundleConfiguration {
-        return swaggerBundleConfiguration
+        return swaggerConfig
     }
 
 }
