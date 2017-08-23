@@ -4,18 +4,17 @@ import io.dropwizard.Application
 import java.io.File
 import io.dropwizard.Configuration
 import io.dropwizard.setup.Environment
-import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
 import org.glassfish.jersey.server.ServerProperties
 import com.codahale.metrics.health.HealthCheck
-import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle
 import io.dropwizard.setup.Bootstrap
-import io.federecio.dropwizard.swagger.SwaggerBundle
 import java.util.*
 import javax.net.ssl.*
 import javax.servlet.DispatcherType
 import java.util.EnumSet
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle
+import io.dropwizard.assets.AssetsBundle
 
 /**
  * This class provides a convenient wa of configuring and starting
@@ -26,16 +25,16 @@ import com.fasterxml.jackson.databind.SerializationFeature
  * val server: FeatherfallServer( ... )
  * server.start()
  */
-class FeatherfallServer<T: Configuration>( private val configFile: File? = null,
-                                           serverRootPath: String? = null,
-                                           keystore: Keystore? = null,
-                                           disableSslValidation: Boolean = false,
-                                           private val jsonPrettyPrint: Boolean = true,
-                                           private val disableSameSiteOriginPolicy: Boolean = false,
-                                           private val displayWADL: Boolean = true,
-                                           private val resources: List<Any> = listOf<Any>(),
-                                           private val healthChecks: List<HealthCheckContext> = listOf<HealthCheckContext>(),
-                                           private val staticDirectories: List<StaticResource> = listOf<StaticResource>()
+class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
+                                          serverRootPath: String? = null,
+                                          keystore: Keystore? = null,
+                                          disableSslValidation: Boolean = false,
+                                          private val jsonPrettyPrint: Boolean = true,
+                                          private val disableSameSiteOriginPolicy: Boolean = false,
+                                          private val displayWADL: Boolean = true,
+                                          private val apiResources: List<Any> = listOf<Any>(),
+                                          private val healthChecks: List<HealthCheckContext> = listOf<HealthCheckContext>(),
+                                          private val staticResources: List<StaticResource> = listOf<StaticResource>()
     ) :Application<T>() {
     init {
         if (serverRootPath != null) System.setProperty("dw.server.rootPath", serverRootPath)
@@ -61,10 +60,14 @@ class FeatherfallServer<T: Configuration>( private val configFile: File? = null,
     override fun initialize( bootstrap : Bootstrap<T>){
         super.initialize( bootstrap )
 
-        //the current release of the sagger API is broken. Again.
-        //if (!swaggerPackages.isEmpty()) {
-        //    bootstrap.addBundle(ConfiguredSwaggerBundle(swaggerPackages))
-        //}
+        for ( (location, context, index, onClasspth, uuid) in staticResources){
+            if( onClasspth ) {
+                bootstrap.addBundle(AssetsBundle(location, context, index, uuid))
+            }
+            else{
+                bootstrap.addBundle(FileAssetsBundle(location, context, index, uuid))
+            }
+        }
     }
 
     override fun run(config: T, env: Environment) {
@@ -88,7 +91,7 @@ class FeatherfallServer<T: Configuration>( private val configFile: File? = null,
             filter.setInitParameter("allowCredentials", "true")
         }
 
-        for (resource in resources) {
+        for (resource in apiResources) {
             env.jersey().register(resource)
         }
 
@@ -104,7 +107,7 @@ class FeatherfallServer<T: Configuration>( private val configFile: File? = null,
 
 data class HealthCheckContext(val context: String, val healthCheck: HealthCheck)
 
-data class StaticResource(val location: String, val context: String = "", val index: String = "index.html", val uuid: String = UUID.randomUUID().toString())
+data class StaticResource(val location: String, val context: String = "", val index: String = "index.html", val onClasspath: Boolean=true, val uuid: String = UUID.randomUUID().toString())
 
 data class Keystore(val location: File, val password: String)
 
@@ -120,16 +123,3 @@ class AllHostsValid : HostnameVerifier {
     override fun verify(hostname: String, session: SSLSession): Boolean { return true }
 }
 
-class ConfiguredSwaggerBundle<T: Configuration>(val swaggerPackages: List<String>): SwaggerBundle<T>() {
-    private val swaggerConfig: SwaggerBundleConfiguration = SwaggerBundleConfiguration();
-
-    init{
-        val packageNames = swaggerPackages.joinToString()
-        swaggerConfig.resourcePackage = packageNames
-    }
-
-    override fun getSwaggerBundleConfiguration(p0: T): SwaggerBundleConfiguration {
-        return swaggerConfig
-    }
-
-}
