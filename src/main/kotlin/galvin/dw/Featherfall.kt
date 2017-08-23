@@ -33,11 +33,10 @@ class FeatherfallServer<T: Configuration>( private val configFile: File? = null,
                                            private val jsonPrettyPrint: Boolean = true,
                                            private val disableSameSiteOriginPolicy: Boolean = false,
                                            private val displayWADL: Boolean = true,
-                                           private val swaggerPackages: List<String> = listOf<String>(),
-                                           private val resources: List<Any> = listOf<String>(),
+                                           private val resources: List<Any> = listOf<Any>(),
                                            private val healthChecks: List<HealthCheckContext> = listOf<HealthCheckContext>(),
-                                           private val staticDirectories: List<StaticResource> = listOf<StaticResource>())
-    : Application<T>() {
+                                           private val staticDirectories: List<StaticResource> = listOf<StaticResource>()
+    ) :Application<T>() {
     init {
         if (serverRootPath != null) System.setProperty("dw.server.rootPath", serverRootPath)
 
@@ -62,13 +61,10 @@ class FeatherfallServer<T: Configuration>( private val configFile: File? = null,
     override fun initialize( bootstrap : Bootstrap<T>){
         super.initialize( bootstrap )
 
-        if ( !swaggerPackages.isEmpty() ){
-            bootstrap.addBundle( ConfiguredSwaggerBundle(swaggerPackages) )
-        }
-
-        for ( (location, context, index, uuid) in staticDirectories ){
-            bootstrap.addBundle( FileAssetsBundle( location, context, index, uuid ) );
-        }
+        //the current release of the sagger API is broken. Again.
+        //if (!swaggerPackages.isEmpty()) {
+        //    bootstrap.addBundle(ConfiguredSwaggerBundle(swaggerPackages))
+        //}
     }
 
     override fun run(config: T, env: Environment) {
