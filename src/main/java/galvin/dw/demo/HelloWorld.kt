@@ -9,12 +9,18 @@ import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
 fun main(args: Array<String>) {
-    val resources = arrayListOf<Any>( HelloResource() )
+    try {
+        println("Setting up server...")
+        val resources = arrayListOf<Any>(HelloResource())
 
-    val server = FeatherfallServer<HelloConfig>(
-            resources = resources
-    )
-    server.start()
+        val server = FeatherfallServer<HelloConfig>(
+                resources = resources
+        )
+        server.start()
+    }
+    catch(t: Throwable){
+        t.printStackTrace()
+    }
 }
 
 class HelloConfig: Configuration(){}
