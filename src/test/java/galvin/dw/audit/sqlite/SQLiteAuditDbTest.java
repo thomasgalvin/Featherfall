@@ -205,17 +205,26 @@ public class SQLiteAuditDbTest{
             mods.add(mod);
         }
 
+        Random random = new Random();
+        LoginType[] loginTypes = LoginType.values();
+        LoginType loginType = loginTypes[ random.nextInt( loginTypes.length ) ];
+
+        AccessType[] accessTypes = AccessType.values();
+        AccessType accessType = accessTypes[ random.nextInt( accessTypes.length ) ];
+
+        boolean permissionGranted = random.nextBoolean();
+
         return new AccessInfo(
                 "user" + UUID.randomUUID().toString(),
-                LoginType.USERNAME_PASSWORD,
+                loginType,
                 null,
                 System.currentTimeMillis(),
                 "resourceUUID:" + UUID.randomUUID().toString(),
                 "resourceName:" + UUID.randomUUID().toString(),
                 "U",
                 "TPS Report",
-                AccessType.CREATE,
-                true,
+                accessType,
+                permissionGranted,
                 systemInfoUuid,
                 mods,
                 "uuid:" + UUID.randomUUID().toString()
