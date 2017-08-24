@@ -125,6 +125,7 @@ internal fun loadSql( classpathEntry: String ): String{
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
+    private val concurrencyLock = Object()
     private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
     private val sqlCreateTableSystemInfo = loadSql("/galvin/dw/db/sqlite/audit_create_table_system_info.sql")
     private val sqlCreateTableSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit_create_table_system_info_networks.sql")
@@ -155,24 +156,26 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     override fun store(systemInfo: SystemInfo) {
-        val (conn, statement) = prepareStatement( getConnection(), sqlStoreSystemInfo )
+        synchronized(concurrencyLock) {
+            val (conn, statement) = prepareStatement(getConnection(), sqlStoreSystemInfo)
 
-        statement.setString(1, systemInfo.serialNumber)
-        statement.setString(2, systemInfo.name)
-        statement.setString(3, systemInfo.version)
-        statement.setString(4, systemInfo.maximumClassification)
-        statement.setString(5, systemInfo.classificationGuide)
-        statement.setString(6, systemInfo.uuid)
+            statement.setString(1, systemInfo.serialNumber)
+            statement.setString(2, systemInfo.name)
+            statement.setString(3, systemInfo.version)
+            statement.setString(4, systemInfo.maximumClassification)
+            statement.setString(5, systemInfo.classificationGuide)
+            statement.setString(6, systemInfo.uuid)
 
-        statement.executeUpdate()
-        statement.close()
+            statement.executeUpdate()
+            statement.close()
 
-        for( (ordinal, network) in systemInfo.networks.withIndex() ){
-            storeNetwork(conn, systemInfo.uuid, network, ordinal)
+            for ((ordinal, network) in systemInfo.networks.withIndex()) {
+                storeNetwork(conn, systemInfo.uuid, network, ordinal)
+            }
+
+            conn.commit()
+            conn.close()
         }
-
-        conn.commit()
-        conn.close()
     }
 
     private fun storeNetwork( conn: Connection, systemInfoUuid: String, networkName: String, ordinal: Int ){
