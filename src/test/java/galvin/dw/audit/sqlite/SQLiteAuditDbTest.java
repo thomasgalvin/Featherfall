@@ -8,94 +8,96 @@ import java.io.File;
 import java.util.*;
 
 public class SQLiteAuditDbTest{
+    private static final boolean console = false;
+
     @Test
     public void should_create_tables() throws Exception{
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
     }
 
     @Test
     public void should_not_create_tables_twice() throws Exception{
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
-        AuditDB audit2 = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
+        final AuditDB audit2 = new SQLiteAuditDB(auditFile);
     }
 
     @Test
     public void should_store_system_info() throws Exception{
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        SystemInfo system = randomSystemInfo();
+        final SystemInfo system = randomSystemInfo();
         audit.store(system);
     }
 
     @Test
     public void should_retrieve_system_info() throws Exception{
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        SystemInfo system = randomSystemInfo();
+        final SystemInfo system = randomSystemInfo();
         audit.store(system);
 
-        List<SystemInfo> allSystemInfo = audit.retrieveAllSystemInfo();
+        final List<SystemInfo> allSystemInfo = audit.retrieveAllSystemInfo();
         Assert.assertEquals( "Unexpected system info count", 1, allSystemInfo.size() );
         Assert.assertEquals( "Loaded system info did not match expected", system, allSystemInfo.get(0) );
     }
 
     @Test
     public void should_retrieve_system_info_list() throws Exception{
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        final int exepctedCount = 10;
+        final int expectedCount = 10;
         Map<String, SystemInfo> map = new HashMap<>();
 
-        for( int i = 0; i < exepctedCount; i++ ){
-            SystemInfo system = randomSystemInfo();
+        for( int i = 0; i < expectedCount; i++ ){
+            final SystemInfo system = randomSystemInfo();
             map.put( system.getUuid(), system );
             audit.store(system);
         }
 
-        List<SystemInfo> allSystemInfo = audit.retrieveAllSystemInfo();
-        Assert.assertEquals( "Unexpected system info count", exepctedCount, allSystemInfo.size() );
+        final List<SystemInfo> allSystemInfo = audit.retrieveAllSystemInfo();
+        Assert.assertEquals( "Unexpected system info count", expectedCount, allSystemInfo.size() );
 
-        for( SystemInfo loaded: allSystemInfo ){
-            SystemInfo expected = map.get( loaded.getUuid() );
+        for( final SystemInfo loaded: allSystemInfo ){
+            final SystemInfo expected = map.get( loaded.getUuid() );
             Assert.assertEquals( "Loaded system info did not match expected", expected, loaded );
         }
     }
 
     @Test
     public void should_retrieve_system_info_by_uuid() throws Exception{
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        final int exepctedCount = 10;
-        Map<String, SystemInfo> map = new HashMap<>();
+        final int expectedCount = 10;
+        final Map<String, SystemInfo> map = new HashMap<>();
 
-        for( int i = 0; i < exepctedCount; i++ ){
-            SystemInfo system = randomSystemInfo();
+        for( int i = 0; i < expectedCount; i++ ){
+            final SystemInfo system = randomSystemInfo();
             map.put( system.getUuid(), system );
             audit.store(system);
         }
 
 
-        for( String key: map.keySet() ){
-            SystemInfo expected = map.get(key);
-            SystemInfo loaded = audit.retrieveSystemInfo(key);
+        for( final String key: map.keySet() ){
+            final SystemInfo expected = map.get(key);
+            final SystemInfo loaded = audit.retrieveSystemInfo(key);
             Assert.assertEquals( "Loaded system info did not match expected", expected, loaded );
         }
     }
 
     @Test
     public void should_store_access_info() throws Exception{
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        SystemInfo system = randomSystemInfo();
-        AccessInfo info = randomAccessInfo( system.getUuid() );
-        audit.log(info);
+        final SystemInfo system = randomSystemInfo();
+        final AccessInfo info = randomAccessInfo( system.getUuid() );
+        audit.log(info, console);
     }
 
     @Test
@@ -105,20 +107,20 @@ public class SQLiteAuditDbTest{
         final long later = now + 10_000;
         final int expectedCount = 10;
 
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        SystemInfo system = randomSystemInfo();
+        final SystemInfo system = randomSystemInfo();
         audit.store(system);
 
-        List<AccessInfo> expectedEntries = generateAccessInfo(system, expectedCount, audit);
-        List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(then, later);
+        final List<AccessInfo> expectedEntries = generateAccessInfo(system, expectedCount, audit);
+        final List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(then, later);
 
         Assert.assertEquals( "Unexpected system info count", expectedCount, loadedEntries.size() );
 
         for( int i = 0; i < expectedEntries.size(); i++ ){
-            AccessInfo expected = expectedEntries.get(i);
-            AccessInfo loaded = loadedEntries.get(i);
+            final AccessInfo expected = expectedEntries.get(i);
+            final AccessInfo loaded = loadedEntries.get(i);
             Assert.assertEquals( "Loaded access info did not match expected", expected, loaded );
         }
     }
@@ -167,14 +169,14 @@ public class SQLiteAuditDbTest{
         final long earlier = now - 10_000;
         final int expectedCount = 10;
 
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        SystemInfo system = randomSystemInfo();
+        final SystemInfo system = randomSystemInfo();
         audit.store(system);
 
         generateAccessInfo(system, expectedCount, audit);
-        List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(muchEarlier, earlier);
+        final List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(muchEarlier, earlier);
 
         Assert.assertEquals( "Unexpected system info count", 0, loadedEntries.size() );
     }
@@ -186,14 +188,14 @@ public class SQLiteAuditDbTest{
         final long muchLater = now + 20_000;
         final int expectedCount = 10;
 
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        SystemInfo system = randomSystemInfo();
+        final SystemInfo system = randomSystemInfo();
         audit.store(system);
 
         generateAccessInfo(system, expectedCount, audit);
-        List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(later, muchLater);
+        final List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(later, muchLater);
 
         Assert.assertEquals( "Unexpected system info count", 0, loadedEntries.size() );
     }
@@ -205,32 +207,18 @@ public class SQLiteAuditDbTest{
         final long later = now + 10_000;
         final int expectedCount = 10;
 
-        File auditFile = randomAuditDbFile();
-        AuditDB audit = new SQLiteAuditDB(auditFile);
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        SystemInfo system = randomSystemInfo();
+        final SystemInfo system = randomSystemInfo();
         generateAccessInfo( system, expectedCount, audit );
 
-        List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(then, later);
+        final List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(then, later);
         Assert.assertEquals( "Unexpected system info count", expectedCount, loadedEntries.size() );
 
         final String randomSystemUuid = UUID.randomUUID().toString();
-        List<AccessInfo> nonExistentSystemEntries = audit.retrieveAccessInfo( randomSystemUuid , then, later);
+        final List<AccessInfo> nonExistentSystemEntries = audit.retrieveAccessInfo( randomSystemUuid , then, later);
         Assert.assertEquals( "Unexpected system info count", 0, nonExistentSystemEntries.size() );
-    }
-
-    private List<AccessInfo> generateAccessInfo( SystemInfo system, int expectedCount, AuditDB audit ) throws Exception{
-        List<AccessInfo> result = new ArrayList<>();
-
-        for( int i = 0; i < expectedCount; i++ ) {
-            AccessInfo info = randomAccessInfo(system.getUuid());
-            audit.log(info);
-            result.add(info);
-
-            Thread.sleep(1);
-        }
-
-        return result;
     }
 
     private static File randomAuditDbFile(){
@@ -255,35 +243,47 @@ public class SQLiteAuditDbTest{
         );
     }
 
+    private List<AccessInfo> generateAccessInfo( SystemInfo system, int expectedCount, AuditDB audit ) throws Exception{
+        final List<AccessInfo> result = new ArrayList<>();
+
+        for( int i = 0; i < expectedCount; i++ ) {
+            final AccessInfo info = randomAccessInfo(system.getUuid());
+            audit.log(info, console);
+            result.add(info);
+
+            Thread.sleep(1);
+        }
+
+        return result;
+    }
+
     private static AccessInfo randomAccessInfo(String systemInfoUuid){
-        List<Modification> mods = new ArrayList();
+        final List<Modification> mods = new ArrayList();
         for( int i = 0; i < 10; i++ ){
-            Modification mod = new Modification(
+            mods.add( new Modification(
                     "field:" + UUID.randomUUID().toString(),
                     "old:" + UUID.randomUUID().toString(),
                     "new:" + UUID.randomUUID().toString()
-            );
-            mods.add(mod);
+            ) );
         }
 
-        Random random = new Random();
-        LoginType[] loginTypes = LoginType.values();
-        LoginType loginType = loginTypes[ random.nextInt( loginTypes.length ) ];
+        final Random random = new Random();
+        final LoginType[] loginTypes = LoginType.values();
+        final AccessType[] accessTypes = AccessType.values();
 
-        AccessType[] accessTypes = AccessType.values();
-        AccessType accessType = accessTypes[ random.nextInt( accessTypes.length ) ];
-
-        boolean permissionGranted = random.nextBoolean();
+        final LoginType loginType = loginTypes[ random.nextInt( loginTypes.length ) ];
+        final AccessType accessType = accessTypes[ random.nextInt( accessTypes.length ) ];
+        final boolean permissionGranted = random.nextBoolean();
 
         return new AccessInfo(
                 "user" + UUID.randomUUID().toString(),
                 loginType,
-                null,
+                "proxy:" + UUID.randomUUID().toString(),
                 System.currentTimeMillis(),
                 "resourceUUID:" + UUID.randomUUID().toString(),
                 "resourceName:" + UUID.randomUUID().toString(),
-                "U",
-                "TPS Report",
+                "classification" + UUID.randomUUID().toString(),
+                "resource" + UUID.randomUUID().toString(),
                 accessType,
                 permissionGranted,
                 systemInfoUuid,

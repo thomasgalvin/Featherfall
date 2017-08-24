@@ -13,7 +13,7 @@ interface AuditDB{
     fun retrieveAllSystemInfo(): List<SystemInfo>
     fun retrieveSystemInfo(uuid: String): SystemInfo?
 
-    fun log( access: AccessInfo )
+    fun log( access: AccessInfo, console: Boolean = false )
     fun retrieveAccessInfo(startTimestamp: Long, endTimestamp: Long): List<AccessInfo>
     fun retrieveAccessInfo(systemInfoUuid: String, startTimestamp: Long, endTimestamp: Long): List<AccessInfo>
 }
@@ -257,7 +257,7 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
         return result
     }
 
-    override fun log(access: AccessInfo) {
+    override fun log(access: AccessInfo, console: Boolean) {
         synchronized(concurrencyLock) {
             val (conn, statement) = prepareStatement(getConnection(), sqlStoreAccessInfo)
 
@@ -286,6 +286,8 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
             conn.commit()
             conn.close()
         }
+
+        if(console) println( access )
     }
 
     private fun storeMod( conn: Connection, accessInfoUuid: String, mod: Modification, ordinal: Int ){
@@ -311,10 +313,6 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
 
     private fun doRetrieveAccessInfo(systemInfoUuid: String?, startTimestamp: Long, endTimestamp: Long): List<AccessInfo> {
         val sql = if( isBlank(systemInfoUuid) ) sqlRetrieveAccessInfoByDates else sqlRetrieveAccessInfoByDatesAndUuid
-
-        println("***")
-        println("access info sql:\n$sql")
-
         val (conn, statement) = prepareStatement( getConnection(), sql )
         val result = mutableListOf<AccessInfo>()
 
