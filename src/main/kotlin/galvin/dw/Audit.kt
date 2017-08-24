@@ -97,23 +97,25 @@ internal fun close(conn: Connection, statement: PreparedStatement){
     conn.close()
 }
 
-internal fun prepareStatement( conn: Connection, sqlFileName: String, autoCommit: Boolean = false ): ConnectionStatement {
-    conn.autoCommit = autoCommit
-
-    val resource = SQLiteAuditDB::class.java.getResource(sqlFileName)
-    if(resource == null) throw IOException( "Unable to load SQL: $sqlFileName" )
-
-    val sql = resource.readText()
-    if( isBlank(sql) ) throw IOException( "Loaded empty SQL: $sqlFileName" )
-
+internal fun prepareStatement( conn: Connection, sql: String ): ConnectionStatement {
     val statement = conn.prepareStatement(sql)
     return ConnectionStatement(conn, statement)
 
 }
 
-internal fun runSql( conn: Connection, sqlFileName: String ){
-    var (_, statement) = prepareStatement( conn, sqlFileName )
+internal fun runSql( conn: Connection, sql: String ){
+    var (_, statement) = prepareStatement( conn, sql )
     executeAndClose(conn, statement)
+}
+
+internal fun loadSql( classpathEntry: String ): String{
+    val resource = SQLiteAuditDB::class.java.getResource(classpathEntry)
+    if(resource == null) throw IOException( "Unable to load SQL: $classpathEntry" )
+
+    val sql = resource.readText()
+    if( isBlank(sql) ) throw IOException( "Loaded empty SQL: $classpathEntry" )
+
+    return sql
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -124,6 +126,13 @@ internal fun runSql( conn: Connection, sqlFileName: String ){
 
 class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
+    private val sqlCreateTableSystemInfo = loadSql("/galvin/dw/db/sqlite/audit_create_table_system_info.sql")
+    private val sqlCreateTableSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit_create_table_system_info_networks.sql")
+    private val sqlStoreSystemInfo = loadSql("/galvin/dw/db/sqlite/audit_store_system_info.sql")
+    private val sqlStoreSystemInfoNetwork = loadSql("/galvin/dw/db/sqlite/audit_store_system_info_network.sql")
+    private val sqlRetrieveAllSystemInfo = loadSql("/galvin/dw/db/sqlite/audit_retrieve_all_system_info.sql")
+    private val sqlRetrieveSystemInfoByUuid = loadSql("/galvin/dw/db/sqlite/audit_retrieve_system_info_by_uuid.sql")
+    private val sqlRetrieveSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit_retrieve_system_info_networks.sql")
 
     init{
         createTables()
@@ -131,7 +140,9 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
 
     private fun getConnection( connectionUrl: String ): Connection {
         Class.forName( "org.sqlite.JDBC" )
-        return DriverManager.getConnection( connectionUrl )
+        val result = DriverManager.getConnection( connectionUrl )
+        result.autoCommit = false
+        return result
     }
 
     private fun getConnection(): Connection{
@@ -139,16 +150,12 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     private fun createTables(){
-        val systemInfoSql = "/galvin/dw/db/sqlite/audit_create_table_system_info.sql"
-        runSql( getConnection(), systemInfoSql )
-
-        val networksSql= "/galvin/dw/db/sqlite/audit_create_table_system_info_networks.sql"
-        runSql( getConnection(), networksSql )
+        runSql( getConnection(), sqlCreateTableSystemInfo )
+        runSql( getConnection(), sqlCreateTableSystemInfoNetworks )
     }
 
     override fun store(systemInfo: SystemInfo) {
-        val sqlFile = "/galvin/dw/db/sqlite/audit_store_system_info.sql"
-        val (conn, statement) = prepareStatement( getConnection(), sqlFile )
+        val (conn, statement) = prepareStatement( getConnection(), sqlStoreSystemInfo )
 
         statement.setString(1, systemInfo.serialNumber)
         statement.setString(2, systemInfo.name)
@@ -169,8 +176,7 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     private fun storeNetwork( conn: Connection, systemInfoUuid: String, networkName: String, ordinal: Int ){
-        val sqlFile = "/galvin/dw/db/sqlite/audit_store_system_info_network.sql"
-        val (_, statement) = prepareStatement( conn, sqlFile )
+        val (_, statement) = prepareStatement( conn, sqlStoreSystemInfoNetwork )
 
         statement.setString(1, systemInfoUuid)
         statement.setString(2, networkName)
@@ -181,9 +187,7 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     override fun retrieveAllSystemInfo(): List<SystemInfo> {
-        val sqlFile = "/galvin/dw/db/sqlite/audit_retrieve_all_system_info.sql"
-        val (conn, statement) = prepareStatement( getConnection(), sqlFile )
-
+        val (conn, statement) = prepareStatement( getConnection(), sqlRetrieveAllSystemInfo )
         val result = mutableListOf<SystemInfo>()
 
         val resultSet = statement.executeQuery()
@@ -198,10 +202,8 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     override fun retrieveSystemInfo(uuid: String): SystemInfo? {
+        val (conn, statement) = prepareStatement( getConnection(), sqlRetrieveSystemInfoByUuid )
         var result: SystemInfo? = null
-
-        val sqlFile = "/galvin/dw/db/sqlite/audit_retrieve_system_info_by_uuid.sql"
-        val (conn, statement) = prepareStatement( getConnection(), sqlFile )
 
         statement.setString(1, uuid)
 
@@ -228,10 +230,9 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
                 uuid
         )
 
-        val sqlFile = "/galvin/dw/db/sqlite/audit_retrieve_system_info_networks.sql"
-        val (_, statement) = prepareStatement( conn, sqlFile )
-
+        val (_, statement) = prepareStatement( conn, sqlRetrieveSystemInfoNetworks )
         statement.setString(1, uuid)
+
         val networkHits = statement.executeQuery()
         if( networkHits != null ){
             while( networkHits.next() ){
