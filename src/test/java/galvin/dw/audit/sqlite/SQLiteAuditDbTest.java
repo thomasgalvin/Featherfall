@@ -99,7 +99,7 @@ public class SQLiteAuditDbTest{
     }
 
     @Test
-    public void should_store_access_info_by_dates() throws Exception{
+    public void should_retrieve_access_info_by_dates() throws Exception{
         final long now = System.currentTimeMillis();
         final long then = now - 10_000;
         final long later = now + 10_000;
@@ -124,7 +124,82 @@ public class SQLiteAuditDbTest{
     }
 
     @Test
-    public void should_store_access_info_by_dates_and_uuid() throws Exception{
+    public void should_retrieve_access_info_by_dates_and_uuid() throws Exception{
+        final long now = System.currentTimeMillis();
+        final long then = now - 10_000;
+        final long later = now + 10_000;
+        final int expectedCount = 10;
+
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
+
+        final List<SystemInfo> systems = new ArrayList();
+        final Map< String, List<AccessInfo> > map = new HashMap<>();
+
+        for( int i = 0; i < expectedCount; i++ ){
+            final SystemInfo system = randomSystemInfo();
+            audit.store(system);
+            systems.add(system);
+
+            final List<AccessInfo> expectedEntries = generateAccessInfo(system, expectedCount, audit);
+            map.put( system.getUuid(), expectedEntries );
+        }
+
+        for( SystemInfo system : systems ){
+            final String systemUuid = system.getUuid();
+            final List<AccessInfo> expectedEntries = map.get( systemUuid );
+            final List<AccessInfo> loadedEntries = audit.retrieveAccessInfo( systemUuid, then, later );
+
+            Assert.assertEquals( "Unexpected system info count", expectedEntries.size(), loadedEntries.size() );
+
+            for( int i = 0; i < expectedEntries.size(); i++ ){
+                final AccessInfo expected = expectedEntries.get(i);
+                final AccessInfo loaded = loadedEntries.get(i);
+                Assert.assertEquals( "Loaded access info did not match expected", expected, loaded );
+            }
+        }
+    }
+
+    @Test
+    public void should_not_retrieve_access_info_by_dates_before() throws Exception{
+        final long now = System.currentTimeMillis();
+        final long muchEarlier = now - 15_000;
+        final long earlier = now - 10_000;
+        final int expectedCount = 10;
+
+        File auditFile = randomAuditDbFile();
+        AuditDB audit = new SQLiteAuditDB(auditFile);
+
+        SystemInfo system = randomSystemInfo();
+        audit.store(system);
+
+        generateAccessInfo(system, expectedCount, audit);
+        List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(muchEarlier, earlier);
+
+        Assert.assertEquals( "Unexpected system info count", 0, loadedEntries.size() );
+    }
+
+    @Test
+    public void should_not_retrieve_access_info_by_dates_after() throws Exception{
+        final long now = System.currentTimeMillis();
+        final long later = now + 10_000;
+        final long muchLater = now + 20_000;
+        final int expectedCount = 10;
+
+        File auditFile = randomAuditDbFile();
+        AuditDB audit = new SQLiteAuditDB(auditFile);
+
+        SystemInfo system = randomSystemInfo();
+        audit.store(system);
+
+        generateAccessInfo(system, expectedCount, audit);
+        List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(later, muchLater);
+
+        Assert.assertEquals( "Unexpected system info count", 0, loadedEntries.size() );
+    }
+
+    @Test
+    public void should_not_retrieve_access_info_by_uuid() throws Exception{
         final long now = System.currentTimeMillis();
         final long then = now - 10_000;
         final long later = now + 10_000;
@@ -133,29 +208,15 @@ public class SQLiteAuditDbTest{
         File auditFile = randomAuditDbFile();
         AuditDB audit = new SQLiteAuditDB(auditFile);
 
-        List<SystemInfo> systems = new ArrayList();
-        Map< String, List<AccessInfo> > map = new HashMap<>();
+        SystemInfo system = randomSystemInfo();
+        generateAccessInfo( system, expectedCount, audit );
 
-        for( int i = 0; i < expectedCount; i++ ){
-            SystemInfo system = randomSystemInfo();
-            audit.store(system);
+        List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(then, later);
+        Assert.assertEquals( "Unexpected system info count", expectedCount, loadedEntries.size() );
 
-            List<AccessInfo> expectedEntries = generateAccessInfo(system, expectedCount, audit);
-            map.put( system.getUuid(), expectedEntries );
-        }
-
-        for( SystemInfo system : systems ){
-            List<AccessInfo> expectedEntries = map.get( system.getUuid() );
-            List<AccessInfo> loadedEntries = audit.retrieveAccessInfo( system.getUuid(), then, later );
-
-            Assert.assertEquals( "Unexpected system info count", expectedEntries.size(), loadedEntries.size() );
-
-            for( int i = 0; i < expectedEntries.size(); i++ ){
-                AccessInfo expected = expectedEntries.get(i);
-                AccessInfo loaded = loadedEntries.get(i);
-                Assert.assertEquals( "Loaded access info did not match expected", expected, loaded );
-            }
-        }
+        final String randomSystemUuid = UUID.randomUUID().toString();
+        List<AccessInfo> nonExistentSystemEntries = audit.retrieveAccessInfo( randomSystemUuid , then, later);
+        Assert.assertEquals( "Unexpected system info count", 0, nonExistentSystemEntries.size() );
     }
 
     private List<AccessInfo> generateAccessInfo( SystemInfo system, int expectedCount, AuditDB audit ) throws Exception{

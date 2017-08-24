@@ -310,7 +310,10 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     private fun doRetrieveAccessInfo(systemInfoUuid: String?, startTimestamp: Long, endTimestamp: Long): List<AccessInfo> {
-        val sql = if( isBlank(systemInfoUuid) ) sqlRetrieveAccessInfoByDates else sqlRetrieveAccessInfoByDates
+        val sql = if( isBlank(systemInfoUuid) ) sqlRetrieveAccessInfoByDates else sqlRetrieveAccessInfoByDatesAndUuid
+
+        println("***")
+        println("access info sql:\n$sql")
 
         val (conn, statement) = prepareStatement( getConnection(), sql )
         val result = mutableListOf<AccessInfo>()
