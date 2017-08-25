@@ -30,7 +30,7 @@ class SqliteUserDbTest {
         }
 
         for( expected in roles ){
-            var loaded = userdb.retrieveRole(expected.name)
+            val loaded = userdb.retrieveRole(expected.name)
             Assert.assertEquals("Loaded role did not match expected", expected, loaded)
         }
 
@@ -85,6 +85,37 @@ class SqliteUserDbTest {
         Assert.assertEquals("Role was unintentionally deactivated", true, shouldBeActive.active)
     }
 
+    @Test
+    fun should_update_role(){
+        val userdb = userDB()
+
+        val expectedCount = 10;
+        val map = mutableMapOf<String, Role>()
+
+        val roles = generateRoles(expectedCount)
+        for( role in roles ){
+            userdb.storeRole(role)
+            map.put(role.name, role)
+        }
+
+        var toBeUpdated = generateRole()
+        userdb.storeRole(toBeUpdated)
+
+        val check = userdb.retrieveRole(toBeUpdated.name)
+        Assert.assertEquals("Loaded role did not match expected", toBeUpdated, check)
+
+        var update = generateRole(name = toBeUpdated.name)
+        userdb.storeRole(update)
+
+        var shouldBeUpdate = userdb.retrieveRole(toBeUpdated.name)
+        Assert.assertEquals("Role was not updated", update, shouldBeUpdate)
+
+        for( expected in roles ){
+            val loaded = userdb.retrieveRole(expected.name)
+            Assert.assertEquals("Loaded role did not match expected", expected, loaded)
+        }
+    }
+
     // Utility code
 
     private fun userDB(): UserDB{
@@ -105,7 +136,7 @@ class SqliteUserDbTest {
         return result
     }
 
-    private fun generateRole( permissonCount: Int = 10, active: Boolean? = null ): Role {
+    private fun generateRole( permissonCount: Int = 10, active: Boolean? = null, name: String = "name:" + uuid() ): Role {
         val random = Random()
         val isActive = if(active == null) random.nextBoolean() else active
 
@@ -118,7 +149,7 @@ class SqliteUserDbTest {
         }
 
         return Role(
-                "name:" + uuid(),
+                name,
                 permissions,
                 isActive
         )

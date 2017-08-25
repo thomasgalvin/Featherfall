@@ -83,6 +83,9 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/users/create_table_roles.sql")
     private val sqlCreateTableRolePermissions = loadSql("/galvin/dw/db/sqlite/users/create_table_role_permissions.sql")
 
+    private val sqlDeleteRole = loadSql("/galvin/dw/db/sqlite/users/delete_role.sql")
+    private val sqlDeleteRolePermissions = loadSql("/galvin/dw/db/sqlite/users/delete_role_permissions.sql")
+
     private val sqlStoreRole = loadSql("/galvin/dw/db/sqlite/users/store_role.sql")
     private val sqlStoreRolePermission = loadSql("/galvin/dw/db/sqlite/users/store_role_permission.sql")
     private val sqlRetrieveAllRoles = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_roles.sql")
@@ -113,10 +116,20 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     override fun storeRole(role: Role){
         synchronized(concurrencyLock) {
             val conn = conn()
+
+            val deletePermissionsStatement = conn.prepareStatement(sqlDeleteRolePermissions)
+            deletePermissionsStatement.setString(1, role.name)
+            deletePermissionsStatement.executeUpdate()
+            deletePermissionsStatement.close()
+
+            val deleteRoleStatement = conn.prepareStatement(sqlDeleteRole)
+            deleteRoleStatement.setString(1, role.name)
+            deleteRoleStatement.executeUpdate()
+            deleteRoleStatement.close()
+
             val statement = conn.prepareStatement(sqlStoreRole)
 
             val active = if(role.active) 1 else 0
-
             statement.setString(1, role.name)
             statement.setInt(2, active)
 
