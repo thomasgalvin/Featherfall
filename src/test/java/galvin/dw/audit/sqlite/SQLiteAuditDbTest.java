@@ -7,42 +7,16 @@ import org.junit.Test;
 import java.io.File;
 import java.util.*;
 
+import static galvin.dw.UtilitiesKt.uuid;
+
 public class SQLiteAuditDbTest{
     private static final boolean console = false;
-
-    @Test
-    public void should_create_tables() throws Exception{
-        final File auditFile = randomAuditDbFile();
-        final AuditDB audit = new SQLiteAuditDB(auditFile);
-    }
 
     @Test
     public void should_not_create_tables_twice() throws Exception{
         final File auditFile = randomAuditDbFile();
         final AuditDB audit = new SQLiteAuditDB(auditFile);
         final AuditDB audit2 = new SQLiteAuditDB(auditFile);
-    }
-
-    @Test
-    public void should_store_system_info() throws Exception{
-        final File auditFile = randomAuditDbFile();
-        final AuditDB audit = new SQLiteAuditDB(auditFile);
-
-        final SystemInfo system = randomSystemInfo();
-        audit.store(system);
-    }
-
-    @Test
-    public void should_retrieve_system_info() throws Exception{
-        final File auditFile = randomAuditDbFile();
-        final AuditDB audit = new SQLiteAuditDB(auditFile);
-
-        final SystemInfo system = randomSystemInfo();
-        audit.store(system);
-
-        final List<SystemInfo> allSystemInfo = audit.retrieveAllSystemInfo();
-        Assert.assertEquals( "Unexpected system info count", 1, allSystemInfo.size() );
-        Assert.assertEquals( "Loaded system info did not match expected", system, allSystemInfo.get(0) );
     }
 
     @Test
@@ -88,16 +62,6 @@ public class SQLiteAuditDbTest{
             final SystemInfo loaded = audit.retrieveSystemInfo(key);
             Assert.assertEquals( "Loaded system info did not match expected", expected, loaded );
         }
-    }
-
-    @Test
-    public void should_store_access_info() throws Exception{
-        final File auditFile = randomAuditDbFile();
-        final AuditDB audit = new SQLiteAuditDB(auditFile);
-
-        final SystemInfo system = randomSystemInfo();
-        final AccessInfo info = randomAccessInfo( system.getUuid() );
-        audit.log(info, console);
     }
 
     @Test
@@ -216,30 +180,30 @@ public class SQLiteAuditDbTest{
         final List<AccessInfo> loadedEntries = audit.retrieveAccessInfo(then, later);
         Assert.assertEquals( "Unexpected system info count", expectedCount, loadedEntries.size() );
 
-        final String randomSystemUuid = UUID.randomUUID().toString();
+        final String randomSystemUuid = uuid();
         final List<AccessInfo> nonExistentSystemEntries = audit.retrieveAccessInfo( randomSystemUuid , then, later);
         Assert.assertEquals( "Unexpected system info count", 0, nonExistentSystemEntries.size() );
     }
 
     private static File randomAuditDbFile(){
-        return new File( "target/audit-" + UUID.randomUUID().toString() + ".dat" );
+        return new File( "target/audit-" + uuid() + ".dat" );
     }
 
     private static SystemInfo randomSystemInfo(){
         return new SystemInfo(
-                "serial:" + UUID.randomUUID().toString(),
-                "name:" + UUID.randomUUID().toString(),
-                "version" + UUID.randomUUID().toString(),
-                "Unclassified-" + UUID.randomUUID().toString(),
-                "guide:" + UUID.randomUUID().toString(),
+                "serial:" + uuid(),
+                "name:" + uuid(),
+                "version" + uuid(),
+                "Unclassified-" + uuid(),
+                "guide:" + uuid(),
                 Arrays.asList(
-                        UUID.randomUUID().toString(),
-                        UUID.randomUUID().toString(),
-                        UUID.randomUUID().toString(),
-                        UUID.randomUUID().toString(),
-                        UUID.randomUUID().toString()
+                        uuid(),
+                        uuid(),
+                        uuid(),
+                        uuid(),
+                        uuid()
                 ),
-                "uuid:" + UUID.randomUUID().toString()
+                "uuid:" + uuid()
         );
     }
 
@@ -261,9 +225,9 @@ public class SQLiteAuditDbTest{
         final List<Modification> mods = new ArrayList();
         for( int i = 0; i < 10; i++ ){
             mods.add( new Modification(
-                    "field:" + UUID.randomUUID().toString(),
-                    "old:" + UUID.randomUUID().toString(),
-                    "new:" + UUID.randomUUID().toString()
+                    "field:" + uuid(),
+                    "old:" + uuid(),
+                    "new:" + uuid()
             ) );
         }
 
@@ -276,19 +240,19 @@ public class SQLiteAuditDbTest{
         final boolean permissionGranted = random.nextBoolean();
 
         return new AccessInfo(
-                "user" + UUID.randomUUID().toString(),
+                "user" + uuid(),
                 loginType,
-                "proxy:" + UUID.randomUUID().toString(),
+                "proxy:" + uuid(),
                 System.currentTimeMillis(),
-                "resourceUUID:" + UUID.randomUUID().toString(),
-                "resourceName:" + UUID.randomUUID().toString(),
-                "classification" + UUID.randomUUID().toString(),
-                "resource" + UUID.randomUUID().toString(),
+                "resourceUUID:" + uuid(),
+                "resourceName:" + uuid(),
+                "classification" + uuid(),
+                "resource" + uuid(),
                 accessType,
                 permissionGranted,
                 systemInfoUuid,
                 mods,
-                "uuid:" + UUID.randomUUID().toString()
+                "uuid:" + uuid()
         );
     }
 }

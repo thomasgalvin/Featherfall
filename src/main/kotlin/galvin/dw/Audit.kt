@@ -24,7 +24,7 @@ data class SystemInfo( val serialNumber: String,
                        val maximumClassification: String,
                        val classificationGuide: String,
                        val networks: List<String>,
-                       val uuid: String = UUID.randomUUID().toString() )
+                       val uuid: String = uuid() )
 
 data class AccessInfo( val userUuid: String,
                        val loginType: LoginType,
@@ -42,7 +42,7 @@ data class AccessInfo( val userUuid: String,
                        val systemInfoUuid: String,
 
                        val modifications: List<Modification> = listOf(),
-                       val uuid: String = UUID.randomUUID().toString()
+                       val uuid: String = uuid()
 )
 
 data class Modification( val field: String,
@@ -75,10 +75,8 @@ enum class AccessType {
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
+class SQLiteAuditDB( databaseFile: File) :AuditDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
-
-    private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
 
     private val sqlCreateTableSystemInfo = loadSql("/galvin/dw/db/sqlite/audit//create_table_system_info.sql")
     private val sqlCreateTableSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit//create_table_system_info_networks.sql")
@@ -99,31 +97,21 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     private val sqlRetrieveAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit//retrieve_access_info_mods.sql")
 
     init{
-        createTables()
-    }
-
-    private fun getConnection( connectionUrl: String ): Connection {
+        //load driver
         Class.forName( "org.sqlite.JDBC" )
-        val result = DriverManager.getConnection( connectionUrl )
-        result.autoCommit = false
-        return result
-    }
 
-    private fun getConnection(): Connection{
-        return getConnection(connectionUrl)
-    }
+        //create tables
+        runSql( conn(), sqlCreateTableSystemInfo )
+        runSql( conn(), sqlCreateTableSystemInfoNetworks )
 
-    private fun createTables(){
-        runSql( getConnection(), sqlCreateTableSystemInfo )
-        runSql( getConnection(), sqlCreateTableSystemInfoNetworks )
-
-        runSql( getConnection(), sqlCreateTableAccessInfo )
-        runSql( getConnection(), sqlCreateTableAccessInfoMods )
+        runSql( conn(), sqlCreateTableAccessInfo )
+        runSql( conn(), sqlCreateTableAccessInfoMods )
     }
 
     override fun store(systemInfo: SystemInfo) {
         synchronized(concurrencyLock) {
-            val (conn, statement) = prepareStatement(getConnection(), sqlStoreSystemInfo)
+            val conn = conn();
+            val statement = conn.prepareStatement(sqlStoreSystemInfo)
 
             statement.setString(1, systemInfo.serialNumber)
             statement.setString(2, systemInfo.name)
@@ -145,7 +133,7 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     private fun storeNetwork( conn: Connection, systemInfoUuid: String, networkName: String, ordinal: Int ){
-        val (_, statement) = prepareStatement( conn, sqlStoreSystemInfoNetwork )
+        val statement = conn.prepareStatement(sqlStoreSystemInfoNetwork )
 
         statement.setString(1, systemInfoUuid)
         statement.setString(2, networkName)
@@ -156,7 +144,8 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     override fun retrieveAllSystemInfo(): List<SystemInfo> {
-        val (conn, statement) = prepareStatement( getConnection(), sqlRetrieveAllSystemInfo )
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveAllSystemInfo)
         val result = mutableListOf<SystemInfo>()
 
         val resultSet = statement.executeQuery()
@@ -171,7 +160,8 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     override fun retrieveSystemInfo(uuid: String): SystemInfo? {
-        val (conn, statement) = prepareStatement( getConnection(), sqlRetrieveSystemInfoByUuid )
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveSystemInfoByUuid)
         var result: SystemInfo? = null
 
         statement.setString(1, uuid)
@@ -199,7 +189,7 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
                 uuid
         )
 
-        val (_, statement) = prepareStatement( conn, sqlRetrieveSystemInfoNetworks )
+        val statement = conn.prepareStatement(sqlRetrieveSystemInfoNetworks)
         statement.setString(1, uuid)
 
         val networkHits = statement.executeQuery()
@@ -209,12 +199,14 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
             }
         }
 
+        statement.close()
         return result
     }
 
     override fun log(access: AccessInfo, console: Boolean) {
         synchronized(concurrencyLock) {
-            val (conn, statement) = prepareStatement(getConnection(), sqlStoreAccessInfo)
+            val conn = conn()
+            val statement = conn.prepareStatement(sqlStoreAccessInfo)
 
             val accessGranted = if(access.permissionGranted) 1 else 0
 
@@ -246,7 +238,7 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
     }
 
     private fun storeMod( conn: Connection, accessInfoUuid: String, mod: Modification, ordinal: Int ){
-        val (_, statement) = prepareStatement( conn, sqlStoreAccessInfoMod )
+        val statement = conn.prepareStatement(sqlStoreAccessInfoMod)
 
         statement.setString(1, mod.field)
         statement.setString(2, mod.oldValue)
@@ -268,7 +260,9 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
 
     private fun doRetrieveAccessInfo(systemInfoUuid: String?, startTimestamp: Long, endTimestamp: Long): List<AccessInfo> {
         val sql = if( isBlank(systemInfoUuid) ) sqlRetrieveAccessInfoByDates else sqlRetrieveAccessInfoByDatesAndUuid
-        val (conn, statement) = prepareStatement( getConnection(), sql )
+
+        val conn = conn()
+        val statement = conn.prepareStatement(sql)
         val result = mutableListOf<AccessInfo>()
 
         statement.setLong(1, startTimestamp)
@@ -296,7 +290,7 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
 
         val mods = mutableListOf<Modification>()
 
-        val (_, statement) = prepareStatement( conn, sqlRetrieveAccessInfoMods )
+        val statement = conn.prepareStatement(sqlRetrieveAccessInfoMods)
         statement.setString(1, uuid)
 
         val modHits = statement.executeQuery()

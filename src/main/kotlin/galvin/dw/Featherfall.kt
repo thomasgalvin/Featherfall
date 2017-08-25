@@ -24,7 +24,7 @@ import io.dropwizard.assets.AssetsBundle
  *
  * val config = File( "path/t/config )
  * val resources = listOf( UserResource(), SomeOtherResource() )
- * 
+ *
  * val server = FeatherfallServer( configFile=config, apiResources=resources  )
  * server.start()
  */
@@ -110,7 +110,7 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
 
 data class HealthCheckContext(val context: String, val healthCheck: HealthCheck)
 
-data class StaticResource(val location: String, val context: String = "", val index: String = "index.html", val onClasspath: Boolean=true, val uuid: String = UUID.randomUUID().toString())
+data class StaticResource( val location: String, val context: String = "", val index: String = "index.html", val onClasspath: Boolean=true, val uuid: String = uuid() )
 
 data class Keystore(val location: File, val password: String)
 
