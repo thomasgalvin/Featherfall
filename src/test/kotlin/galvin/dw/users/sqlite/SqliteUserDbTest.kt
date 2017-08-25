@@ -44,24 +44,44 @@ class SqliteUserDbTest {
     }
 
     @Test
+    fun should_activate_role(){
+        val userdb = userDB()
+
+        val inactiveToActive = generateRole( active=false )
+        val alwaysInactive = generateRole( active=false )
+
+        userdb.storeRole(inactiveToActive)
+        userdb.storeRole(alwaysInactive)
+        userdb.activate(inactiveToActive.name)
+
+        val shouldBeActive = userdb.retrieveRole(inactiveToActive.name)
+        if( shouldBeActive == null ) throw Exception("Failed to load role from database")
+
+        val shouldBeInactive = userdb.retrieveRole(alwaysInactive.name)
+        if( shouldBeInactive == null ) throw Exception("Failed to load role from database")
+
+        Assert.assertEquals("Role should have been activated", true, shouldBeActive.active)
+        Assert.assertEquals("Role was unintentionally activated", false, shouldBeInactive.active)
+    }
+
+    @Test
     fun should_deactivate_role(){
         val userdb = userDB()
 
-        val activeToDeactive = generateRole( active=true )
-        userdb.storeRole(activeToDeactive)
+        val activeToInactive = generateRole( active=true )
+        val alwaysActive = generateRole( active=true )
 
-        val alwaysActive= generateRole( active=true )
+        userdb.storeRole(activeToInactive)
         userdb.storeRole(alwaysActive)
+        userdb.deactivate(activeToInactive.name)
 
-        userdb.deactivate(activeToDeactive.name)
-
-        val shouldBeDeactive = userdb.retrieveRole(activeToDeactive.name)
-        if( shouldBeDeactive == null ) throw Exception("Failed to load role from database")
+        val shouldBeInactive = userdb.retrieveRole(activeToInactive.name)
+        if( shouldBeInactive == null ) throw Exception("Failed to load role from database")
 
         val shouldBeActive = userdb.retrieveRole(alwaysActive.name)
         if( shouldBeActive == null ) throw Exception("Failed to load role from database")
 
-        Assert.assertEquals("Role should have been deactivated", false, shouldBeDeactive.active)
+        Assert.assertEquals("Role should have been deactivated", false, shouldBeInactive.active)
         Assert.assertEquals("Role was unintentionally deactivated", true, shouldBeActive.active)
     }
 
