@@ -22,7 +22,9 @@ data class User(
         val login: String, val passwordHash: String?,
 
         //human name
-        val name: String, val displayName: String, val sortName: String,
+        val name: String, //full legal name, eg "John Smith"
+        val displayName:  String,//on-screen nickname, eg "John" or "Tigerpunch2010"
+        val sortName: String, //name in a sortable order, eg "Smith, John"
         val prependToName: String?, // this is used to store stuff like "Mr." or "Dr."
         val appendToName: String?, // used for stuff like rank, eg "Major General of the Fell Armies of Nod"
 
@@ -83,22 +85,22 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
 
     private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
 
-    private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/users/create_table_roles.sql")
-    private val sqlCreateTableRolePermissions = loadSql("/galvin/dw/db/sqlite/users/create_table_role_permissions.sql")
+    private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/roles/create_table_roles.sql")
+    private val sqlCreateTableRolePermissions = loadSql("/galvin/dw/db/sqlite/roles/create_table_role_permissions.sql")
     private val sqlCreateTableUsers = loadSql("/galvin/dw/db/sqlite/users/create_table_users.sql")
     private val sqlCreateTableContactInfo = loadSql("/galvin/dw/db/sqlite/users/create_table_contact_info.sql")
     private val sqlCreateTableUserRoles = loadSql("/galvin/dw/db/sqlite/users/create_table_user_roles.sql")
 
-    private val sqlDeleteRole = loadSql("/galvin/dw/db/sqlite/users/delete_role.sql")
-    private val sqlDeleteRolePermissions = loadSql("/galvin/dw/db/sqlite/users/delete_role_permissions.sql")
+    private val sqlDeleteRole = loadSql("/galvin/dw/db/sqlite/roles/delete_role.sql")
+    private val sqlDeleteRolePermissions = loadSql("/galvin/dw/db/sqlite/roles/delete_role_permissions.sql")
 
-    private val sqlStoreRole = loadSql("/galvin/dw/db/sqlite/users/store_role.sql")
-    private val sqlStoreRolePermission = loadSql("/galvin/dw/db/sqlite/users/store_role_permission.sql")
-    private val sqlRetrieveAllRoles = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_roles.sql")
-    private val sqlRetrieveRoleByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_role_by_uuid.sql")
-    private val sqlRetrieveRolePermissions = loadSql("/galvin/dw/db/sqlite/users/retrieve_role_permissions.sql")
+    private val sqlStoreRole = loadSql("/galvin/dw/db/sqlite/roles/store_role.sql")
+    private val sqlStoreRolePermission = loadSql("/galvin/dw/db/sqlite/roles/store_role_permission.sql")
+    private val sqlRetrieveAllRoles = loadSql("/galvin/dw/db/sqlite/roles/retrieve_all_roles.sql")
+    private val sqlRetrieveRoleByUuid = loadSql("/galvin/dw/db/sqlite/roles/retrieve_role_by_uuid.sql")
+    private val sqlRetrieveRolePermissions = loadSql("/galvin/dw/db/sqlite/roles/retrieve_role_permissions.sql")
 
-    private val sqlSetRoleActive = loadSql("/galvin/dw/db/sqlite/users/set_role_active.sql")
+    private val sqlSetRoleActive = loadSql("/galvin/dw/db/sqlite/roles/set_role_active.sql")
 
     private val sqlStoreUser = loadSql("/galvin/dw/db/sqlite/users/store_user.sql")
     private val sqlStoreUserContactInfo = loadSql("/galvin/dw/db/sqlite/users/store_user_contact_info.sql")

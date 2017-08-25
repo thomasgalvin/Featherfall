@@ -184,14 +184,14 @@ class SqliteUserDbTest {
         return result
     }
 
-    private fun generateRole( permissonCount: Int = 10, active: Boolean? = null, name: String = "name:" + uuid() ): Role {
+    private fun generateRole( permissionCount: Int = 10, active: Boolean? = null, name: String = "name:" + uuid() ): Role {
         val random = Random()
         val isActive = if(active == null) random.nextBoolean() else active
 
         val permissions = mutableListOf<String>()
 
-        for (i in 1..permissonCount) {
-            for (j in 1..permissonCount) {
+        for (i in 1..permissionCount) {
+            for (j in 1..permissionCount) {
                 permissions.add("permission:" + uuid())
             }
         }
