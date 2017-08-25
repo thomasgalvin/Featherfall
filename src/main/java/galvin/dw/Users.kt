@@ -2,6 +2,8 @@ package galvin.dw
 
 import com.sun.corba.se.pept.transport.ContactInfo
 import java.io.File
+import java.sql.Connection
+import java.sql.DriverManager
 import java.util.*
 
 interface UserDB {
@@ -77,8 +79,25 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB {
 
     private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
 
-    private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/audit_create_table_roles.sql")
-    private val sqlCreateTableRolePermissions = loadSql("/galvin/dw/db/sqlite/audit_create_table_role_permissions.sql")
+    private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/users/create_table_roles.sql")
+    private val sqlCreateTableRolePermissions = loadSql("/galvin/dw/db/sqlite/users/create_table_role_permissions.sql")
+
+    init{
+        //create tables
+        runSql( getConnection(), sqlCreateTableRoles )
+        runSql( getConnection(), sqlCreateTableRolePermissions )
+    }
+
+    private fun getConnection( connectionUrl: String ): Connection {
+        Class.forName( "org.sqlite.JDBC" )
+        val result = DriverManager.getConnection( connectionUrl )
+        result.autoCommit = false
+        return result
+    }
+
+    private fun getConnection(): Connection {
+        return getConnection(connectionUrl)
+    }
 
     override fun storeRole(role: Role){
     }

@@ -68,51 +68,6 @@ enum class AccessType {
 
     ASSERT_PERMISSION
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Database utility code
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-data class ConnectionStatement(val connection: Connection, val statement: PreparedStatement)
-
-internal fun isBlank( string: String? ) :Boolean {
-    return string == null || string.isBlank();
-}
-
-internal fun loadSql( classpathEntry: String ): String{
-    val resource = SQLiteAuditDB::class.java.getResource(classpathEntry)
-    if(resource == null) throw IOException( "Unable to load SQL: $classpathEntry" )
-
-    val sql = resource.readText()
-    if( isBlank(sql) ) throw IOException( "Loaded empty SQL: $classpathEntry" )
-
-    return sql
-}
-
-internal fun runSql( conn: Connection, sql: String ){
-    var (_, statement) = prepareStatement( conn, sql )
-    executeAndClose(conn, statement)
-}
-
-internal fun prepareStatement( conn: Connection, sql: String ): ConnectionStatement {
-    val statement = conn.prepareStatement(sql)
-    return ConnectionStatement(conn, statement)
-
-}
-
-internal fun executeAndClose(conn: Connection, statement: PreparedStatement){
-    statement.executeUpdate()
-    statement.close()
-
-    conn.commit()
-    conn.close()
-}
-
-internal fun close(conn: Connection, statement: PreparedStatement){
-    statement.close()
-    conn.close()
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
