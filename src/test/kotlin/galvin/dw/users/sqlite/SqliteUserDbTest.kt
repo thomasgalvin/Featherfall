@@ -129,41 +129,29 @@ class SqliteUserDbTest {
     @Test
     fun should_store_and_retrieve_user(){
         val userdb = userDB()
-        val contact = generateContactInfo()
         val roles = generateRoles(userdb = userdb)
 
-
-        val userRoles = mutableListOf<String>()
-        for( role in roles.subList(3, 5) ){
-            userRoles.add( role.name )
-        }
-
-        val user = User(
-                "login:" + uuid(),
-                "passwordHash:" + uuid(),
-                "name:" + uuid(),
-                "displayName:" + uuid(),
-                "sortName:" + uuid(),
-                "prependToName:" + uuid(),
-                "appendToName:" + uuid(),
-                "credential:" + uuid(),
-                "serialNumber:" + uuid(),
-                "distinguishedName:" + uuid(),
-                "homeAgency:" + uuid(),
-                "agency:" + uuid(),
-                "countryCode:" + uuid(),
-                "citizenship:" + uuid(),
-                System.currentTimeMillis(),
-                true,
-                uuid(),
-                contact,
-                userRoles
-        )
-
+        val user = generateUser(roles)
         userdb.storeUser(user)
 
         val loaded = userdb.retrieveUser(user.uuid)
         Assert.assertEquals("Loaded user did not match expected", user, loaded)
+    }
+
+    @Test
+    fun should_update_user(){
+        val userdb = userDB()
+        val roles = generateRoles(userdb = userdb)
+
+        val user = generateUser(roles)
+        userdb.storeUser(user)
+
+        val updateRoles = generateRoles(userdb = userdb)
+        val updated = generateUser(updateRoles, user.uuid)
+        userdb.storeUser(updated)
+
+        val loaded = userdb.retrieveUser(user.uuid)
+        Assert.assertEquals("Loaded user did not match expected", updated, loaded)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,5 +216,36 @@ class SqliteUserDbTest {
             )
         }
         return result
+    }
+
+    private fun generateUser( systemRoles: List<Role>, uuid: String = uuid() ): User{
+        val contact = generateContactInfo()
+
+        val userRoles = mutableListOf<String>()
+        for( role in systemRoles.subList(3, 5) ){
+            userRoles.add( role.name )
+        }
+
+        return User(
+                "login:" + uuid(),
+                "passwordHash:" + uuid(),
+                "name:" + uuid(),
+                "displayName:" + uuid(),
+                "sortName:" + uuid(),
+                "prependToName:" + uuid(),
+                "appendToName:" + uuid(),
+                "credential:" + uuid(),
+                "serialNumber:" + uuid(),
+                "distinguishedName:" + uuid(),
+                "homeAgency:" + uuid(),
+                "agency:" + uuid(),
+                "countryCode:" + uuid(),
+                "citizenship:" + uuid(),
+                System.currentTimeMillis(),
+                true,
+                uuid,
+                contact,
+                userRoles
+        )
     }
 }
