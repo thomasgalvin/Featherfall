@@ -29,6 +29,11 @@ class SqliteUserDbTest {
             map.put(role.name, role)
         }
 
+        for( expected in roles ){
+            var loaded = userdb.retrieveRole(expected.name)
+            Assert.assertEquals("Loaded role did not match expected", expected, loaded)
+        }
+
         val loadedRoles = userdb.listRoles()
         Assert.assertEquals("Unexpected role count", expectedCount, loadedRoles.size)
 

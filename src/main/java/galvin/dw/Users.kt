@@ -5,13 +5,13 @@ import java.io.File
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.ResultSet
-import java.util.*
 
 interface UserDB {
     fun storeRole(role: Role)
     fun deactivate( roleName: String )
     fun activate( roleName: String )
     fun listRoles(): List<Role>
+    fun retrieveRole(name: String): Role?
 }
 
 data class User(
@@ -86,6 +86,7 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     private val sqlStoreRole = loadSql("/galvin/dw/db/sqlite/users/store_role.sql")
     private val sqlStoreRolePermission = loadSql("/galvin/dw/db/sqlite/users/store_role_permission.sql")
     private val sqlRetrieveAllRoles = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_roles.sql")
+    private val sqlRetrieveRoleByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_role_by_uuid.sql")
     private val sqlRetrieveRolePermissions = loadSql("/galvin/dw/db/sqlite/users/retrieve_role_permissions.sql")
 
     init{
@@ -151,6 +152,24 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
         if(resultSet != null){
             while( resultSet.next() ){
                 result.add( unmarshallRole(resultSet, conn) )
+            }
+        }
+
+        close(conn, statement)
+        return result
+    }
+
+    override fun retrieveRole(name: String): Role?{
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveRoleByUuid)
+        statement.setString(1, name)
+
+        var result: Role? = null
+
+        val resultSet = statement.executeQuery()
+        if(resultSet != null){
+            if( resultSet.next() ){
+                result = unmarshallRole(resultSet, conn)
             }
         }
 
