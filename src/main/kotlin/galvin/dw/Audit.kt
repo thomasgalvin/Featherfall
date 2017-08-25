@@ -125,23 +125,23 @@ class SQLiteAuditDB( private val databaseFile: File) :AuditDB {
 
     private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
 
-    private val sqlCreateTableSystemInfo = loadSql("/galvin/dw/db/sqlite/audit_create_table_system_info.sql")
-    private val sqlCreateTableSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit_create_table_system_info_networks.sql")
-    private val sqlStoreSystemInfo = loadSql("/galvin/dw/db/sqlite/audit_store_system_info.sql")
-    private val sqlStoreSystemInfoNetwork = loadSql("/galvin/dw/db/sqlite/audit_store_system_info_network.sql")
-    private val sqlRetrieveAllSystemInfo = loadSql("/galvin/dw/db/sqlite/audit_retrieve_all_system_info.sql")
-    private val sqlRetrieveSystemInfoByUuid = loadSql("/galvin/dw/db/sqlite/audit_retrieve_system_info_by_uuid.sql")
-    private val sqlRetrieveSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit_retrieve_system_info_networks.sql")
+    private val sqlCreateTableSystemInfo = loadSql("/galvin/dw/db/sqlite/audit//create_table_system_info.sql")
+    private val sqlCreateTableSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit//create_table_system_info_networks.sql")
+    private val sqlStoreSystemInfo = loadSql("/galvin/dw/db/sqlite/audit//store_system_info.sql")
+    private val sqlStoreSystemInfoNetwork = loadSql("/galvin/dw/db/sqlite/audit//store_system_info_network.sql")
+    private val sqlRetrieveAllSystemInfo = loadSql("/galvin/dw/db/sqlite/audit//retrieve_all_system_info.sql")
+    private val sqlRetrieveSystemInfoByUuid = loadSql("/galvin/dw/db/sqlite/audit//retrieve_system_info_by_uuid.sql")
+    private val sqlRetrieveSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit//retrieve_system_info_networks.sql")
 
-    private val sqlCreateTableAccessInfo = loadSql("/galvin/dw/db/sqlite/audit_create_table_access_info.sql")
-    private val sqlCreateTableAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit_create_table_access_info_mods.sql")
+    private val sqlCreateTableAccessInfo = loadSql("/galvin/dw/db/sqlite/audit//create_table_access_info.sql")
+    private val sqlCreateTableAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit//create_table_access_info_mods.sql")
 
-    private val sqlStoreAccessInfo = loadSql("/galvin/dw/db/sqlite/audit_store_access_info.sql")
-    private val sqlStoreAccessInfoMod = loadSql("/galvin/dw/db/sqlite/audit_store_access_info_mod.sql")
+    private val sqlStoreAccessInfo = loadSql("/galvin/dw/db/sqlite/audit//store_access_info.sql")
+    private val sqlStoreAccessInfoMod = loadSql("/galvin/dw/db/sqlite/audit//store_access_info_mod.sql")
 
-    private val sqlRetrieveAccessInfoByDates = loadSql("/galvin/dw/db/sqlite/audit_retrieve_access_info_by_dates.sql")
-    private val sqlRetrieveAccessInfoByDatesAndUuid = loadSql("/galvin/dw/db/sqlite/audit_retrieve_access_info_by_dates_and_uuid.sql")
-    private val sqlRetrieveAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit_retrieve_access_info_mods.sql")
+    private val sqlRetrieveAccessInfoByDates = loadSql("/galvin/dw/db/sqlite/audit//retrieve_access_info_by_dates.sql")
+    private val sqlRetrieveAccessInfoByDatesAndUuid = loadSql("/galvin/dw/db/sqlite/audit//retrieve_access_info_by_dates_and_uuid.sql")
+    private val sqlRetrieveAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit//retrieve_access_info_mods.sql")
 
     init{
         createTables()
