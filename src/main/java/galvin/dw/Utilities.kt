@@ -44,12 +44,14 @@ fun runSql(conn: Connection, sql: String ){
     executeAndClose(conn, statement)
 }
 
-fun executeAndClose(conn: Connection, statement: PreparedStatement){
+fun executeAndClose(conn: Connection? = null, statement: PreparedStatement){
     statement.executeUpdate()
     statement.close()
 
-    conn.commit()
-    conn.close()
+    if( conn != null ) {
+        conn.commit()
+        conn.close()
+    }
 }
 
 fun close(conn: Connection, statement: PreparedStatement){

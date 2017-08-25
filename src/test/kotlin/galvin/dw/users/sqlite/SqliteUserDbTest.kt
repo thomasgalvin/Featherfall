@@ -1,9 +1,6 @@
 package galvin.dw.users.sqlite
 
-import galvin.dw.Role
-import galvin.dw.SQLiteUserDB
-import galvin.dw.UserDB
-import galvin.dw.uuid
+import galvin.dw.*
 import org.junit.Assert
 import org.junit.Test
 import java.io.File
@@ -105,17 +102,17 @@ class SqliteUserDbTest {
             map.put(role.name, role)
         }
 
-        var toBeUpdated = generateRole()
+        val toBeUpdated = generateRole()
         userdb.storeRole(toBeUpdated)
 
         val check = userdb.retrieveRole(toBeUpdated.name)
         Assert.assertEquals("Loaded role did not match expected", toBeUpdated, check)
 
-        var update = generateRole(name = toBeUpdated.name)
+        val update = generateRole(name = toBeUpdated.name)
         userdb.storeRole(update)
 
-        var shouldBeUpdate = userdb.retrieveRole(toBeUpdated.name)
-        Assert.assertEquals("Role was not updated", update, shouldBeUpdate)
+        val shouldBeUpdated = userdb.retrieveRole(toBeUpdated.name)
+        Assert.assertEquals("Role was not updated", update, shouldBeUpdated)
 
         for( expected in roles ){
             val loaded = userdb.retrieveRole(expected.name)
@@ -131,7 +128,42 @@ class SqliteUserDbTest {
 
     @Test
     fun should_store_and_retrieve_user(){
-        println("hi")
+        val userdb = userDB()
+        val contact = generateContactInfo()
+        val roles = generateRoles(userdb = userdb)
+
+
+        val userRoles = mutableListOf<String>()
+        for( role in roles.subList(3, 5) ){
+            userRoles.add( role.name )
+        }
+
+        val user = User(
+                "login:" + uuid(),
+                "passwordHash:" + uuid(),
+                "name:" + uuid(),
+                "displayName:" + uuid(),
+                "sortName:" + uuid(),
+                "prependToName:" + uuid(),
+                "appendToName:" + uuid(),
+                "credential:" + uuid(),
+                "serialNumber:" + uuid(),
+                "distinguishedName:" + uuid(),
+                "homeAgency:" + uuid(),
+                "agency:" + uuid(),
+                "countryCode:" + uuid(),
+                "citizenship:" + uuid(),
+                System.currentTimeMillis(),
+                true,
+                uuid(),
+                contact,
+                userRoles
+        )
+
+        userdb.storeUser(user)
+
+        val loaded = userdb.retrieveUser(user.uuid)
+        Assert.assertEquals("Loaded user did not match expected", user, loaded)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,11 +180,17 @@ class SqliteUserDbTest {
         return File( "target/users-" + uuid() + ".dat" )
     }
 
-    private fun generateRoles( count: Int ): List<Role>  {
+    private fun generateRoles( count: Int = 10, userdb: UserDB? = null ): List<Role>  {
         val result = mutableListOf<Role>()
 
         for( i in 1..count ){
             result.add( generateRole(count) )
+        }
+
+        if( userdb != null ){
+            for( role in result ){
+                userdb.storeRole(role)
+            }
         }
 
         return result
@@ -175,5 +213,20 @@ class SqliteUserDbTest {
                 permissions,
                 isActive
         )
+    }
+
+    private fun generateContactInfo(): List<ContactInfo>{
+        val result = mutableListOf<ContactInfo>()
+        for( i in 1..5 ){
+            result.add(
+                    ContactInfo(
+                            "type:" + uuid(),
+                            "description:" + uuid(),
+                            "contact:" + uuid(),
+                            i == 1
+                    )
+            )
+        }
+        return result
     }
 }

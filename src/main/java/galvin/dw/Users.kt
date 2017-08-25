@@ -1,9 +1,7 @@
 package galvin.dw
 
-import com.sun.corba.se.pept.transport.ContactInfo
 import java.io.File
 import java.sql.Connection
-import java.sql.DriverManager
 import java.sql.ResultSet
 
 interface UserDB {
@@ -13,6 +11,10 @@ interface UserDB {
     fun activate( roleName: String )
     fun listRoles(): List<Role>
     fun retrieveRole(name: String): Role?
+
+    //users
+    fun storeUser(user: User)
+    fun retrieveUser(uuid: String): User?
 }
 
 data class User(
@@ -21,25 +23,25 @@ data class User(
 
         //human name
         val name: String, val displayName: String, val sortName: String,
-        val prepend: String?, // this is used to store stuff like "Mr." or "Dr."
-        val append: String?, // used for stuff like rank, eg "Major General of the Fell Armies of Nod"
+        val prependToName: String?, // this is used to store stuff like "Mr." or "Dr."
+        val appendToName: String?, // used for stuff like rank, eg "Major General of the Fell Armies of Nod"
 
         //smart card info
         val credential: String?, val serialNumber: String?, val distinguishedName: String?,
         val homeAgency: String?, val agency: String?, val countryCode: String?,
         val citizenship: String?,
 
-        //contact info
-        val contact: List<ContactInfo> = listOf<ContactInfo>(),
-
-        //roles
-        val roles: List<String> = listOf<String>(),
-
         //activation
         val created: Long, val active: Boolean,
 
         //uuid
-        val uuid: String = uuid()
+        val uuid: String = uuid(),
+
+        //contact info
+        val contact: List<ContactInfo> = listOf<ContactInfo>(),
+
+        //roles
+        val roles: List<String> = listOf<String>()
 )
 
 data class AccountRequest(
@@ -83,6 +85,9 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
 
     private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/users/create_table_roles.sql")
     private val sqlCreateTableRolePermissions = loadSql("/galvin/dw/db/sqlite/users/create_table_role_permissions.sql")
+    private val sqlCreateTableUsers = loadSql("/galvin/dw/db/sqlite/users/create_table_users.sql")
+    private val sqlCreateTableContactInfo = loadSql("/galvin/dw/db/sqlite/users/create_table_contact_info.sql")
+    private val sqlCreateTableUserRoles = loadSql("/galvin/dw/db/sqlite/users/create_table_user_roles.sql")
 
     private val sqlDeleteRole = loadSql("/galvin/dw/db/sqlite/users/delete_role.sql")
     private val sqlDeleteRolePermissions = loadSql("/galvin/dw/db/sqlite/users/delete_role_permissions.sql")
@@ -95,6 +100,17 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
 
     private val sqlSetRoleActive = loadSql("/galvin/dw/db/sqlite/users/set_role_active.sql")
 
+    private val sqlStoreUser = loadSql("/galvin/dw/db/sqlite/users/store_user.sql")
+    private val sqlStoreUserContactInfo = loadSql("/galvin/dw/db/sqlite/users/store_user_contact_info.sql")
+    private val sqlStoreUserRole = loadSql("/galvin/dw/db/sqlite/users/store_user_roles.sql")
+
+    private val sqlRetrieveUserByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_uuid.sql")
+    private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
+    private val sqlRetrieveRolesForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_roles_for_user.sql")
+
+    private val sqlDeleteContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/delete_contact_info_for_user.sql")
+    private val sqlDeleteRolesForUser = loadSql("/galvin/dw/db/sqlite/users/delete_roles_for_user.sql")
+
     init{
         //load driver
         Class.forName( "org.sqlite.JDBC" )
@@ -102,17 +118,14 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
         //create tables
         runSql( conn(), sqlCreateTableRoles )
         runSql( conn(), sqlCreateTableRolePermissions )
+        runSql( conn(), sqlCreateTableUsers )
+        runSql( conn(), sqlCreateTableContactInfo )
+        runSql( conn(), sqlCreateTableUserRoles )
     }
 
-    private fun getConnection( connectionUrl: String ): Connection {
-        val result = DriverManager.getConnection( connectionUrl )
-        result.autoCommit = false
-        return result
-    }
-
-    private fun getConnection(): Connection {
-        return getConnection(connectionUrl)
-    }
+    //
+    // Roles
+    //
 
     override fun storeRole(role: Role){
         synchronized(concurrencyLock) {
@@ -146,7 +159,6 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
                 permStatement.executeUpdate()
                 permStatement.close()
             }
-
 
             conn.commit()
             conn.close()
@@ -227,5 +239,157 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
 
         statement.close()
         return Role(name, permissions, active)
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Users
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    override fun storeUser(user: User){
+        val conn = conn()
+
+        val delContactStatement = conn.prepareStatement(sqlDeleteContactInfoForUser)
+        delContactStatement.setString(1, user.uuid)
+        delContactStatement.executeUpdate()
+        delContactStatement.close()
+
+        val delRolesStatement = conn.prepareStatement(sqlDeleteRolesForUser)
+        delRolesStatement.setString(1, user.uuid)
+        delRolesStatement.executeUpdate()
+        delRolesStatement.close()
+
+        val statement = conn.prepareStatement(sqlStoreUser)
+        val active = if(user.active) 1 else 0
+
+        statement.setString(1, user.login)
+        statement.setString(2, user.passwordHash)
+        statement.setString(3, user.name)
+        statement.setString(4, user.displayName)
+        statement.setString(5, user.sortName)
+        statement.setString(6, user.prependToName)
+        statement.setString(7, user.appendToName)
+        statement.setString(8, user.credential)
+        statement.setString(9, user.serialNumber)
+        statement.setString(10, user.distinguishedName)
+        statement.setString(11, user.homeAgency)
+        statement.setString(12, user.agency)
+        statement.setString(13, user.countryCode)
+        statement.setString(14, user.citizenship)
+        statement.setLong(15, user.created)
+        statement.setInt(16, active)
+        statement.setString(17, user.uuid)
+
+        statement.executeUpdate()
+        statement.close()
+
+        for( (ordinal, contact) in user.contact.withIndex() ){
+            val isPrimary = if(contact.primary) 1 else 0
+
+            val contactStatement = conn.prepareStatement(sqlStoreUserContactInfo)
+            contactStatement.setString(1, contact.type)
+            contactStatement.setString(2, contact.description)
+            contactStatement.setString(3, contact.contact)
+            contactStatement.setInt(4, isPrimary)
+            contactStatement.setString(5, user.uuid)
+            contactStatement.setInt(6, ordinal)
+
+            contactStatement.executeUpdate()
+            contactStatement.close()
+        }
+
+        for( (ordinal, role) in user.roles.withIndex() ){
+            val roleStatement = conn.prepareStatement(sqlStoreUserRole)
+            roleStatement.setString(1, role)
+            roleStatement.setString(2, user.uuid)
+            roleStatement.setInt(3, ordinal)
+
+            roleStatement.executeUpdate()
+            roleStatement.close()
+        }
+
+        conn.commit()
+        conn.close()
+    }
+
+    override fun retrieveUser(uuid: String): User?{
+        var result: User? = null;
+
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveUserByUuid)
+        statement.setString(1, uuid)
+
+        val resultSet = statement.executeQuery()
+        if( resultSet != null ){
+            if( resultSet.next() ){
+                result = unmarshallUser(resultSet, conn)
+            }
+        }
+
+        statement.close()
+        conn.close()
+
+        return result;
+    }
+
+    private fun unmarshallUser( hit: ResultSet, conn: Connection ): User{
+        val uuid = hit.getString(17)
+
+        val contact: MutableList<ContactInfo> = mutableListOf<ContactInfo>()
+        val roles: MutableList<String> = mutableListOf<String>()
+        val active = hit.getInt(16) != 0
+
+        val contactStatement = conn.prepareStatement(sqlRetrieveContactInfoForUser )
+        contactStatement.setString(1, uuid)
+        val conHits = contactStatement.executeQuery()
+        if( conHits != null ){
+            while( conHits.next() ){
+                contact.add( unmarshallContact(conHits) )
+            }
+        }
+        contactStatement.close()
+
+        val roleStatement = conn.prepareStatement(sqlRetrieveRolesForUser)
+        roleStatement.setString(1, uuid)
+        val roleHits = roleStatement.executeQuery()
+        if( roleHits != null ){
+            while( roleHits.next() ){
+                roles.add( roleHits.getString(1) )
+            }
+        }
+        roleStatement.close()
+
+        return User(
+                hit.getString(1),
+                hit.getString(2),
+                hit.getString(3),
+                hit.getString(4),
+                hit.getString(5),
+                hit.getString(6),
+                hit.getString(7),
+                hit.getString(8),
+                hit.getString(9),
+                hit.getString(10),
+                hit.getString(11),
+                hit.getString(12),
+                hit.getString(13),
+                hit.getString(14),
+                hit.getLong(15),
+                active,
+                uuid,
+                contact,
+                roles
+        )
+    }
+
+    private fun unmarshallContact( hit: ResultSet ): ContactInfo{
+        val primary = hit.getInt(4) != 0
+        return ContactInfo(
+                hit.getString(1),
+                hit.getString(2),
+                hit.getString(3),
+                primary
+        )
     }
 }
