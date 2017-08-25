@@ -7,6 +7,7 @@ import java.sql.DriverManager
 import java.sql.ResultSet
 
 interface UserDB {
+    //roles
     fun storeRole(role: Role)
     fun deactivate( roleName: String )
     fun activate( roleName: String )
@@ -35,7 +36,7 @@ data class User(
         val roles: List<String> = listOf<String>(),
 
         //activation
-        val active: Boolean, val created: Long,
+        val created: Long, val active: Boolean,
 
         //uuid
         val uuid: String = uuid()
