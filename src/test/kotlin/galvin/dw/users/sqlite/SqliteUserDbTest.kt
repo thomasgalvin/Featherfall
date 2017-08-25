@@ -43,6 +43,28 @@ class SqliteUserDbTest {
         }
     }
 
+    @Test
+    fun should_deactivate_role(){
+        val userdb = userDB()
+
+        val activeToDeactive = generateRole( active=true )
+        userdb.storeRole(activeToDeactive)
+
+        val alwaysActive= generateRole( active=true )
+        userdb.storeRole(alwaysActive)
+
+        userdb.deactivate(activeToDeactive.name)
+
+        val shouldBeDeactive = userdb.retrieveRole(activeToDeactive.name)
+        if( shouldBeDeactive == null ) throw Exception("Failed to load role from database")
+
+        val shouldBeActive = userdb.retrieveRole(alwaysActive.name)
+        if( shouldBeActive == null ) throw Exception("Failed to load role from database")
+
+        Assert.assertEquals("Role should have been deactivated", false, shouldBeDeactive.active)
+        Assert.assertEquals("Role was unintentionally deactivated", true, shouldBeActive.active)
+    }
+
     // Utility code
 
     private fun userDB(): UserDB{
@@ -55,22 +77,30 @@ class SqliteUserDbTest {
 
     private fun generateRoles( count: Int ): List<Role>  {
         val result = mutableListOf<Role>()
-        val random = Random()
 
         for( i in 1..count ){
-            val permissions = mutableListOf<String>()
-            for( j in 1..count ){
-                permissions.add( "permission:" + uuid() )
-            }
-
-            val role = Role(
-                "name:" + uuid(),
-                    permissions,
-                    random.nextBoolean()
-            )
-            result.add(role)
+            result.add( generateRole(count) )
         }
 
         return result
+    }
+
+    private fun generateRole( permissonCount: Int = 10, active: Boolean? = null ): Role {
+        val random = Random()
+        val isActive = if(active == null) random.nextBoolean() else active
+
+        val permissions = mutableListOf<String>()
+
+        for (i in 1..permissonCount) {
+            for (j in 1..permissonCount) {
+                permissions.add("permission:" + uuid())
+            }
+        }
+
+        return Role(
+                "name:" + uuid(),
+                permissions,
+                isActive
+        )
     }
 }

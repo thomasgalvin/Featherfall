@@ -89,6 +89,8 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     private val sqlRetrieveRoleByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_role_by_uuid.sql")
     private val sqlRetrieveRolePermissions = loadSql("/galvin/dw/db/sqlite/users/retrieve_role_permissions.sql")
 
+    private val sqlSetRoleActive = loadSql("/galvin/dw/db/sqlite/users/set_role_active.sql")
+
     init{
         //load driver
         Class.forName( "org.sqlite.JDBC" )
@@ -110,7 +112,7 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
 
     override fun storeRole(role: Role){
         synchronized(concurrencyLock) {
-            val conn = conn();
+            val conn = conn()
             val statement = conn.prepareStatement(sqlStoreRole)
 
             val active = if(role.active) 1 else 0
@@ -138,9 +140,26 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     }
 
     override fun deactivate( roleName: String ){
+        doSetRoleActive(roleName, false)
     }
 
     override fun activate( roleName: String ){
+        doSetRoleActive(roleName, true)
+    }
+
+    private fun doSetRoleActive( roleName: String, active: Boolean ){
+        val conn = conn();
+        val statement = conn.prepareStatement(sqlSetRoleActive)
+
+        val value = if(active) 1 else 0
+        statement.setInt(1, value)
+        statement.setString(2, roleName)
+
+        statement.executeUpdate()
+        statement.close()
+
+        conn.commit()
+        conn.close()
     }
 
     override fun listRoles(): List<Role>{
