@@ -15,6 +15,7 @@ interface UserDB {
     //users
     fun storeUser(user: User)
     fun retrieveUser(uuid: String): User?
+    fun retrieveUsers(): List<User>
 }
 
 data class User(
@@ -107,6 +108,7 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     private val sqlStoreUserRole = loadSql("/galvin/dw/db/sqlite/users/store_user_roles.sql")
 
     private val sqlRetrieveUserByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_uuid.sql")
+    private val sqlRetrieveAllUsers = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_users.sql")
     private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
     private val sqlRetrieveRolesForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_roles_for_user.sql")
 
@@ -333,6 +335,25 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
         conn.close()
 
         return result;
+    }
+
+    override fun retrieveUsers(): List<User>{
+        val result = mutableListOf<User>()
+
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveAllUsers)
+
+        val resultSet = statement.executeQuery()
+        if( resultSet != null ){
+            if( resultSet.next() ){
+                result.add( unmarshallUser(resultSet, conn) )
+            }
+        }
+
+        statement.close()
+        conn.close()
+
+        return result
     }
 
     private fun unmarshallUser( hit: ResultSet, conn: Connection ): User{
