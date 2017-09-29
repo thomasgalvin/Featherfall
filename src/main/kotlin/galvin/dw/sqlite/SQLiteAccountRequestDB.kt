@@ -50,7 +50,8 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             statement.setInt(8, rejected)
             statement.setString(9, request.rejectedByUuid)
             statement.setLong(10, request.rejectedTimestamp)
-            statement.setString(11, request.uuid)
+            statement.setString(11, request.rejectedReason)
+            statement.setString(12, request.uuid)
 
             statement.executeUpdate()
             conn.commit()
@@ -202,6 +203,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
                 rejected = rejected,
                 rejectedByUuid = hit.getString("rejectedByUuid"),
                 rejectedTimestamp = hit.getLong("rejectedTimestamp"),
+                rejectedReason = hit.getString("rejectedReason"),
                 uuid = uuid
         )
     }

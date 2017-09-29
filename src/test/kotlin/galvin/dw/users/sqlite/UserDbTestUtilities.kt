@@ -28,6 +28,7 @@ fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid(), passw
             "vouchContactInfo" + uuid(),
             false, "", -1,
             false, "", -1,
+            "rejectedReason" + uuid(),
             uuid
     )
 }

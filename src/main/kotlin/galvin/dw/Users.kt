@@ -71,6 +71,7 @@ data class AccountRequest(
         //approved / rejected
         val approved: Boolean = false, val approvedByUuid: String = "", val approvedTimestamp: Long = -1,
         val rejected: Boolean = false, val rejectedByUuid: String = "", val rejectedTimestamp: Long = -1,
+        val rejectedReason: String = "",
 
         //uuid
         val uuid: String = uuid()

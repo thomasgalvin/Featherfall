@@ -12,6 +12,7 @@ create table if not exists AccountRequests(
     rejected int,
     rejectedByUuid text,
     rejectedTimestamp bigint,
+    rejectedReason text,
 
     uuid text not null primary key
 );
