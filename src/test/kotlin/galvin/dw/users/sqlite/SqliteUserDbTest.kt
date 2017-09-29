@@ -141,6 +141,32 @@ class SqliteUserDbTest {
     }
 
     @Test
+    fun should_store_and_retrieve_all_users(){
+        val userdb = userDB()
+        val roles = generateRoles(userdb = userdb)
+        val expectedCount = 10
+
+        val map = mutableMapOf<String, User>()
+        for( i in 1..expectedCount ){
+            val user = generateUser(roles)
+            userdb.storeUser(user)
+            map.put( user.uuid, user )
+        }
+
+        for( key in map.keys ){
+            val expected = map[key]
+            val loaded = userdb.retrieveUser(key)
+            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
+        }
+
+        val loadedUsers = userdb.retrieveUsers()
+        for( loaded in loadedUsers ){
+            val expected = map[loaded.uuid]
+            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
+        }
+    }
+
+    @Test
     fun should_update_user(){
         val userdb = userDB()
         val roles = generateRoles(userdb = userdb)
@@ -191,32 +217,6 @@ class SqliteUserDbTest {
         for( user in users ){
             val loaded = userdb.retrieveUser(user.uuid)
             Assert.assertNotEquals("Loaded user should have been modified", user, loaded)
-        }
-    }
-
-    @Test
-    fun should_store_and_retrieve_all_users(){
-        val userdb = userDB()
-        val roles = generateRoles(userdb = userdb)
-        val expectedCount = 10
-
-        val map = mutableMapOf<String, User>()
-        for( i in 1..expectedCount ){
-            val user = generateUser(roles)
-            userdb.storeUser(user)
-            map.put( user.uuid, user )
-        }
-
-        for( key in map.keys ){
-            val expected = map[key]
-            val loaded = userdb.retrieveUser(key)
-            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
-        }
-
-        val loadedUsers = userdb.retrieveUsers()
-        for( loaded in loadedUsers ){
-            val expected = map[loaded.uuid]
-            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
         }
     }
 }

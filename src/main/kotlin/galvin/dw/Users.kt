@@ -20,6 +20,7 @@ interface AccountRequestDB {
     fun retrieveAccountRequests() : List<AccountRequest>
 
     fun approve( uuid: String, approvedByUuid: String, timestamp: Long = System.currentTimeMillis() )
+    fun reject( uuid: String, rejectedByUuid: String, timestamp: Long = System.currentTimeMillis() )
 }
 
 data class User(
@@ -64,8 +65,8 @@ data class AccountRequest(
         val vouchContactInfo: String?, //how to get ahold of the person who can vouch for you
 
         //approved / rejected
-        val approved: Boolean = false, val approvedByUuid: String?, val approvedTimestamp: Long = -1,
-        val rejected: Boolean = false, val rejectedByUuid: String?, val rejectedTimestamp: Long = -1,
+        val approved: Boolean = false, val approvedByUuid: String = "", val approvedTimestamp: Long = -1,
+        val rejected: Boolean = false, val rejectedByUuid: String = "", val rejectedTimestamp: Long = -1,
 
         //uuid
         val uuid: String = uuid()
@@ -80,3 +81,7 @@ data class ContactInfo( val type: String, //eg "Phone", "Email", or "Mattermost"
 )
 
 
+val ERROR_PASSWORD_MISMATCH = "Account Request error: password mismatch"
+val ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID = "Account Request error: no account request with that UUID"
+val ERROR_USER_WITH_THIS_UUID_ALREADY_EXISTS = "Account Request error: user with this UUID already exists"
+val ERROR_NO_USER_WITH_THIS_UUID_EXISTS = "Account Request error: no user with this UUID exists"

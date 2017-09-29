@@ -18,17 +18,16 @@ fun accountRequestDB( userDB: UserDB ): AccountRequestDB {
     return SQLiteAccountRequestDB( randomUserDbFile(), userDB )
 }
 
-fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid() ) : AccountRequest {
-    val password = "password" + uuid()
+fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid(), password: String = uuid(), confirmPassword: String = password ) : AccountRequest {
     return AccountRequest(
             generateUser(systemRoles, uuid),
             password,
-            password,
+            confirmPassword,
             "reason" + uuid(),
             "vouchName" + uuid(),
             "vouchContactInfo" + uuid(),
-            false, null, -1,
-            false, null, -1,
+            false, "", -1,
+            false, "", -1,
             uuid
     )
 }
