@@ -66,6 +66,17 @@ public class SQLiteAuditDbTest{
     }
 
     @Test
+    public void should_retrieve_current_system_info() throws Exception{
+        final File auditFile = randomAuditDbFile();
+        final AuditDB audit = new SQLiteAuditDB(auditFile);
+        final SystemInfo system = randomSystemInfo();
+        audit.store(system);
+        audit.setCurrentSystemInfo( system.getUuid() );
+        final SystemInfo loaded = audit.retrieveCurrentSystemInfo();
+        Assert.assertEquals( "Loaded current system info did not match expected", system, loaded );
+    }
+
+    @Test
     public void should_retrieve_access_info_by_dates() throws Exception{
         final long now = System.currentTimeMillis();
         final long then = now - 10_000;

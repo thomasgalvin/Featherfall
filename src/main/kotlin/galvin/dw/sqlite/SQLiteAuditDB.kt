@@ -8,23 +8,28 @@ import java.sql.ResultSet
 class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
 
-    private val sqlCreateTableSystemInfo = loadSql("/galvin/dw/db/sqlite/audit//create_table_system_info.sql")
-    private val sqlCreateTableSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit//create_table_system_info_networks.sql")
-    private val sqlStoreSystemInfo = loadSql("/galvin/dw/db/sqlite/audit//store_system_info.sql")
-    private val sqlStoreSystemInfoNetwork = loadSql("/galvin/dw/db/sqlite/audit//store_system_info_network.sql")
-    private val sqlRetrieveAllSystemInfo = loadSql("/galvin/dw/db/sqlite/audit//retrieve_all_system_info.sql")
-    private val sqlRetrieveSystemInfoByUuid = loadSql("/galvin/dw/db/sqlite/audit//retrieve_system_info_by_uuid.sql")
-    private val sqlRetrieveSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit//retrieve_system_info_networks.sql")
+    private val sqlCreateTableSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/create_table_system_info.sql")
+    private val sqlCreateTableSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit/create_table_system_info_networks.sql")
+    private val sqlStoreSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/store_system_info.sql")
+    private val sqlStoreSystemInfoNetwork = loadSql("/galvin/dw/db/sqlite/audit/store_system_info_network.sql")
+    private val sqlRetrieveAllSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/retrieve_all_system_info.sql")
+    private val sqlRetrieveSystemInfoByUuid = loadSql("/galvin/dw/db/sqlite/audit/retrieve_system_info_by_uuid.sql")
+    private val sqlRetrieveSystemInfoNetworks = loadSql("/galvin/dw/db/sqlite/audit/retrieve_system_info_networks.sql")
 
-    private val sqlCreateTableAccessInfo = loadSql("/galvin/dw/db/sqlite/audit//create_table_access_info.sql")
-    private val sqlCreateTableAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit//create_table_access_info_mods.sql")
+    private val sqlCreateTableAccessInfo = loadSql("/galvin/dw/db/sqlite/audit/create_table_access_info.sql")
+    private val sqlCreateTableAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit/create_table_access_info_mods.sql")
 
-    private val sqlStoreAccessInfo = loadSql("/galvin/dw/db/sqlite/audit//store_access_info.sql")
-    private val sqlStoreAccessInfoMod = loadSql("/galvin/dw/db/sqlite/audit//store_access_info_mod.sql")
+    private val sqlStoreAccessInfo = loadSql("/galvin/dw/db/sqlite/audit/store_access_info.sql")
+    private val sqlStoreAccessInfoMod = loadSql("/galvin/dw/db/sqlite/audit/store_access_info_mod.sql")
 
-    private val sqlRetrieveAccessInfoByDates = loadSql("/galvin/dw/db/sqlite/audit//retrieve_access_info_by_dates.sql")
-    private val sqlRetrieveAccessInfoByDatesAndUuid = loadSql("/galvin/dw/db/sqlite/audit//retrieve_access_info_by_dates_and_uuid.sql")
-    private val sqlRetrieveAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit//retrieve_access_info_mods.sql")
+    private val sqlRetrieveAccessInfoByDates = loadSql("/galvin/dw/db/sqlite/audit/retrieve_access_info_by_dates.sql")
+    private val sqlRetrieveAccessInfoByDatesAndUuid = loadSql("/galvin/dw/db/sqlite/audit/retrieve_access_info_by_dates_and_uuid.sql")
+    private val sqlRetrieveAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit/retrieve_access_info_mods.sql")
+    
+    private val sqlCreateTableCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/create_table_current_system_info.sql")
+    private val sqlDeleteCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/delete_current_system_info.sql")
+    private val sqlSetCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/set_current_system_info.sql")
+    private val sqlRetrieveCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/retrieve_current_system_info.sql")
 
     init{
         runSql( conn(), sqlCreateTableSystemInfo )
@@ -32,6 +37,8 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
 
         runSql( conn(), sqlCreateTableAccessInfo )
         runSql( conn(), sqlCreateTableAccessInfoMods )
+
+        runSql( conn(), sqlCreateTableCurrentSystemInfo )
     }
 
     override fun store(systemInfo: SystemInfo) {
@@ -99,6 +106,34 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
 
         close(conn, statement)
         return result
+    }
+
+    override fun retrieveCurrentSystemInfo(): SystemInfo?{
+        val conn = conn()
+
+        val statement = conn.prepareStatement(sqlRetrieveCurrentSystemInfo)
+        val resultSet = statement.executeQuery()
+        if( resultSet != null && resultSet.next() ){
+            val uuid = resultSet.getString("uuid")
+            return retrieveSystemInfo(uuid)
+        }
+
+        return null
+    }
+
+    override fun setCurrentSystemInfo(uuid: String) {
+        synchronized(concurrencyLock) {
+            val conn = conn()
+
+            val statement = conn.prepareStatement(sqlSetCurrentSystemInfo)
+            statement.setString(1, uuid)
+
+            statement.executeUpdate()
+            statement.close()
+
+            conn.commit()
+            conn.close()
+        }
     }
 
     private fun unmarshallSystemInfo(hit: ResultSet, conn: Connection): SystemInfo {

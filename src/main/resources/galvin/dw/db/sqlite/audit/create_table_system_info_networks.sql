@@ -1,5 +1,5 @@
 create table if not exists SystemInfoNetworks(
-    systemInfoUuid TEXT NOT NULL,
-    networkName TEXT NOT NULL,
+    systemInfoUuid text not null,
+    networkName text not null,
     ordinal int NOT NULL
 );
