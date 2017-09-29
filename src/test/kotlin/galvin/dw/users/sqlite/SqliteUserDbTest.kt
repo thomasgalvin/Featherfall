@@ -269,6 +269,7 @@ class SqliteUserDbTest {
                 "citizenship:" + uuid(),
                 System.currentTimeMillis(),
                 true,
+                false,
                 uuid,
                 contact,
                 userRoles

@@ -35,7 +35,7 @@ data class User(
         val citizenship: String?,
 
         //activation
-        val created: Long, val active: Boolean,
+        val created: Long, val active: Boolean, val locked: Boolean = false,
 
         //uuid
         val uuid: String = uuid(),
@@ -266,6 +266,7 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
 
         val statement = conn.prepareStatement(sqlStoreUser)
         val active = if(user.active) 1 else 0
+        val locked = if(user.locked) 1 else 0
 
         statement.setString(1, user.login)
         statement.setString(2, user.passwordHash)
@@ -283,7 +284,8 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
         statement.setString(14, user.citizenship)
         statement.setLong(15, user.created)
         statement.setInt(16, active)
-        statement.setString(17, user.uuid)
+        statement.setInt(17, locked)
+        statement.setString(18, user.uuid)
 
         statement.executeUpdate()
         statement.close()
@@ -357,11 +359,12 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     }
 
     private fun unmarshallUser( hit: ResultSet, conn: Connection ): User{
-        val uuid = hit.getString(17)
+        val uuid = hit.getString("uuid")
 
         val contact: MutableList<ContactInfo> = mutableListOf<ContactInfo>()
         val roles: MutableList<String> = mutableListOf<String>()
-        val active = hit.getInt(16) != 0
+        val active = hit.getInt("active") != 0
+        val locked = hit.getInt("locked") != 0
 
         val contactStatement = conn.prepareStatement(sqlRetrieveContactInfoForUser )
         contactStatement.setString(1, uuid)
@@ -384,25 +387,26 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
         roleStatement.close()
 
         return User(
-                hit.getString(1),
-                hit.getString(2),
-                hit.getString(3),
-                hit.getString(4),
-                hit.getString(5),
-                hit.getString(6),
-                hit.getString(7),
-                hit.getString(8),
-                hit.getString(9),
-                hit.getString(10),
-                hit.getString(11),
-                hit.getString(12),
-                hit.getString(13),
-                hit.getString(14),
-                hit.getLong(15),
-                active,
-                uuid,
-                contact,
-                roles
+                login = hit.getString("login"),
+                passwordHash = hit.getString("passwordHash"),
+                name = hit.getString("name"),
+                displayName = hit.getString("displayName"),
+                sortName = hit.getString("sortName"),
+                prependToName = hit.getString("prependToName"),
+                appendToName = hit.getString("appendToName"),
+                credential = hit.getString("credential"),
+                serialNumber = hit.getString("serialNumber"),
+                distinguishedName = hit.getString("distinguishedName"),
+                homeAgency = hit.getString("homeAgency"),
+                agency = hit.getString("agency"),
+                countryCode = hit.getString("countryCode"),
+                citizenship = hit.getString("citizenship"),
+                created = hit.getLong("created"),
+                active = active,
+                locked = locked,
+                uuid = uuid,
+                contact = contact,
+                roles = roles
         )
     }
 

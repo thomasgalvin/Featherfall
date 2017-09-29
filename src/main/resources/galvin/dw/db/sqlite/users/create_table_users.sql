@@ -18,6 +18,7 @@ create table if not exists Users(
 
     created bigint not null,
     active int not null,
+    locked int not null,
 
     uuid text not null primary key
 );
