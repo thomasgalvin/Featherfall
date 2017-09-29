@@ -241,5 +241,33 @@ class SqliteAccountRequestDBTest {
             Assert.assertEquals("UnexpectedException", e.message, ERROR_USER_WITH_THIS_UUID_ALREADY_EXISTS)
         }
     }
+
+    @Test
+    fun should_throws_when_reject_approved_account(){
+        val userDB = userDB()
+        val accountRequestDB = accountRequestDB(userDB)
+        val roles = generateRoles(userdb = userDB)
+
+        val request = generateAccountRequest(roles)
+        accountRequestDB.storeAccountRequest(request)
+
+        val approvedBy = uuid()
+        val timestamp = System.currentTimeMillis()
+        accountRequestDB.approve( request.uuid, approvedBy, timestamp )
+
+        val loaded = accountRequestDB.retrieveAccountRequest(request.uuid)
+        Assert.assertTrue( "Unexpected value for approved", loaded!!.approved )
+        Assert.assertEquals( "Unexpected value for approved by", approvedBy, loaded.approvedByUuid )
+        Assert.assertEquals( "Unexpected value for approved timestamp", timestamp, loaded.approvedTimestamp )
+        Assert.assertEquals( "Unexpected value for approved user", request.user, loaded.user )
+
+        try {
+            accountRequestDB.reject(request.uuid, approvedBy, timestamp)
+            throw Exception("Error: Account Request database should have thrown an exception")
+        }
+        catch (e: Exception) {
+            Assert.assertEquals("UnexpectedException", e.message, ERROR_ALREADY_APPROVED)
+        }
+    }
 }
 

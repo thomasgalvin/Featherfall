@@ -133,6 +133,10 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             return
         }
 
+        if( accountRequest.approved ){
+            throw Exception(ERROR_ALREADY_APPROVED)
+        }
+
         synchronized(concurrencyLock) {
             val conn = conn()
             val statement = conn.prepareStatement(sqlRejectAccountRequest)
