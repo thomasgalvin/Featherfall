@@ -18,6 +18,12 @@ interface UserDB {
     fun retrieveUsers(): List<User>
 }
 
+interface AccountRequestDB {
+    fun storeAccountRequest( request: AccountRequest )
+//    fun retrieveAccountRequest( uuid: String ) : AccountRequest
+//    fun retrieveAccountRequests() : List<AccountRequest>
+}
+
 data class User(
         //login credentials
         val login: String, val passwordHash: String?,
@@ -77,13 +83,12 @@ data class ContactInfo( val type: String, //eg "Phone", "Email", or "Mattermost"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// SQLite implementation
+// SQLite UserDB implementation
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFile) {
+open class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
-
     private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
 
     private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/roles/create_table_roles.sql")
@@ -178,52 +183,58 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     }
 
     private fun doSetRoleActive( roleName: String, active: Boolean ){
-        val conn = conn();
-        val statement = conn.prepareStatement(sqlSetRoleActive)
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            val statement = conn.prepareStatement(sqlSetRoleActive)
 
-        val value = if(active) 1 else 0
-        statement.setInt(1, value)
-        statement.setString(2, roleName)
+            val value = if (active) 1 else 0
+            statement.setInt(1, value)
+            statement.setString(2, roleName)
 
-        statement.executeUpdate()
-        statement.close()
+            statement.executeUpdate()
+            statement.close()
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
+        }
     }
 
     override fun listRoles(): List<Role>{
-        val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveAllRoles)
-        val result = mutableListOf<Role>()
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            val statement = conn.prepareStatement(sqlRetrieveAllRoles)
+            val result = mutableListOf<Role>()
 
-        val resultSet = statement.executeQuery()
-        if(resultSet != null){
-            while( resultSet.next() ){
-                result.add( unmarshallRole(resultSet, conn) )
+            val resultSet = statement.executeQuery()
+            if (resultSet != null) {
+                while (resultSet.next()) {
+                    result.add(unmarshallRole(resultSet, conn))
+                }
             }
-        }
 
-        close(conn, statement)
-        return result
+            close(conn, statement)
+            return result
+        }
     }
 
     override fun retrieveRole(name: String): Role?{
-        val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveRoleByUuid)
-        statement.setString(1, name)
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            val statement = conn.prepareStatement(sqlRetrieveRoleByUuid)
+            statement.setString(1, name)
 
-        var result: Role? = null
+            var result: Role? = null
 
-        val resultSet = statement.executeQuery()
-        if(resultSet != null){
-            if( resultSet.next() ){
-                result = unmarshallRole(resultSet, conn)
+            val resultSet = statement.executeQuery()
+            if (resultSet != null) {
+                if (resultSet.next()) {
+                    result = unmarshallRole(resultSet, conn)
+                }
             }
-        }
 
-        close(conn, statement)
-        return result
+            close(conn, statement)
+            return result
+        }
     }
 
     private fun unmarshallRole(hit: ResultSet, conn: Connection ): Role{
@@ -252,110 +263,116 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     override fun storeUser(user: User){
-        val conn = conn()
+        synchronized(concurrencyLock) {
+            val conn = conn()
 
-        val delContactStatement = conn.prepareStatement(sqlDeleteContactInfoForUser)
-        delContactStatement.setString(1, user.uuid)
-        delContactStatement.executeUpdate()
-        delContactStatement.close()
+            val delContactStatement = conn.prepareStatement(sqlDeleteContactInfoForUser)
+            delContactStatement.setString(1, user.uuid)
+            delContactStatement.executeUpdate()
+            delContactStatement.close()
 
-        val delRolesStatement = conn.prepareStatement(sqlDeleteRolesForUser)
-        delRolesStatement.setString(1, user.uuid)
-        delRolesStatement.executeUpdate()
-        delRolesStatement.close()
+            val delRolesStatement = conn.prepareStatement(sqlDeleteRolesForUser)
+            delRolesStatement.setString(1, user.uuid)
+            delRolesStatement.executeUpdate()
+            delRolesStatement.close()
 
-        val statement = conn.prepareStatement(sqlStoreUser)
-        val active = if(user.active) 1 else 0
-        val locked = if(user.locked) 1 else 0
+            val statement = conn.prepareStatement(sqlStoreUser)
+            val active = if (user.active) 1 else 0
+            val locked = if (user.locked) 1 else 0
 
-        statement.setString(1, user.login)
-        statement.setString(2, user.passwordHash)
-        statement.setString(3, user.name)
-        statement.setString(4, user.displayName)
-        statement.setString(5, user.sortName)
-        statement.setString(6, user.prependToName)
-        statement.setString(7, user.appendToName)
-        statement.setString(8, user.credential)
-        statement.setString(9, user.serialNumber)
-        statement.setString(10, user.distinguishedName)
-        statement.setString(11, user.homeAgency)
-        statement.setString(12, user.agency)
-        statement.setString(13, user.countryCode)
-        statement.setString(14, user.citizenship)
-        statement.setLong(15, user.created)
-        statement.setInt(16, active)
-        statement.setInt(17, locked)
-        statement.setString(18, user.uuid)
+            statement.setString(1, user.login)
+            statement.setString(2, user.passwordHash)
+            statement.setString(3, user.name)
+            statement.setString(4, user.displayName)
+            statement.setString(5, user.sortName)
+            statement.setString(6, user.prependToName)
+            statement.setString(7, user.appendToName)
+            statement.setString(8, user.credential)
+            statement.setString(9, user.serialNumber)
+            statement.setString(10, user.distinguishedName)
+            statement.setString(11, user.homeAgency)
+            statement.setString(12, user.agency)
+            statement.setString(13, user.countryCode)
+            statement.setString(14, user.citizenship)
+            statement.setLong(15, user.created)
+            statement.setInt(16, active)
+            statement.setInt(17, locked)
+            statement.setString(18, user.uuid)
 
-        statement.executeUpdate()
-        statement.close()
+            statement.executeUpdate()
+            statement.close()
 
-        for( (ordinal, contact) in user.contact.withIndex() ){
-            val isPrimary = if(contact.primary) 1 else 0
+            for ((ordinal, contact) in user.contact.withIndex()) {
+                val isPrimary = if (contact.primary) 1 else 0
 
-            val contactStatement = conn.prepareStatement(sqlStoreUserContactInfo)
-            contactStatement.setString(1, contact.type)
-            contactStatement.setString(2, contact.description)
-            contactStatement.setString(3, contact.contact)
-            contactStatement.setInt(4, isPrimary)
-            contactStatement.setString(5, user.uuid)
-            contactStatement.setInt(6, ordinal)
+                val contactStatement = conn.prepareStatement(sqlStoreUserContactInfo)
+                contactStatement.setString(1, contact.type)
+                contactStatement.setString(2, contact.description)
+                contactStatement.setString(3, contact.contact)
+                contactStatement.setInt(4, isPrimary)
+                contactStatement.setString(5, user.uuid)
+                contactStatement.setInt(6, ordinal)
 
-            contactStatement.executeUpdate()
-            contactStatement.close()
+                contactStatement.executeUpdate()
+                contactStatement.close()
+            }
+
+            for ((ordinal, role) in user.roles.withIndex()) {
+                val roleStatement = conn.prepareStatement(sqlStoreUserRole)
+                roleStatement.setString(1, role)
+                roleStatement.setString(2, user.uuid)
+                roleStatement.setInt(3, ordinal)
+
+                roleStatement.executeUpdate()
+                roleStatement.close()
+            }
+
+            conn.commit()
+            conn.close()
         }
-
-        for( (ordinal, role) in user.roles.withIndex() ){
-            val roleStatement = conn.prepareStatement(sqlStoreUserRole)
-            roleStatement.setString(1, role)
-            roleStatement.setString(2, user.uuid)
-            roleStatement.setInt(3, ordinal)
-
-            roleStatement.executeUpdate()
-            roleStatement.close()
-        }
-
-        conn.commit()
-        conn.close()
     }
 
     override fun retrieveUser(uuid: String): User?{
-        var result: User? = null;
+        synchronized(concurrencyLock) {
+            var result: User? = null;
 
-        val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveUserByUuid)
-        statement.setString(1, uuid)
+            val conn = conn()
+            val statement = conn.prepareStatement(sqlRetrieveUserByUuid)
+            statement.setString(1, uuid)
 
-        val resultSet = statement.executeQuery()
-        if( resultSet != null ){
-            if( resultSet.next() ){
-                result = unmarshallUser(resultSet, conn)
+            val resultSet = statement.executeQuery()
+            if (resultSet != null) {
+                if (resultSet.next()) {
+                    result = unmarshallUser(resultSet, conn)
+                }
             }
+
+            statement.close()
+            conn.close()
+
+            return result;
         }
-
-        statement.close()
-        conn.close()
-
-        return result;
     }
 
     override fun retrieveUsers(): List<User>{
-        val result = mutableListOf<User>()
+        synchronized(concurrencyLock) {
+            val result = mutableListOf<User>()
 
-        val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveAllUsers)
+            val conn = conn()
+            val statement = conn.prepareStatement(sqlRetrieveAllUsers)
 
-        val resultSet = statement.executeQuery()
-        if( resultSet != null ){
-            if( resultSet.next() ){
-                result.add( unmarshallUser(resultSet, conn) )
+            val resultSet = statement.executeQuery()
+            if (resultSet != null) {
+                if (resultSet.next()) {
+                    result.add(unmarshallUser(resultSet, conn))
+                }
             }
+
+            statement.close()
+            conn.close()
+
+            return result
         }
-
-        statement.close()
-        conn.close()
-
-        return result
     }
 
     private fun unmarshallUser( hit: ResultSet, conn: Connection ): User{
@@ -419,4 +436,44 @@ class SQLiteUserDB( private val databaseFile: File) :UserDB, SQLiteDB(databaseFi
                 primary
         )
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// SQLite AccountRequestDB implementation
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class SQLiteAccountRequestDB( private val databaseFile: File) :AccountRequestDB, SQLiteUserDB(databaseFile){
+    private val concurrencyLock = Object()
+    private val userDB : SQLiteUserDB
+
+    private val sqlCreateTableAccountRequests = loadSql("/galvin/dw/db/sqlite/requests/create_table_account_requests.sql")
+    private val sqlAccountRequestUser = loadSql("/galvin/dw/db/sqlite/requests/store_account_request.sql")
+
+    init{
+        userDB = SQLiteUserDB(databaseFile)
+
+        //create tables
+        runSql( conn(), sqlCreateTableAccountRequests )
+    }
+
+    override fun storeAccountRequest(request: AccountRequest) {
+        synchronized(concurrencyLock) {
+
+
+            userDB.storeUser(request.user);
+        }
+    }
+//
+//    override fun retrieveAccountRequest(uuid: String): AccountRequest {
+//        synchronized(concurrencyLock) {
+//        }
+//    }
+//
+//    override fun retrieveAccountRequests(): List<AccountRequest> {
+//        synchronized(concurrencyLock) {
+//        }
+//    }
+
 }
