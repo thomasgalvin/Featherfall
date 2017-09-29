@@ -1,0 +1,1 @@
+update AccountRequests set approved = 1, approvedByUuid = ?, approvedTimestamp = ? where uuid = ?

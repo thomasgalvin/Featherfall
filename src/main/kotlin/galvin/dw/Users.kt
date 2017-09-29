@@ -18,6 +18,8 @@ interface AccountRequestDB {
     fun storeAccountRequest( request: AccountRequest )
     fun retrieveAccountRequest( uuid: String ) : AccountRequest?
     fun retrieveAccountRequests() : List<AccountRequest>
+
+    fun approve( uuid: String, approvedByUuid: String, timestamp: Long = System.currentTimeMillis() )
 }
 
 data class User(

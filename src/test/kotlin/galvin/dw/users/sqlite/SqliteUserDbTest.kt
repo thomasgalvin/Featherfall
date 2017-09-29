@@ -157,6 +157,44 @@ class SqliteUserDbTest {
     }
 
     @Test
+    fun should_update_multiple_users(){
+        val userdb = userDB()
+        val roles = generateRoles(userdb = userdb)
+
+        val users = mutableListOf<User>()
+        for( i in 1 .. 10 ) {
+            users.add(generateUser(roles))
+        }
+
+        val map = mutableMapOf<String, User>()
+        for( user in users ){
+            userdb.storeUser( user )
+            map[user.uuid] = user
+        }
+
+        for( key in map.keys ){
+            val loaded = userdb.retrieveUser(key)
+            Assert.assertEquals("Loaded user did not match expected", map[key], loaded)
+        }
+
+        for( key in map.keys ){
+            val user = generateUser(roles, key)
+            map[key] = user
+            userdb.storeUser( user )
+        }
+
+        for( key in map.keys ){
+            val loaded = userdb.retrieveUser(key)
+            Assert.assertEquals("Loaded user did not match expected", map[key], loaded)
+        }
+
+        for( user in users ){
+            val loaded = userdb.retrieveUser(user.uuid)
+            Assert.assertNotEquals("Loaded user should have been modified", user, loaded)
+        }
+    }
+
+    @Test
     fun should_store_and_retrieve_all_users(){
         val userdb = userDB()
         val roles = generateRoles(userdb = userdb)

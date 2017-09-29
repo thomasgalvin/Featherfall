@@ -5,14 +5,15 @@ import java.io.File
 import java.sql.ResultSet
 import java.util.*
 
-class SQLiteAccountRequestDB( private val databaseFile: File) : AccountRequestDB, SQLiteDB(databaseFile){
+class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB: UserDB ) : AccountRequestDB, SQLiteDB(databaseFile){
     private val concurrencyLock = Object()
-    private val userDB = SQLiteUserDB(databaseFile)
+    private val accountRequestUserInfoDB = SQLiteUserDB(databaseFile)
 
     private val sqlCreateTableAccountRequests = loadSql("/galvin/dw/db/sqlite/requests/create_table_account_requests.sql")
     private val sqlStoreAccountRequest = loadSql("/galvin/dw/db/sqlite/requests/store_account_request.sql")
     private val sqlRetrieveAccountRequestByUuid = loadSql("/galvin/dw/db/sqlite/requests/retrieve_account_request_by_uuid.sql")
     private val sqlRetrieveAllAccountRequests = loadSql("/galvin/dw/db/sqlite/requests/retrieve_all_account_requests.sql")
+    private val sqlApproveAccountRequest = loadSql("/galvin/dw/db/sqlite/requests/approve_account_request.sql")
 
     init{
         //create tables
@@ -24,8 +25,10 @@ class SQLiteAccountRequestDB( private val databaseFile: File) : AccountRequestDB
             throw Exception("Account Request: password mismatch")
         }
 
+        verifyNoUserExists(request.uuid)
+
         synchronized(concurrencyLock) {
-            userDB.storeUser(request.user, request.uuid)
+            accountRequestUserInfoDB.storeUser(request.user, request.uuid)
 
             val conn = conn()
             val statement = conn.prepareStatement(sqlStoreAccountRequest)
@@ -90,12 +93,45 @@ class SQLiteAccountRequestDB( private val databaseFile: File) : AccountRequestDB
         return result
     }
 
+    override fun approve( uuid: String, approvedByUuid: String, timestamp: Long ){
+        verifyNoUserExists(uuid)
+
+        val accountRequest = retrieveAccountRequest(uuid)
+        if( accountRequest == null ){
+            throw Exception( "Account Request error: no account request with that UUID" )
+        }
+
+        if( accountRequest.approved ){
+            return
+        }
+
+        synchronized(concurrencyLock) {
+            userDB.storeUser(accountRequest.user)
+
+            val conn = conn()
+            val statement = conn.prepareStatement(sqlApproveAccountRequest)
+            statement.setString(1, approvedByUuid)
+            statement.setLong(2, timestamp)
+            statement.setString(3, uuid)
+
+            statement.close()
+            conn.close()
+        }
+    }
+
+    private fun verifyNoUserExists( uuid: String ){
+        val user = userDB.retrieveUser(uuid)
+        if( user != null ){
+            throw Exception("Account Request error: user with this UUID already exists")
+        }
+    }
+
     private fun unmarshallAccountRequest(hit: ResultSet): AccountRequest{
         val uuid = hit.getString("uuid")
         val approved = hit.getInt("approved") == 1
         val rejected = hit.getInt("rejected") == 1
 
-        val user = userDB.retrieveUser(uuid)
+        val user = accountRequestUserInfoDB.retrieveUser(uuid)
         if( user == null ){
             throw Exception( "Account Request error: no user data" )
         }

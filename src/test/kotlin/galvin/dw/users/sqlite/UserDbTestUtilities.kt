@@ -14,8 +14,8 @@ fun userDB(): UserDB{
     return SQLiteUserDB( randomUserDbFile() )
 }
 
-fun accountRequestDB(): AccountRequestDB {
-    return SQLiteAccountRequestDB( randomUserDbFile() )
+fun accountRequestDB( userDB: UserDB ): AccountRequestDB {
+    return SQLiteAccountRequestDB( randomUserDbFile(), userDB )
 }
 
 fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid() ) : AccountRequest {
