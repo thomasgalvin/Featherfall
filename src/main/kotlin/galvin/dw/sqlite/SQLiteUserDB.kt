@@ -7,7 +7,6 @@ import java.sql.ResultSet
 
 class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
-    private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
 
     private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/roles/create_table_roles.sql")
     private val sqlCreateTableRolePermissions = loadSql("/galvin/dw/db/sqlite/roles/create_table_role_permissions.sql")
@@ -118,41 +117,37 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     }
 
     override fun listRoles(): List<Role>{
-        synchronized(concurrencyLock) {
-            val conn = conn()
-            val statement = conn.prepareStatement(sqlRetrieveAllRoles)
-            val result = mutableListOf<Role>()
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveAllRoles)
+        val result = mutableListOf<Role>()
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                while (resultSet.next()) {
-                    result.add(unmarshallRole(resultSet, conn))
-                }
+        val resultSet = statement.executeQuery()
+        if (resultSet != null) {
+            while (resultSet.next()) {
+                result.add(unmarshallRole(resultSet, conn))
             }
-
-            close(conn, statement)
-            return result
         }
+
+        close(conn, statement)
+        return result
     }
 
     override fun retrieveRole(name: String): Role?{
-        synchronized(concurrencyLock) {
-            val conn = conn()
-            val statement = conn.prepareStatement(sqlRetrieveRoleByUuid)
-            statement.setString(1, name)
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveRoleByUuid)
+        statement.setString(1, name)
 
-            var result: Role? = null
+        var result: Role? = null
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                if (resultSet.next()) {
-                    result = unmarshallRole(resultSet, conn)
-                }
+        val resultSet = statement.executeQuery()
+        if (resultSet != null) {
+            if (resultSet.next()) {
+                result = unmarshallRole(resultSet, conn)
             }
-
-            close(conn, statement)
-            return result
         }
+
+        close(conn, statement)
+        return result
     }
 
     private fun unmarshallRole(hit: ResultSet, conn: Connection): Role {
@@ -180,21 +175,23 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    override fun storeUser(user: User){
+    override fun storeUser(user: User, uuid : String?){
         synchronized(concurrencyLock) {
+            val theUuid = if( isBlank(uuid) ) user.uuid else uuid
             val conn = conn()
 
             val delContactStatement = conn.prepareStatement(sqlDeleteContactInfoForUser)
-            delContactStatement.setString(1, user.uuid)
+            delContactStatement.setString(1, theUuid)
             delContactStatement.executeUpdate()
             delContactStatement.close()
 
             val delRolesStatement = conn.prepareStatement(sqlDeleteRolesForUser)
-            delRolesStatement.setString(1, user.uuid)
+            delRolesStatement.setString(1, theUuid)
             delRolesStatement.executeUpdate()
             delRolesStatement.close()
 
             val statement = conn.prepareStatement(sqlStoreUser)
+
             val active = if (user.active) 1 else 0
             val locked = if (user.locked) 1 else 0
 
@@ -215,7 +212,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
             statement.setLong(15, user.created)
             statement.setInt(16, active)
             statement.setInt(17, locked)
-            statement.setString(18, user.uuid)
+            statement.setString(18, theUuid)
 
             statement.executeUpdate()
             statement.close()
@@ -228,7 +225,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
                 contactStatement.setString(2, contact.description)
                 contactStatement.setString(3, contact.contact)
                 contactStatement.setInt(4, isPrimary)
-                contactStatement.setString(5, user.uuid)
+                contactStatement.setString(5, theUuid)
                 contactStatement.setInt(6, ordinal)
 
                 contactStatement.executeUpdate()
@@ -238,7 +235,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
             for ((ordinal, role) in user.roles.withIndex()) {
                 val roleStatement = conn.prepareStatement(sqlStoreUserRole)
                 roleStatement.setString(1, role)
-                roleStatement.setString(2, user.uuid)
+                roleStatement.setString(2, theUuid)
                 roleStatement.setInt(3, ordinal)
 
                 roleStatement.executeUpdate()
@@ -251,46 +248,42 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     }
 
     override fun retrieveUser(uuid: String): User?{
-        synchronized(concurrencyLock) {
-            var result: User? = null;
+        var result: User? = null
 
-            val conn = conn()
-            val statement = conn.prepareStatement(sqlRetrieveUserByUuid)
-            statement.setString(1, uuid)
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveUserByUuid)
+        statement.setString(1, uuid)
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                if (resultSet.next()) {
-                    result = unmarshallUser(resultSet, conn)
-                }
+        val resultSet = statement.executeQuery()
+        if (resultSet != null) {
+            if (resultSet.next()) {
+                result = unmarshallUser(resultSet, conn)
             }
-
-            statement.close()
-            conn.close()
-
-            return result;
         }
+
+        statement.close()
+        conn.close()
+
+        return result
     }
 
     override fun retrieveUsers(): List<User>{
-        synchronized(concurrencyLock) {
-            val result = mutableListOf<User>()
+        val result = mutableListOf<User>()
 
-            val conn = conn()
-            val statement = conn.prepareStatement(sqlRetrieveAllUsers)
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveAllUsers)
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                if (resultSet.next()) {
-                    result.add(unmarshallUser(resultSet, conn))
-                }
+        val resultSet = statement.executeQuery()
+        if (resultSet != null) {
+            if (resultSet.next()) {
+                result.add(unmarshallUser(resultSet, conn))
             }
-
-            statement.close()
-            conn.close()
-
-            return result
         }
+
+        statement.close()
+        conn.close()
+
+        return result
     }
 
     private fun unmarshallUser(hit: ResultSet, conn: Connection): User {

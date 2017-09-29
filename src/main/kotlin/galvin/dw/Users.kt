@@ -9,15 +9,15 @@ interface UserDB {
     fun retrieveRole(name: String): Role?
 
     //users
-    fun storeUser(user: User)
+    fun storeUser(user: User, uuid: String? = null)
     fun retrieveUser(uuid: String): User?
     fun retrieveUsers(): List<User>
 }
 
 interface AccountRequestDB {
     fun storeAccountRequest( request: AccountRequest )
-//    fun retrieveAccountRequest( uuid: String ) : AccountRequest
-//    fun retrieveAccountRequests() : List<AccountRequest>
+    fun retrieveAccountRequest( uuid: String ) : AccountRequest?
+    fun retrieveAccountRequests() : List<AccountRequest>
 }
 
 data class User(
@@ -62,8 +62,8 @@ data class AccountRequest(
         val vouchContactInfo: String?, //how to get ahold of the person who can vouch for you
 
         //approved / rejected
-        val approved: Boolean = false, val approvedByUuid: String?, val approvedTimestamp: Long?,
-        val rejected: Boolean = false, val rejectedByUuid: String?, val rejectedTimestamp: Long?,
+        val approved: Boolean = false, val approvedByUuid: String?, val approvedTimestamp: Long = -1,
+        val rejected: Boolean = false, val rejectedByUuid: String?, val rejectedTimestamp: Long = -1,
 
         //uuid
         val uuid: String = uuid()

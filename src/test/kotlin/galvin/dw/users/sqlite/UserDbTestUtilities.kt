@@ -27,8 +27,8 @@ fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid() ) : Ac
             "reason" + uuid(),
             "vouchName" + uuid(),
             "vouchContactInfo" + uuid(),
-            false, null, null,
-            false, null, null,
+            false, null, -1,
+            false, null, -1,
             uuid
     )
 }

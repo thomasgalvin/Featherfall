@@ -17,6 +17,9 @@ class SqliteUserDbTest {
     fun should_not_create_tables_twice(){
         val userdb = userDB()
         val userdb2 = userDB()
+
+        Assert.assertNotNull(userdb)
+        Assert.assertNotNull(userdb2)
     }
 
     @Test
