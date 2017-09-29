@@ -16,6 +16,10 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
     private val sqlApproveAccountRequest = loadSql("/galvin/dw/db/sqlite/requests/approve_account_request.sql")
     private val sqlRejectAccountRequest = loadSql("/galvin/dw/db/sqlite/requests/reject_account_request.sql")
 
+    private val sqlRetrievePendingAccountRequests = loadSql("/galvin/dw/db/sqlite/requests/retrieve_pending_account_requests.sql")
+    private val sqlRetrieveApprovedAccountRequests = loadSql("/galvin/dw/db/sqlite/requests/retrieve_approved_account_requests.sql")
+    private val sqlRetrieveRejectedAccountRequests = loadSql("/galvin/dw/db/sqlite/requests/retrieve_rejected_account_requests.sql")
+
     init{
         //create tables
         runSql( conn(), sqlCreateTableAccountRequests )
@@ -76,14 +80,30 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
 
 
     override fun retrieveAccountRequests(): List<AccountRequest> {
+        return retrieveAccountRequests(sqlRetrieveAllAccountRequests)
+    }
+
+    override fun retrievePendingAccountRequests() : List<AccountRequest>{
+        return retrieveAccountRequests(sqlRetrievePendingAccountRequests)
+    }
+
+    override fun retrieveApprovedAccountRequests() : List<AccountRequest>{
+        return retrieveAccountRequests(sqlRetrieveApprovedAccountRequests)
+    }
+
+    override fun retrieveRejectedAccountRequests() : List<AccountRequest>{
+        return retrieveAccountRequests(sqlRetrieveRejectedAccountRequests)
+    }
+
+    private fun retrieveAccountRequests( sql: String ): List<AccountRequest> {
         val result = mutableListOf<AccountRequest>()
 
         val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveAllAccountRequests)
+        val statement = conn.prepareStatement(sql)
 
         val resultSet = statement.executeQuery()
         if (resultSet != null) {
-            if (resultSet.next()) {
+            while (resultSet.next()) {
                 result.add(unmarshallAccountRequest(resultSet))
             }
         }

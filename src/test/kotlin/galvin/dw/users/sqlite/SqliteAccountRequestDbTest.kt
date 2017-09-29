@@ -269,5 +269,57 @@ class SqliteAccountRequestDBTest {
             Assert.assertEquals("UnexpectedException", e.message, ERROR_ALREADY_APPROVED)
         }
     }
+
+    @Test
+    fun should_retrieve_by_status(){
+        val userDB = userDB()
+        val accountRequestDB = accountRequestDB(userDB)
+        val roles = generateRoles(userdb = userDB)
+
+        val pending = mutableMapOf<String, AccountRequest>()
+        val approved = mutableMapOf<String, AccountRequest>()
+        val rejected = mutableMapOf<String, AccountRequest>()
+
+        populate(pending, roles, accountRequestDB)
+        populate(approved, roles, accountRequestDB)
+        populate(rejected, roles, accountRequestDB)
+
+        for( uuid in approved.keys){
+            accountRequestDB.approve( uuid, uuid() )
+        }
+
+        for( uuid in rejected.keys){
+            accountRequestDB.reject( uuid, uuid() )
+        }
+
+        val loadedPending = accountRequestDB.retrievePendingAccountRequests()
+        Assert.assertEquals( "Unexpected number of pending users", pending.size, loadedPending.size)
+        for( loaded in loadedPending ){
+            val original = pending[loaded.uuid]
+            Assert.assertEquals( "Unexpected value for pending user", original!!.user, loaded.user )
+        }
+
+        val loadedApproved = accountRequestDB.retrieveApprovedAccountRequests()
+        Assert.assertEquals( "Unexpected number of approved users", approved.size, loadedApproved.size)
+        for( loaded in loadedApproved ){
+            val original = approved[loaded.uuid]
+            Assert.assertEquals( "Unexpected value for approved user", original!!.user, loaded.user )
+        }
+
+        val loadedRejected = accountRequestDB.retrieveRejectedAccountRequests()
+        Assert.assertEquals( "Unexpected number of rejected users", rejected.size, loadedRejected.size)
+        for( loaded in loadedRejected ){
+            val original = rejected[loaded.uuid]
+            Assert.assertEquals( "Unexpected value for rejected user", original!!.user, loaded.user )
+        }
+    }
+
+    private fun populate( map: MutableMap<String, AccountRequest>, roles: List<Role>, accountRequestDB : AccountRequestDB ){
+        for( i in 1 .. 10 ){
+            val request = generateAccountRequest(roles)
+            map[request.uuid] = request
+            accountRequestDB.storeAccountRequest(request)
+        }
+    }
 }
 

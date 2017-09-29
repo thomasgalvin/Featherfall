@@ -19,6 +19,10 @@ interface AccountRequestDB {
     fun retrieveAccountRequest( uuid: String ) : AccountRequest?
     fun retrieveAccountRequests() : List<AccountRequest>
 
+    fun retrievePendingAccountRequests() : List<AccountRequest>
+    fun retrieveApprovedAccountRequests() : List<AccountRequest>
+    fun retrieveRejectedAccountRequests() : List<AccountRequest>
+
     fun approve( uuid: String, approvedByUuid: String, timestamp: Long = System.currentTimeMillis() )
     fun reject( uuid: String, rejectedByUuid: String, timestamp: Long = System.currentTimeMillis() )
 }

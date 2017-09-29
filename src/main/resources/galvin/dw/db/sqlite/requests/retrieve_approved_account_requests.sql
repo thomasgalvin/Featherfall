@@ -1,0 +1,1 @@
+select * from AccountRequests where approved = 1
