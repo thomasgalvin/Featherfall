@@ -1,20 +1,19 @@
 package galvin.dw
 
-import io.dropwizard.Application
-import java.io.File
-import io.dropwizard.Configuration
-import io.dropwizard.setup.Environment
-import org.glassfish.jersey.server.ServerProperties
 import com.codahale.metrics.health.HealthCheck
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle
+import io.dropwizard.Application
+import io.dropwizard.Configuration
+import io.dropwizard.assets.AssetsBundle
 import io.dropwizard.setup.Bootstrap
+import io.dropwizard.setup.Environment
+import org.eclipse.jetty.servlets.CrossOriginFilter
+import org.glassfish.jersey.server.ServerProperties
+import java.io.File
 import java.util.*
 import javax.net.ssl.*
 import javax.servlet.DispatcherType
-import java.util.EnumSet
-import org.eclipse.jetty.servlets.CrossOriginFilter
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle
-import io.dropwizard.assets.AssetsBundle
 
 /**
  * This class provides a convenient wa of configuring and starting

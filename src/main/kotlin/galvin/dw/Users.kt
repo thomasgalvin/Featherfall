@@ -1,9 +1,5 @@
 package galvin.dw
 
-import java.io.File
-import java.sql.Connection
-import java.sql.ResultSet
-
 interface UserDB {
     //roles
     fun storeRole(role: Role)

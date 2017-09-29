@@ -1,10 +1,9 @@
 package galvin.dw.users.sqlite
 
-import galvin.dw.*
+import galvin.dw.Role
+import galvin.dw.User
 import org.junit.Assert
 import org.junit.Test
-import java.io.File
-import java.util.*
 
 class SqliteUserDbTest {
 
