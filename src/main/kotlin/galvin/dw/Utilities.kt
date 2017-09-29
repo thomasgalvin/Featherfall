@@ -7,6 +7,8 @@ import java.sql.DriverManager
 import java.sql.PreparedStatement
 import java.util.*
 
+class Utilities{}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // String utility code
@@ -30,7 +32,7 @@ fun uuid(): String {
 data class ConnectionStatement(val connection: Connection, val statement: PreparedStatement)
 
 fun loadSql( classpathEntry: String ): String{
-    val resource = SQLiteAuditDB::class.java.getResource(classpathEntry)
+    val resource = Utilities::class.java.getResource(classpathEntry)
     if(resource == null) throw IOException( "Unable to load SQL: $classpathEntry" )
 
     val sql = resource.readText()
@@ -59,27 +61,3 @@ fun close(conn: Connection, statement: PreparedStatement){
     conn.close()
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-/// SQLite utility code
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-open class SQLiteDB( private val databaseFile: File){
-    private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
-
-    init{
-        //load driver
-        Class.forName( "org.sqlite.JDBC" )
-    }
-
-    /**
-     * Returns a connection to the current SQLite database (specified in constructor), with
-     * auto-commit disabled
-     */
-    fun conn(): Connection{
-        val result = DriverManager.getConnection( connectionUrl )
-        result.autoCommit = false
-        return result
-    }
-}

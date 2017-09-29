@@ -1,6 +1,7 @@
 package galvin.dw.audit.sqlite;
 
 import galvin.dw.*;
+import galvin.dw.sqlite.SQLiteAuditDB;
 import org.junit.Assert;
 import org.junit.Test;
 
