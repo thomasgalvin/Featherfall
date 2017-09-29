@@ -195,7 +195,44 @@ class SqliteAccountRequestDBTest {
     }
 
     @Test
-    fun should_throw_when_password_mismatch() {
+    fun should_reject_multiple_account_requests(){
+        val userDB = userDB()
+        val accountRequestDB = accountRequestDB(userDB)
+        val roles = generateRoles(userdb = userDB)
+
+        val requests = mutableListOf<AccountRequest>()
+        for( i in 1 .. 10 ) {
+            requests.add(generateAccountRequest(roles))
+        }
+
+        val map = mutableMapOf<String, AccountRequest>()
+        for( request in requests ){
+            accountRequestDB.storeAccountRequest( request )
+            map[request.uuid] = request
+        }
+
+        for( key in map.keys ){
+            val loaded = accountRequestDB.retrieveAccountRequest(key)
+            Assert.assertEquals("Loaded account request did not match expected", map[key], loaded)
+        }
+
+        for( key in map.keys ){
+            accountRequestDB.reject(key, uuid(), uuid() )
+        }
+
+        for( key in map.keys ){
+            val loaded = accountRequestDB.retrieveAccountRequest(key)
+            Assert.assertFalse( "Unexpected value for approved", loaded!!.approved )
+        }
+
+        for( request in requests ){
+            val loaded = accountRequestDB.retrieveAccountRequest(request.uuid)
+            Assert.assertNotEquals("Loaded account request should have been modified", request, loaded)
+        }
+    }
+
+    @Test
+    fun should_throw_when_passwords_mismatch() {
         val userDB = userDB()
         val accountRequestDB = accountRequestDB(userDB)
         val roles = generateRoles(userdb = userDB)
@@ -219,13 +256,26 @@ class SqliteAccountRequestDBTest {
             throw Exception("Error: Account Request database should have thrown an exception")
         }
         catch (e: Exception) {
-
             Assert.assertEquals("UnexpectedException", e.message, ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID)
         }
     }
 
     @Test
-    fun should_throw_when_user_alrady_exists_store() {
+    fun should_throw_when_no_account_request_exists_to_reject() {
+        val userDB = userDB()
+        val accountRequestDB = accountRequestDB(userDB)
+
+        try {
+            accountRequestDB.reject(uuid(), uuid())
+            throw Exception("Error: Account Request database should have thrown an exception")
+        }
+        catch (e: Exception) {
+            Assert.assertEquals("UnexpectedException", e.message, ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID)
+        }
+    }
+
+    @Test
+    fun should_throw_when_user_alrady_exists() {
         val userDB = userDB()
         val accountRequestDB = accountRequestDB(userDB)
 
@@ -245,7 +295,7 @@ class SqliteAccountRequestDBTest {
     }
 
     @Test
-    fun should_throw_when_reject_approved_account(){
+    fun should_throw_when_rejecting_an_approved_account(){
         val userDB = userDB()
         val accountRequestDB = accountRequestDB(userDB)
         val roles = generateRoles(userdb = userDB)
