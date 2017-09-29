@@ -38,10 +38,6 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     private val sqlDeleteRolesForUser = loadSql("/galvin/dw/db/sqlite/users/delete_roles_for_user.sql")
 
     init{
-        //load driver
-        Class.forName( "org.sqlite.JDBC" )
-
-        //create tables
         runSql( conn(), sqlCreateTableRoles )
         runSql( conn(), sqlCreateTableRolePermissions )
         runSql( conn(), sqlCreateTableUsers )

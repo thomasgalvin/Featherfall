@@ -27,10 +27,6 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     private val sqlRetrieveAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit//retrieve_access_info_mods.sql")
 
     init{
-        //load driver
-        Class.forName( "org.sqlite.JDBC" )
-
-        //create tables
         runSql( conn(), sqlCreateTableSystemInfo )
         runSql( conn(), sqlCreateTableSystemInfoNetworks )
 
