@@ -144,7 +144,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
         }
     }
 
-    override fun reject( uuid: String, rejectedByUuid: String, timestamp: Long ){
+    override fun reject( uuid: String, rejectedByUuid: String, reason: String, timestamp: Long ){
         val accountRequest = retrieveAccountRequest(uuid)
         if( accountRequest == null ){
             throw Exception( ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID )
@@ -163,7 +163,8 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             val statement = conn.prepareStatement(sqlRejectAccountRequest)
             statement.setString(1, rejectedByUuid)
             statement.setLong(2, timestamp)
-            statement.setString(3, uuid)
+            statement.setString(3, reason)
+            statement.setString(4, uuid)
 
             statement.executeUpdate()
             statement.close()

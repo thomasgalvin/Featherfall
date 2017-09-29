@@ -182,13 +182,15 @@ class SqliteAccountRequestDBTest {
         accountRequestDB.storeAccountRequest(request)
 
         val rejectedBy = uuid()
+        val reason = uuid()
         val timestamp = System.currentTimeMillis()
-        accountRequestDB.reject( request.uuid, rejectedBy, timestamp )
+        accountRequestDB.reject( request.uuid, rejectedBy, reason, timestamp )
 
         val loaded = accountRequestDB.retrieveAccountRequest(request.uuid)
         Assert.assertTrue( "Unexpected value for rejected", loaded!!.rejected )
         Assert.assertEquals( "Unexpected value for rejected by", rejectedBy, loaded.rejectedByUuid )
         Assert.assertEquals( "Unexpected value for rejected timestamp", timestamp, loaded.rejectedTimestamp )
+        Assert.assertEquals( "Unexpected value for rejected reason", reason, loaded.rejectedReason )
         Assert.assertEquals( "Unexpected value for rejected user", request.user, loaded.user )
     }
 
@@ -243,26 +245,17 @@ class SqliteAccountRequestDBTest {
     }
 
     @Test
-    fun should_throws_when_reject_approved_account(){
+    fun should_throw_when_reject_approved_account(){
         val userDB = userDB()
         val accountRequestDB = accountRequestDB(userDB)
         val roles = generateRoles(userdb = userDB)
 
         val request = generateAccountRequest(roles)
         accountRequestDB.storeAccountRequest(request)
-
-        val approvedBy = uuid()
-        val timestamp = System.currentTimeMillis()
-        accountRequestDB.approve( request.uuid, approvedBy, timestamp )
-
-        val loaded = accountRequestDB.retrieveAccountRequest(request.uuid)
-        Assert.assertTrue( "Unexpected value for approved", loaded!!.approved )
-        Assert.assertEquals( "Unexpected value for approved by", approvedBy, loaded.approvedByUuid )
-        Assert.assertEquals( "Unexpected value for approved timestamp", timestamp, loaded.approvedTimestamp )
-        Assert.assertEquals( "Unexpected value for approved user", request.user, loaded.user )
+        accountRequestDB.approve( request.uuid, uuid() )
 
         try {
-            accountRequestDB.reject(request.uuid, approvedBy, timestamp)
+            accountRequestDB.reject( request.uuid, uuid(), uuid() )
             throw Exception("Error: Account Request database should have thrown an exception")
         }
         catch (e: Exception) {

@@ -24,7 +24,7 @@ interface AccountRequestDB {
     fun retrieveRejectedAccountRequests() : List<AccountRequest>
 
     fun approve( uuid: String, approvedByUuid: String, timestamp: Long = System.currentTimeMillis() )
-    fun reject( uuid: String, rejectedByUuid: String, timestamp: Long = System.currentTimeMillis() )
+    fun reject( uuid: String, rejectedByUuid: String, reason: String = "", timestamp: Long = System.currentTimeMillis() )
 }
 
 data class User(
