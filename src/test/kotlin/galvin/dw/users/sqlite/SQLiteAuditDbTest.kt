@@ -11,12 +11,12 @@ import java.util.*
 import galvin.dw.uuid
 
 class SQLiteAuditDbTest {
+    val console = false
 
     @Test
     fun should_not_create_tables_twice() {
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
-        val audit2 = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
+        val audit2 = randomAuditDB()
 
         Assert.assertNotNull( "Audit database was null", audit )
         Assert.assertNotNull( "Audit database was null", audit2 )
@@ -24,8 +24,7 @@ class SQLiteAuditDbTest {
 
     @Test
     fun should_retrieve_system_info_list() {
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
 
         val expectedCount = 10
         val map = HashMap<String, SystemInfo>()
@@ -48,8 +47,7 @@ class SQLiteAuditDbTest {
     @Test
     @Throws(Exception::class)
     fun should_retrieve_system_info_by_uuid() {
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
 
         val expectedCount = 10
         val map = HashMap<String, SystemInfo>()
@@ -71,8 +69,7 @@ class SQLiteAuditDbTest {
     @Test
     @Throws(Exception::class)
     fun should_retrieve_current_system_info() {
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
         val system = randomSystemInfo()
         audit.store(system)
         audit.storeCurrentSystemInfo(system.uuid)
@@ -88,8 +85,7 @@ class SQLiteAuditDbTest {
         val later = now + 10000
         val expectedCount = 10
 
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
 
         val system = randomSystemInfo()
         audit.store(system)
@@ -114,8 +110,7 @@ class SQLiteAuditDbTest {
         val later = now + 10000
         val expectedCount = 10
 
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
 
         val systems = ArrayList<SystemInfo>()
         val map = HashMap<String, List<AccessInfo>>()
@@ -156,8 +151,7 @@ class SQLiteAuditDbTest {
         val earlier = now - 10000
         val expectedCount = 10
 
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
 
         val system = randomSystemInfo()
         audit.store(system)
@@ -176,8 +170,7 @@ class SQLiteAuditDbTest {
         val muchLater = now + 20000
         val expectedCount = 10
 
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
 
         val system = randomSystemInfo()
         audit.store(system)
@@ -196,8 +189,7 @@ class SQLiteAuditDbTest {
         val later = now + 10000
         val expectedCount = 10
 
-        val auditFile = randomAuditDbFile()
-        val audit = SQLiteAuditDB(auditFile)
+        val audit = randomAuditDB()
 
         val system = randomSystemInfo()
         generateAccessInfo(system, expectedCount, audit)
@@ -210,7 +202,38 @@ class SQLiteAuditDbTest {
         Assert.assertEquals("Unexpected system info count", 0, nonExistentSystemEntries.size.toLong())
     }
 
-    @Throws(Exception::class)
+
+
+    ///
+    /// Utility code
+    ///
+
+    private fun randomAuditDbFile(): File {
+        return File("target/audit-" + uuid() + ".dat")
+    }
+
+    private fun randomAuditDB() : AuditDB {
+        return SQLiteAuditDB( randomAuditDbFile() )
+    }
+
+    private fun randomSystemInfo(): SystemInfo {
+        return SystemInfo(
+                "serial:" + uuid(),
+                "name:" + uuid(),
+                "version" + uuid(),
+                "Unclassified-" + uuid(),
+                "guide:" + uuid(),
+                Arrays.asList(
+                        uuid(),
+                        uuid(),
+                        uuid(),
+                        uuid(),
+                        uuid()
+                ),
+                "uuid:" + uuid()
+        )
+    }
+
     private fun generateAccessInfo(system: SystemInfo, expectedCount: Int, audit: AuditDB): List<AccessInfo> {
         val result = ArrayList<AccessInfo>()
 
@@ -225,64 +248,38 @@ class SQLiteAuditDbTest {
         return result
     }
 
-    companion object {
-        private val console = false
-
-        private fun randomAuditDbFile(): File {
-            return File("target/audit-" + uuid() + ".dat")
+    private fun randomAccessInfo(systemInfoUuid: String): AccessInfo {
+        val mods = ArrayList<Modification>()
+        for (i in 0..9) {
+            mods.add(Modification(
+                    "field:" + uuid(),
+                    "old:" + uuid(),
+                    "new:" + uuid()
+            ))
         }
 
-        private fun randomSystemInfo(): SystemInfo {
-            return SystemInfo(
-                    "serial:" + uuid(),
-                    "name:" + uuid(),
-                    "version" + uuid(),
-                    "Unclassified-" + uuid(),
-                    "guide:" + uuid(),
-                    Arrays.asList(
-                            uuid(),
-                            uuid(),
-                            uuid(),
-                            uuid(),
-                            uuid()
-                    ),
-                    "uuid:" + uuid()
-            )
-        }
+        val random = Random()
+        val loginTypes = LoginType.values()
+        val accessTypes = AccessType.values()
 
-        private fun randomAccessInfo(systemInfoUuid: String): AccessInfo {
-            val mods = ArrayList<Modification>()
-            for (i in 0..9) {
-                mods.add(Modification(
-                        "field:" + uuid(),
-                        "old:" + uuid(),
-                        "new:" + uuid()
-                ))
-            }
+        val loginType = loginTypes[random.nextInt(loginTypes.size)]
+        val accessType = accessTypes[random.nextInt(accessTypes.size)]
+        val permissionGranted = random.nextBoolean()
 
-            val random = Random()
-            val loginTypes = LoginType.values()
-            val accessTypes = AccessType.values()
-
-            val loginType = loginTypes[random.nextInt(loginTypes.size)]
-            val accessType = accessTypes[random.nextInt(accessTypes.size)]
-            val permissionGranted = random.nextBoolean()
-
-            return AccessInfo(
-                    "user" + uuid(),
-                    loginType,
-                    "proxy:" + uuid(),
-                    System.currentTimeMillis(),
-                    "resourceUUID:" + uuid(),
-                    "resourceName:" + uuid(),
-                    "classification" + uuid(),
-                    "resource" + uuid(),
-                    accessType,
-                    permissionGranted,
-                    systemInfoUuid,
-                    mods,
-                    "uuid:" + uuid()
-            )
-        }
+        return AccessInfo(
+                "user" + uuid(),
+                loginType,
+                "proxy:" + uuid(),
+                System.currentTimeMillis(),
+                "resourceUUID:" + uuid(),
+                "resourceName:" + uuid(),
+                "classification" + uuid(),
+                "resource" + uuid(),
+                accessType,
+                permissionGranted,
+                systemInfoUuid,
+                mods,
+                "uuid:" + uuid()
+        )
     }
 }
