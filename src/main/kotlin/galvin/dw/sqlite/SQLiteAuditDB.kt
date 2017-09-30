@@ -28,7 +28,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     
     private val sqlCreateTableCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/create_table_current_system_info.sql")
     private val sqlDeleteCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/delete_current_system_info.sql")
-    private val sqlSetCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/set_current_system_info.sql")
+    private val sqlSetCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/store_current_system_info.sql")
     private val sqlRetrieveCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/retrieve_current_system_info.sql")
 
     init{
@@ -52,16 +52,13 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
             statement.setString(4, systemInfo.maximumClassification)
             statement.setString(5, systemInfo.classificationGuide)
             statement.setString(6, systemInfo.uuid)
-
-            statement.executeUpdate()
-            statement.close()
+            executeAndClose( statement )
 
             for ((ordinal, network) in systemInfo.networks.withIndex()) {
                 storeNetwork(conn, systemInfo.uuid, network, ordinal)
             }
 
-            conn.commit()
-            conn.close()
+            commitAndClose( conn )
         }
     }
 
@@ -72,8 +69,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         statement.setString(2, networkName)
         statement.setInt(3, ordinal)
 
-        statement.executeUpdate()
-        statement.close()
+        executeAndClose( statement )
     }
 
     override fun retrieveAllSystemInfo(): List<SystemInfo> {
@@ -84,7 +80,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         val resultSet = statement.executeQuery()
         if(resultSet != null){
             while( resultSet.next() ){
-                result.add( unmarshallSystemInfo(resultSet, conn) )
+                result.add( unmarshalSystemInfo(resultSet, conn) )
             }
         }
 
@@ -101,7 +97,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
 
         val resultSet = statement.executeQuery()
         if( resultSet != null && resultSet.next() ){
-            result = unmarshallSystemInfo(resultSet, conn)
+            result = unmarshalSystemInfo(resultSet, conn)
         }
 
         close(conn, statement)
@@ -109,43 +105,43 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     }
 
     override fun retrieveCurrentSystemInfo(): SystemInfo?{
+        var result : SystemInfo? = null
         val conn = conn()
 
         val statement = conn.prepareStatement(sqlRetrieveCurrentSystemInfo)
         val resultSet = statement.executeQuery()
         if( resultSet != null && resultSet.next() ){
             val uuid = resultSet.getString("uuid")
-            return retrieveSystemInfo(uuid)
+            result = retrieveSystemInfo(uuid)
         }
 
-        return null
+        close(conn, statement)
+        return result
     }
 
-    override fun setCurrentSystemInfo(uuid: String) {
+    override fun storeCurrentSystemInfo(uuid: String) {
         synchronized(concurrencyLock) {
             val conn = conn()
 
-            val statement = conn.prepareStatement(sqlSetCurrentSystemInfo)
-            statement.setString(1, uuid)
+            val deleteStatement = conn.prepareStatement(sqlDeleteCurrentSystemInfo)
+            executeAndClose( deleteStatement )
 
-            statement.executeUpdate()
-            statement.close()
-
-            conn.commit()
-            conn.close()
+            val storeStatement = conn.prepareStatement(sqlSetCurrentSystemInfo)
+            storeStatement.setString(1, uuid)
+            executeAndClose( storeStatement, conn )
         }
     }
 
-    private fun unmarshallSystemInfo(hit: ResultSet, conn: Connection): SystemInfo {
+    private fun unmarshalSystemInfo(hit: ResultSet, conn: Connection): SystemInfo {
         val uuid = hit.getString(6)
         val networks = mutableListOf<String>()
 
         val result = SystemInfo(
-                hit.getString(1),
-                hit.getString(2),
-                hit.getString(3),
-                hit.getString(4),
-                hit.getString(5),
+                hit.getString("serialNumber"),
+                hit.getString("name"),
+                hit.getString("version"),
+                hit.getString("maximumClassification"),
+                hit.getString("classificationGuide"),
                 networks,
                 uuid
         )
@@ -184,15 +180,13 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
             statement.setString(11, access.systemInfoUuid)
             statement.setString(12, access.uuid)
 
-            statement.executeUpdate()
-            statement.close()
+            executeAndClose( statement )
 
             for ((ordinal, mod) in access.modifications.withIndex()) {
                 storeMod(conn, access.uuid, mod, ordinal)
             }
 
-            conn.commit()
-            conn.close()
+            commitAndClose(conn)
         }
 
         if(console) println( access )
@@ -207,8 +201,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         statement.setString(4, accessInfoUuid)
         statement.setInt(5, ordinal)
 
-        statement.executeUpdate()
-        statement.close()
+        executeAndClose( statement )
     }
 
     override fun retrieveAccessInfo(startTimestamp: Long, endTimestamp: Long): List<AccessInfo> {
@@ -235,7 +228,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         val resultSet = statement.executeQuery()
         if(resultSet != null){
             while( resultSet.next() ){
-                result.add( unmarshallAccessInfo(resultSet, conn) )
+                result.add( unmarshalAccessInfo(resultSet, conn) )
             }
         }
 
@@ -243,7 +236,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         return result
     }
 
-    private fun unmarshallAccessInfo(hit: ResultSet, conn: Connection): AccessInfo {
+    private fun unmarshalAccessInfo(hit: ResultSet, conn: Connection): AccessInfo {
         val loginType = LoginType.valueOf( hit.getString(2) )
         val accessType = AccessType.valueOf( hit.getString(9) )
         val permissionGranted = hit.getInt(10) != 0

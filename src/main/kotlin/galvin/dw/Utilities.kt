@@ -41,17 +41,24 @@ fun loadSql( classpathEntry: String ): String{
 
 fun runSql(conn: Connection, sql: String ){
     val statement = conn.prepareStatement(sql)
-    executeAndClose(conn, statement)
+    executeAndClose(statement, conn)
 }
 
-fun executeAndClose(conn: Connection? = null, statement: PreparedStatement){
-    statement.executeUpdate()
-    statement.close()
+fun executeAndClose(statement: PreparedStatement? = null, conn: Connection? = null){
+    if( statement != null ) {
+        statement.executeUpdate()
+        statement.close()
+    }
 
     if( conn != null ) {
         conn.commit()
         conn.close()
     }
+}
+
+fun commitAndClose(conn: Connection){
+    conn.commit()
+    conn.close()
 }
 
 fun close(conn: Connection, statement: PreparedStatement){

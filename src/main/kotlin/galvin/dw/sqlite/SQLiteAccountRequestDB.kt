@@ -69,7 +69,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
         val resultSet = statement.executeQuery()
         if (resultSet != null) {
             if (resultSet.next()) {
-                result = unmarshallAccountRequest(resultSet)
+                result = unmarshalAccountRequest(resultSet)
             }
         }
 
@@ -105,7 +105,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
         val resultSet = statement.executeQuery()
         if (resultSet != null) {
             while (resultSet.next()) {
-                result.add(unmarshallAccountRequest(resultSet))
+                result.add(unmarshalAccountRequest(resultSet))
             }
         }
 
@@ -181,7 +181,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
         }
     }
 
-    private fun unmarshallAccountRequest(hit: ResultSet): AccountRequest{
+    private fun unmarshalAccountRequest(hit: ResultSet): AccountRequest{
         val uuid = hit.getString("uuid")
         val approved = hit.getInt("approved") == 1
         val rejected = hit.getInt("rejected") == 1

@@ -120,7 +120,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         val resultSet = statement.executeQuery()
         if (resultSet != null) {
             while (resultSet.next()) {
-                result.add(unmarshallRole(resultSet, conn))
+                result.add(unmarshalRole(resultSet, conn))
             }
         }
 
@@ -138,7 +138,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         val resultSet = statement.executeQuery()
         if (resultSet != null) {
             if (resultSet.next()) {
-                result = unmarshallRole(resultSet, conn)
+                result = unmarshalRole(resultSet, conn)
             }
         }
 
@@ -146,7 +146,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         return result
     }
 
-    private fun unmarshallRole(hit: ResultSet, conn: Connection): Role {
+    private fun unmarshalRole(hit: ResultSet, conn: Connection): Role {
         val name = hit.getString(1)
         val active = hit.getInt(2) != 0
         val permissions = mutableListOf<String>()
@@ -253,7 +253,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         val resultSet = statement.executeQuery()
         if (resultSet != null) {
             if (resultSet.next()) {
-                result = unmarshallUser(resultSet, conn)
+                result = unmarshalUser(resultSet, conn)
             }
         }
 
@@ -272,7 +272,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         val resultSet = statement.executeQuery()
         if (resultSet != null) {
             if (resultSet.next()) {
-                result.add(unmarshallUser(resultSet, conn))
+                result.add(unmarshalUser(resultSet, conn))
             }
         }
 
@@ -282,7 +282,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         return result
     }
 
-    private fun unmarshallUser(hit: ResultSet, conn: Connection): User {
+    private fun unmarshalUser(hit: ResultSet, conn: Connection): User {
         val uuid = hit.getString("uuid")
 
         val contact: MutableList<ContactInfo> = mutableListOf<ContactInfo>()
@@ -295,7 +295,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         val conHits = contactStatement.executeQuery()
         if( conHits != null ){
             while( conHits.next() ){
-                contact.add( unmarshallContact(conHits) )
+                contact.add( unmarshalContact(conHits) )
             }
         }
         contactStatement.close()
@@ -334,7 +334,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         )
     }
 
-    private fun unmarshallContact( hit: ResultSet): ContactInfo {
+    private fun unmarshalContact( hit: ResultSet): ContactInfo {
         val primary = hit.getInt(4) != 0
         return ContactInfo(
                 hit.getString(1),

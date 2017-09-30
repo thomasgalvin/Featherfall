@@ -71,7 +71,7 @@ public class SQLiteAuditDbTest{
         final AuditDB audit = new SQLiteAuditDB(auditFile);
         final SystemInfo system = randomSystemInfo();
         audit.store(system);
-        audit.setCurrentSystemInfo( system.getUuid() );
+        audit.storeCurrentSystemInfo( system.getUuid() );
         final SystemInfo loaded = audit.retrieveCurrentSystemInfo();
         Assert.assertEquals( "Loaded current system info did not match expected", system, loaded );
     }

@@ -7,7 +7,7 @@ interface AuditDB{
     fun retrieveSystemInfo(uuid: String): SystemInfo?
 
     fun retrieveCurrentSystemInfo(): SystemInfo?
-    fun setCurrentSystemInfo(uuid: String)
+    fun storeCurrentSystemInfo(uuid: String)
 
     fun log( access: AccessInfo, console: Boolean = false )
     fun retrieveAccessInfo(startTimestamp: Long, endTimestamp: Long): List<AccessInfo>
