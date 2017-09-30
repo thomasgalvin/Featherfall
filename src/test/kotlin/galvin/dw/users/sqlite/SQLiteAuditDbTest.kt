@@ -1,4 +1,4 @@
-package galvin.dw.audit.sqlite
+package galvin.dw.users.sqlite
 
 import galvin.dw.*
 import galvin.dw.sqlite.SQLiteAuditDB
@@ -13,15 +13,16 @@ import galvin.dw.uuid
 class SQLiteAuditDbTest {
 
     @Test
-    @Throws(Exception::class)
     fun should_not_create_tables_twice() {
         val auditFile = randomAuditDbFile()
         val audit = SQLiteAuditDB(auditFile)
         val audit2 = SQLiteAuditDB(auditFile)
+
+        Assert.assertNotNull( "Audit database was null", audit )
+        Assert.assertNotNull( "Audit database was null", audit2 )
     }
 
     @Test
-    @Throws(Exception::class)
     fun should_retrieve_system_info_list() {
         val auditFile = randomAuditDbFile()
         val audit = SQLiteAuditDB(auditFile)
