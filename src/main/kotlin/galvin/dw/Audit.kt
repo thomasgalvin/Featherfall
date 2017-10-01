@@ -2,7 +2,7 @@ package galvin.dw
 
 
 interface AuditDB{
-    fun store( systemInfo: SystemInfo )
+    fun storeSystemInfo(systemInfo: SystemInfo )
     fun retrieveAllSystemInfo(): List<SystemInfo>
     fun retrieveSystemInfo(uuid: String): SystemInfo?
 

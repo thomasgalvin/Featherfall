@@ -1,6 +1,7 @@
 package galvin.dw.users.sqlite
 
 import galvin.dw.*
+import galvin.dw.sqlite.ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT
 import galvin.dw.sqlite.SQLiteAuditDB
 import org.junit.Assert
 import org.junit.Test
@@ -32,11 +33,11 @@ class SQLiteAuditDbTest {
         for (i in 0 until expectedCount) {
             val system = randomSystemInfo()
             map.put(system.uuid, system)
-            audit.store(system)
+            audit.storeSystemInfo(system)
         }
 
         val allSystemInfo = audit.retrieveAllSystemInfo()
-        Assert.assertEquals("Unexpected system info count", expectedCount.toLong(), allSystemInfo.size.toLong())
+        Assert.assertEquals("Unexpected system info count", expectedCount, allSystemInfo.size )
 
         for (loaded in allSystemInfo) {
             val expected = map[loaded.uuid]
@@ -45,7 +46,6 @@ class SQLiteAuditDbTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun should_retrieve_system_info_by_uuid() {
         val audit = randomAuditDB()
 
@@ -55,9 +55,8 @@ class SQLiteAuditDbTest {
         for (i in 0 until expectedCount) {
             val system = randomSystemInfo()
             map.put(system.uuid, system)
-            audit.store(system)
+            audit.storeSystemInfo(system)
         }
-
 
         for (key in map.keys) {
             val expected = map[key]
@@ -67,18 +66,59 @@ class SQLiteAuditDbTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun should_retrieve_current_system_info() {
         val audit = randomAuditDB()
         val system = randomSystemInfo()
-        audit.store(system)
+        audit.storeSystemInfo(system)
         audit.storeCurrentSystemInfo(system.uuid)
         val loaded = audit.retrieveCurrentSystemInfo()
         Assert.assertEquals("Loaded current system info did not match expected", system, loaded)
     }
 
     @Test
-    @Throws(Exception::class)
+    fun should_store_system_info_list_and_retrieve_current() {
+        val audit = randomAuditDB()
+
+        val map = HashMap<String, SystemInfo>()
+        val expectedCount = 11
+
+        val current = randomSystemInfo()
+        map.put(current.uuid, current)
+        audit.storeSystemInfo(current)
+        audit.storeCurrentSystemInfo(current.uuid)
+
+        for (i in 1..10) {
+            val system = randomSystemInfo()
+            map.put(system.uuid, system)
+            audit.storeSystemInfo(system)
+        }
+
+        val allSystemInfo = audit.retrieveAllSystemInfo()
+        Assert.assertEquals("Unexpected system info count", expectedCount, allSystemInfo.size )
+
+        for (loaded in allSystemInfo) {
+            val expected = map[loaded.uuid]
+            Assert.assertEquals("Loaded system info did not match expected", expected, loaded)
+        }
+
+        val loadedCurrent = audit.retrieveCurrentSystemInfo()
+        Assert.assertEquals("Loaded current system info did not match expected", current, loadedCurrent)
+
+    }
+
+    @Test
+    fun should_throw_when_current_system_info_uuid_not_present(){
+        val audit = randomAuditDB()
+        try{
+            audit.storeCurrentSystemInfo( uuid() )
+            throw Exception( "Audit DB should have thrown" )
+        }
+        catch( ex: Exception ){
+            Assert.assertEquals( "Unexpected error", ex.message, ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT )
+        }
+    }
+
+    @Test
     fun should_retrieve_access_info_by_dates() {
         val now = System.currentTimeMillis()
         val then = now - 10000
@@ -88,7 +128,7 @@ class SQLiteAuditDbTest {
         val audit = randomAuditDB()
 
         val system = randomSystemInfo()
-        audit.store(system)
+        audit.storeSystemInfo(system)
 
         val expectedEntries = generateAccessInfo(system, expectedCount, audit)
         val loadedEntries = audit.retrieveAccessInfo(then, later)
@@ -103,7 +143,6 @@ class SQLiteAuditDbTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun should_retrieve_access_info_by_dates_and_uuid() {
         val now = System.currentTimeMillis()
         val then = now - 10000
@@ -117,7 +156,7 @@ class SQLiteAuditDbTest {
 
         for (i in 0 until expectedCount) {
             val system = randomSystemInfo()
-            audit.store(system)
+            audit.storeSystemInfo(system)
             systems.add(system)
 
             val expectedEntries = generateAccessInfo(system, expectedCount, audit)
@@ -144,7 +183,6 @@ class SQLiteAuditDbTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun should_not_retrieve_access_info_by_dates_before() {
         val now = System.currentTimeMillis()
         val muchEarlier = now - 15000
@@ -154,7 +192,7 @@ class SQLiteAuditDbTest {
         val audit = randomAuditDB()
 
         val system = randomSystemInfo()
-        audit.store(system)
+        audit.storeSystemInfo(system)
 
         generateAccessInfo(system, expectedCount, audit)
         val loadedEntries = audit.retrieveAccessInfo(muchEarlier, earlier)
@@ -163,7 +201,6 @@ class SQLiteAuditDbTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun should_not_retrieve_access_info_by_dates_after() {
         val now = System.currentTimeMillis()
         val later = now + 10000
@@ -173,7 +210,7 @@ class SQLiteAuditDbTest {
         val audit = randomAuditDB()
 
         val system = randomSystemInfo()
-        audit.store(system)
+        audit.storeSystemInfo(system)
 
         generateAccessInfo(system, expectedCount, audit)
         val loadedEntries = audit.retrieveAccessInfo(later, muchLater)
@@ -182,7 +219,6 @@ class SQLiteAuditDbTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun should_not_retrieve_access_info_by_uuid() {
         val now = System.currentTimeMillis()
         val then = now - 10000

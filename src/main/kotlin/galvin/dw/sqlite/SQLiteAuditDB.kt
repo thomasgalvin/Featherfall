@@ -5,6 +5,8 @@ import java.io.File
 import java.sql.Connection
 import java.sql.ResultSet
 
+val ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT = "Audit Error: unable to store current system info: UUID did not match an existing system info"
+
 class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
 
@@ -30,6 +32,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     private val sqlDeleteCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/delete_current_system_info.sql")
     private val sqlSetCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/store_current_system_info.sql")
     private val sqlRetrieveCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/retrieve_current_system_info.sql")
+    private val sqlCurrentSystemInfoExistsByUuid = loadSql("/galvin/dw/db/sqlite/audit/current_system_info_exists_by_uuid.sql")
 
     init{
         runSql( conn(), sqlCreateTableSystemInfo )
@@ -41,7 +44,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         runSql( conn(), sqlCreateTableCurrentSystemInfo )
     }
 
-    override fun store(systemInfo: SystemInfo) {
+    override fun storeSystemInfo(systemInfo: SystemInfo) {
         synchronized(concurrencyLock) {
             val conn = conn();
             val statement = conn.prepareStatement(sqlStoreSystemInfo)
@@ -122,6 +125,13 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     override fun storeCurrentSystemInfo(uuid: String) {
         synchronized(concurrencyLock) {
             val conn = conn()
+
+            val existsStatement = conn.prepareStatement(sqlCurrentSystemInfoExistsByUuid)
+            existsStatement.setString(1, uuid)
+            val existsResult = existsStatement.executeQuery()
+            if( !existsResult.next() ){
+                throw Exception( ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT )
+            }
 
             val deleteStatement = conn.prepareStatement(sqlDeleteCurrentSystemInfo)
             executeAndClose( deleteStatement )

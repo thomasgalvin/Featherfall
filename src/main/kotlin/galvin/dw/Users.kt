@@ -35,7 +35,7 @@ data class User(
         val name: String, //full legal name, eg "John Smith"
         val displayName:  String,//on-screen nickname, eg "John" or "Tigerpunch2010"
         val sortName: String, //name in a sortable order, eg "Smith, John"
-        val prependToName: String?, // this is used to store stuff like "Mr." or "Dr."
+        val prependToName: String?, // this is used to storeSystemInfo stuff like "Mr." or "Dr."
         val appendToName: String?, // used for stuff like rank, eg "Major General of the Fell Armies of Nod"
 
         //smart card info
