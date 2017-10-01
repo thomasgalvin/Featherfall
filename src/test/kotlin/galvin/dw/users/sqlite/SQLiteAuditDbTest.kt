@@ -130,7 +130,7 @@ class SQLiteAuditDbTest {
         audit.storeSystemInfo(system)
 
         val expectedEntries = generateAccessInfo(system, expectedCount, audit)
-        val loadedEntries = audit.retrieveAccessInfo(then, later)
+        val loadedEntries = audit.retrieveAccessInfo(startTimestamp = then, endTimestamp = later)
 
         Assert.assertEquals("Unexpected system info count", expectedCount.toLong(), loadedEntries.size.toLong())
 
@@ -194,7 +194,7 @@ class SQLiteAuditDbTest {
         audit.storeSystemInfo(system)
 
         generateAccessInfo(system, expectedCount, audit)
-        val loadedEntries = audit.retrieveAccessInfo(muchEarlier, earlier)
+        val loadedEntries = audit.retrieveAccessInfo( startTimestamp = muchEarlier, endTimestamp = earlier)
 
         Assert.assertEquals("Unexpected system info count", 0, loadedEntries.size.toLong())
     }
@@ -212,7 +212,7 @@ class SQLiteAuditDbTest {
         audit.storeSystemInfo(system)
 
         generateAccessInfo(system, expectedCount, audit)
-        val loadedEntries = audit.retrieveAccessInfo(later, muchLater)
+        val loadedEntries = audit.retrieveAccessInfo(startTimestamp = later, endTimestamp = muchLater)
 
         Assert.assertEquals("Unexpected system info count", 0, loadedEntries.size.toLong())
     }
@@ -229,15 +229,13 @@ class SQLiteAuditDbTest {
         val system = randomSystemInfo()
         generateAccessInfo(system, expectedCount, audit)
 
-        val loadedEntries = audit.retrieveAccessInfo(then, later)
+        val loadedEntries = audit.retrieveAccessInfo( startTimestamp = then, endTimestamp = later)
         Assert.assertEquals("Unexpected system info count", expectedCount.toLong(), loadedEntries.size.toLong())
 
         val randomSystemUuid = uuid()
-        val nonExistentSystemEntries = audit.retrieveAccessInfo(randomSystemUuid, then, later)
+        val nonExistentSystemEntries = audit.retrieveAccessInfo(systemInfoUuid = randomSystemUuid, startTimestamp = then, endTimestamp = later)
         Assert.assertEquals("Unexpected system info count", 0, nonExistentSystemEntries.size.toLong())
     }
-
-
 
     ///
     /// Utility code

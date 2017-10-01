@@ -4,6 +4,7 @@ import galvin.dw.*
 import java.io.File
 import java.sql.Connection
 import java.sql.ResultSet
+import java.util.stream.Collectors
 
 class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
@@ -22,8 +23,6 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     private val sqlStoreAccessInfo = loadSql("/galvin/dw/db/sqlite/audit/store_access_info.sql")
     private val sqlStoreAccessInfoMod = loadSql("/galvin/dw/db/sqlite/audit/store_access_info_mod.sql")
 
-    private val sqlRetrieveAccessInfoByDates = loadSql("/galvin/dw/db/sqlite/audit/retrieve_access_info_by_dates.sql")
-    private val sqlRetrieveAccessInfoByDatesAndUuid = loadSql("/galvin/dw/db/sqlite/audit/retrieve_access_info_by_dates_and_uuid.sql")
     private val sqlRetrieveAccessInfoMods = loadSql("/galvin/dw/db/sqlite/audit/retrieve_access_info_mods.sql")
     
     private val sqlCreateTableCurrentSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/create_table_current_system_info.sql")
@@ -212,36 +211,83 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         executeAndClose( statement )
     }
 
-    override fun retrieveAccessInfo(startTimestamp: Long, endTimestamp: Long): List<AccessInfo> {
-        return doRetrieveAccessInfo(null, startTimestamp, endTimestamp)
-    }
+    override fun retrieveAccessInfo( systemInfoUuid: String?,
+                                     startTimestamp: Long?,
+                                     endTimestamp: Long?,
+                                     accessType: AccessType?,
+                                     permissionGranted: Boolean? ): List<AccessInfo> {
+        val sql = StringBuilder( "select * from AccessInfo" )
+        val criteria = mutableListOf<String>()
 
-    override fun retrieveAccessInfo(systemInfoUuid: String, startTimestamp: Long, endTimestamp: Long): List<AccessInfo> {
-        return doRetrieveAccessInfo(systemInfoUuid, startTimestamp, endTimestamp)
-    }
-
-    private fun doRetrieveAccessInfo(systemInfoUuid: String?, startTimestamp: Long, endTimestamp: Long): List<AccessInfo> {
-        val sql = if( isBlank(systemInfoUuid) ) sqlRetrieveAccessInfoByDates else sqlRetrieveAccessInfoByDatesAndUuid
-
-        val conn = conn()
-        val statement = conn.prepareStatement(sql)
-        val result = mutableListOf<AccessInfo>()
-
-        statement.setLong(1, startTimestamp)
-        statement.setLong(2, endTimestamp)
-        if( !isBlank(systemInfoUuid) ){
-            statement.setString(3, systemInfoUuid)
+        if( systemInfoUuid != null ){
+            criteria.add("systemInfoUuid = ?")
         }
 
+        if( startTimestamp != null ){
+            criteria.add("timestamp >= ?")
+        }
+
+        if( endTimestamp != null ){
+            criteria.add("timestamp <= ?")
+        }
+
+        if( accessType != null ){
+            criteria.add("accessType = ?")
+        }
+
+        if( permissionGranted != null ){
+            criteria.add("permissionGranted = ?")
+        }
+
+        if( !criteria.isEmpty() ){
+            sql.append(" where " )
+        }
+
+        sql.append( criteria.stream().collect( Collectors.joining( " and " ) ) )
+        val conn = conn()
+        val statement = conn.prepareStatement(sql.toString())
+
+        var index = 1
+
+        if( systemInfoUuid != null ){
+            statement.setString(index, systemInfoUuid)
+            index++
+        }
+
+        if( startTimestamp != null ){
+            statement.setLong(index, startTimestamp)
+            index++
+        }
+
+        if( endTimestamp != null ){
+            statement.setLong(index, endTimestamp)
+            index++
+        }
+
+        if( accessType != null ){
+            statement.setInt(index, accessType.ordinal)
+            index++
+        }
+
+        if( permissionGranted != null ){
+            statement.setInt( index, if(permissionGranted) 1 else 0 )
+            index++
+        }
+
+        if( !criteria.isEmpty() ){
+            sql.append(" where " )
+        }
+
+        val result = mutableListOf<AccessInfo>()
+
         val resultSet = statement.executeQuery()
-        if(resultSet != null){
-            while( resultSet.next() ){
-                result.add( unmarshalAccessInfo(resultSet, conn) )
-            }
+        while( resultSet.next() ){
+            result.add( unmarshalAccessInfo(resultSet, conn) )
         }
 
         close(conn, statement)
         return result
+
     }
 
     private fun unmarshalAccessInfo(hit: ResultSet, conn: Connection): AccessInfo {
@@ -267,17 +313,17 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         }
 
         return AccessInfo(
-                hit.getString(1),
+                hit.getString("userUuid"),
                 loginType,
-                hit.getString(3),
-                hit.getLong(4),
-                hit.getString(5),
-                hit.getString(6),
-                hit.getString(7),
-                hit.getString(8),
+                hit.getString("loginProxyUuid"),
+                hit.getLong("timestamp"),
+                hit.getString("resourceUuid"),
+                hit.getString("resourceName"),
+                hit.getString("classification"),
+                hit.getString("resourceType"),
                 accessType,
                 permissionGranted,
-                hit.getString(11),
+                hit.getString("systemInfoUuid"),
                 mods,
                 uuid
         )

@@ -10,8 +10,11 @@ interface AuditDB{
     fun storeCurrentSystemInfo(uuid: String)
 
     fun log( access: AccessInfo, console: Boolean = false )
-    fun retrieveAccessInfo(startTimestamp: Long, endTimestamp: Long): List<AccessInfo>
-    fun retrieveAccessInfo(systemInfoUuid: String, startTimestamp: Long, endTimestamp: Long): List<AccessInfo>
+    fun retrieveAccessInfo( systemInfoUuid: String? = null,
+                            startTimestamp: Long? = null,
+                            endTimestamp: Long? = null,
+                            accessType: AccessType? = null,
+                            permissionGranted: Boolean? = null ): List<AccessInfo>
 }
 
 data class SystemInfo( val serialNumber: String,
