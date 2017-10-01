@@ -55,13 +55,12 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
             statement.setString(4, systemInfo.maximumClassification)
             statement.setString(5, systemInfo.classificationGuide)
             statement.setString(6, systemInfo.uuid)
-            executeAndClose( statement )
 
             for ((ordinal, network) in systemInfo.networks.withIndex()) {
                 storeNetwork(conn, systemInfo.uuid, network, ordinal)
             }
 
-            commitAndClose( conn )
+            executeAndClose( statement, conn )
         }
     }
 
@@ -130,6 +129,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
             existsStatement.setString(1, uuid)
             val existsResult = existsStatement.executeQuery()
             if( !existsResult.next() ){
+                conn.close()
                 throw Exception( ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT )
             }
 
