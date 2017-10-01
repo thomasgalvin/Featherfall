@@ -1,7 +1,6 @@
 package galvin.dw.users.sqlite
 
 import galvin.dw.*
-import galvin.dw.sqlite.ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT
 import galvin.dw.sqlite.SQLiteAuditDB
 import org.junit.Assert
 import org.junit.Test

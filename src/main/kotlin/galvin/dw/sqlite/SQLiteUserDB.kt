@@ -29,6 +29,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     private val sqlStoreUserContactInfo = loadSql("/galvin/dw/db/sqlite/users/store_user_contact_info.sql")
     private val sqlStoreUserRole = loadSql("/galvin/dw/db/sqlite/users/store_user_roles.sql")
 
+    private val sqlUserExistsByUuid = loadSql("/galvin/dw/db/sqlite/users/user_exists_by_uuid.sql")
     private val sqlRetrieveUserByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_uuid.sql")
     private val sqlRetrieveAllUsers = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_users.sql")
     private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
@@ -342,5 +343,15 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
                 hit.getString(3),
                 primary
         )
+    }
+
+    override fun userExists(uuid: String): Boolean{
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlUserExistsByUuid)
+        statement.setString(1, uuid)
+        val resultSet = statement.executeQuery()
+        val exists = resultSet.next()
+        close(conn, statement)
+        return exists
     }
 }

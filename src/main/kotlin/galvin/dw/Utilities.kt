@@ -61,7 +61,7 @@ fun commitAndClose(conn: Connection){
     conn.close()
 }
 
-fun close(conn: Connection, statement: PreparedStatement){
+fun close( conn: Connection, statement: PreparedStatement){
     statement.close()
     conn.close()
 }

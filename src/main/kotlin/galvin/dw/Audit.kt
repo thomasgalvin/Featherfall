@@ -64,3 +64,5 @@ enum class AccessType {
 
     ASSERT_PERMISSION
 }
+
+val ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT = "Audit Error: unable to store current system info: UUID did not match an existing system info"

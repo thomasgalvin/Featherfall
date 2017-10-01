@@ -12,6 +12,7 @@ interface UserDB {
     fun storeUser(user: User, uuid: String? = null)
     fun retrieveUser(uuid: String): User?
     fun retrieveUsers(): List<User>
+    fun userExists(uuid: String): Boolean
 }
 
 interface AccountRequestDB {

@@ -5,8 +5,6 @@ import java.io.File
 import java.sql.Connection
 import java.sql.ResultSet
 
-val ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT = "Audit Error: unable to store current system info: UUID did not match an existing system info"
-
 class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
 

@@ -53,9 +53,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             statement.setString(11, request.rejectedReason)
             statement.setString(12, request.uuid)
 
-            statement.executeUpdate()
-            conn.commit()
-            conn.close()
+            executeAndClose(statement, conn)
         }
     }
 
@@ -73,9 +71,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             }
         }
 
-        statement.close()
-        conn.close()
-
+        close( conn, statement )
         return result
     }
 
@@ -109,9 +105,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             }
         }
 
-        statement.close()
-        conn.close()
-
+        close( conn, statement )
         return result
     }
 
@@ -136,11 +130,7 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             statement.setLong(2, timestamp)
             statement.setString(3, uuid)
 
-            statement.executeUpdate()
-            statement.close()
-
-            conn.commit()
-            conn.close()
+            executeAndClose(statement, conn)
         }
     }
 
@@ -166,17 +156,12 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             statement.setString(3, reason)
             statement.setString(4, uuid)
 
-            statement.executeUpdate()
-            statement.close()
-
-            conn.commit()
-            conn.close()
+            executeAndClose(statement, conn)
         }
     }
 
     private fun verifyNoUserExists( uuid: String ){
-        val user = userDB.retrieveUser(uuid)
-        if( user != null ){
+        if( userDB.userExists(uuid) ){
             throw Exception( ERROR_USER_WITH_THIS_UUID_ALREADY_EXISTS )
         }
     }
