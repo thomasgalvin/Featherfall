@@ -56,22 +56,18 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
 
             val deletePermissionsStatement = conn.prepareStatement(sqlDeleteRolePermissions)
             deletePermissionsStatement.setString(1, role.name)
-            deletePermissionsStatement.executeUpdate()
-            deletePermissionsStatement.close()
+            executeAndClose(deletePermissionsStatement)
 
             val deleteRoleStatement = conn.prepareStatement(sqlDeleteRole)
             deleteRoleStatement.setString(1, role.name)
-            deleteRoleStatement.executeUpdate()
-            deleteRoleStatement.close()
-
-            val statement = conn.prepareStatement(sqlStoreRole)
+            executeAndClose(deleteRoleStatement)
 
             val active = if(role.active) 1 else 0
+
+            val statement = conn.prepareStatement(sqlStoreRole)
             statement.setString(1, role.name)
             statement.setInt(2, active)
-
-            statement.executeUpdate()
-            statement.close()
+            executeAndClose(statement)
 
             for( (ordinal,permission) in role.permissions.withIndex() ){
                 val permStatement = conn.prepareStatement(sqlStoreRolePermission)
@@ -79,12 +75,10 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
                 permStatement.setString(2, permission)
                 permStatement.setInt(3, ordinal)
 
-                permStatement.executeUpdate()
-                permStatement.close()
+                executeAndClose(permStatement)
             }
 
-            conn.commit()
-            conn.close()
+            commitAndClose(conn)
         }
     }
 
@@ -105,11 +99,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
             statement.setInt(1, value)
             statement.setString(2, roleName)
 
-            statement.executeUpdate()
-            statement.close()
-
-            conn.commit()
-            conn.close()
+            executeAndClose(statement, conn)
         }
     }
 
@@ -179,19 +169,16 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
 
             val delContactStatement = conn.prepareStatement(sqlDeleteContactInfoForUser)
             delContactStatement.setString(1, theUuid)
-            delContactStatement.executeUpdate()
-            delContactStatement.close()
+            executeAndClose(delContactStatement)
 
             val delRolesStatement = conn.prepareStatement(sqlDeleteRolesForUser)
             delRolesStatement.setString(1, theUuid)
-            delRolesStatement.executeUpdate()
-            delRolesStatement.close()
-
-            val statement = conn.prepareStatement(sqlStoreUser)
+            executeAndClose(delRolesStatement)
 
             val active = if (user.active) 1 else 0
             val locked = if (user.locked) 1 else 0
 
+            val statement = conn.prepareStatement(sqlStoreUser)
             statement.setString(1, user.login)
             statement.setString(2, user.passwordHash)
             statement.setString(3, user.name)
@@ -211,10 +198,9 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
             statement.setInt(17, locked)
             statement.setString(18, theUuid)
 
-            statement.executeUpdate()
-            statement.close()
+            executeAndClose(statement)
 
-            for ((ordinal, contact) in user.contact.withIndex()) {
+            for( (ordinal, contact) in user.contact.withIndex() ) {
                 val isPrimary = if (contact.primary) 1 else 0
 
                 val contactStatement = conn.prepareStatement(sqlStoreUserContactInfo)
@@ -225,8 +211,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
                 contactStatement.setString(5, theUuid)
                 contactStatement.setInt(6, ordinal)
 
-                contactStatement.executeUpdate()
-                contactStatement.close()
+                executeAndClose(contactStatement)
             }
 
             for ((ordinal, role) in user.roles.withIndex()) {
@@ -235,12 +220,10 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
                 roleStatement.setString(2, theUuid)
                 roleStatement.setInt(3, ordinal)
 
-                roleStatement.executeUpdate()
-                roleStatement.close()
+                executeAndClose(roleStatement)
             }
 
-            conn.commit()
-            conn.close()
+            commitAndClose(conn)
         }
     }
 
@@ -258,9 +241,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
             }
         }
 
-        statement.close()
-        conn.close()
-
+        close(conn, statement)
         return result
     }
 
@@ -277,9 +258,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
             }
         }
 
-        statement.close()
-        conn.close()
-
+        close(conn, statement)
         return result
     }
 
