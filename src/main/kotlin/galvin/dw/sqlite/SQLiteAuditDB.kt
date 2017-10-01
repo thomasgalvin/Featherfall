@@ -305,9 +305,9 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         if( modHits != null){
             while( modHits.next() ){
                 mods.add( Modification(
-                        modHits.getString(1),
-                        modHits.getString(2),
-                        modHits.getString(3)
+                        modHits.getString("field"),
+                        modHits.getString("oldValue"),
+                        modHits.getString("newValue")
                 ))
             }
         }
