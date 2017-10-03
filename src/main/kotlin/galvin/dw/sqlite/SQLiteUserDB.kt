@@ -164,6 +164,27 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         return Role(name, permissions, active)
     }
 
+    override fun retrievePermissions( roleNames: List<String>): List<String>{
+        val result = mutableListOf<String>()
+
+        for( roleName in roleNames ){
+            if( roleName != null ) {
+                val role = retrieveRole(roleName)
+                if( role != null ){
+                    for( permission in role.permissions ){
+                        if( permission != null ){
+                            if( !result.contains(permission) ){
+                                result.add(permission)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return result
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Users

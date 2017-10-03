@@ -14,6 +14,8 @@ interface UserDB {
     fun listRoles(): List<Role>
     fun retrieveRole(name: String): Role?
 
+    fun retrievePermissions( roleNames: List<String>): List<String>
+
     //users
     fun storeUser(user: User, uuid: String? = null)
     fun retrieveUsers(): List<User>
