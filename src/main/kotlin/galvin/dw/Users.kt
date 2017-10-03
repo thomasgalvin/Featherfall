@@ -1,5 +1,11 @@
 package galvin.dw
 
+const val ERROR_PASSWORD_MISMATCH = "Account Request error: password mismatch"
+const val ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID = "Account Request error: no account request with that UUID"
+const val ERROR_USER_WITH_THIS_UUID_ALREADY_EXISTS = "Account Request error: user with this UUID already exists"
+const val ERROR_NO_USER_WITH_THIS_UUID_EXISTS = "Account Request error: no user with this UUID exists"
+const val ERROR_ALREADY_APPROVED = "Account Request error: this request was previously approved"
+
 interface UserDB {
     //roles
     fun storeRole(role: Role)
@@ -11,6 +17,7 @@ interface UserDB {
     //users
     fun storeUser(user: User, uuid: String? = null)
     fun retrieveUser(uuid: String): User?
+    fun retrieveUserBySerialNumber(serialNumber: String): User?
     fun retrieveUsers(): List<User>
     fun userExists(uuid: String): Boolean
 }
@@ -85,10 +92,3 @@ data class ContactInfo( val type: String, //eg "Phone", "Email", or "Mattermost"
                         val contact: String, //eg spam@devnull.com or 555.555.5555
                         val primary: Boolean //flags this as the best way to contact the user for the given type
 )
-
-
-val ERROR_PASSWORD_MISMATCH = "Account Request error: password mismatch"
-val ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID = "Account Request error: no account request with that UUID"
-val ERROR_USER_WITH_THIS_UUID_ALREADY_EXISTS = "Account Request error: user with this UUID already exists"
-val ERROR_NO_USER_WITH_THIS_UUID_EXISTS = "Account Request error: no user with this UUID exists"
-val ERROR_ALREADY_APPROVED = "Account Request error: this request was previously approved"

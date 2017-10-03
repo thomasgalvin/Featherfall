@@ -31,6 +31,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
 
     private val sqlUserExistsByUuid = loadSql("/galvin/dw/db/sqlite/users/user_exists_by_uuid.sql")
     private val sqlRetrieveUserByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_uuid.sql")
+    private val sqlRetrieveUserBySerialNumber = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_serial_number.sql")
     private val sqlRetrieveAllUsers = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_users.sql")
     private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
     private val sqlRetrieveRolesForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_roles_for_user.sql")
@@ -228,11 +229,19 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     }
 
     override fun retrieveUser(uuid: String): User?{
+        return retrieveUserBy(sqlRetrieveUserByUuid, uuid)
+    }
+
+    override fun retrieveUserBySerialNumber(serialNumber: String): User? {
+        return retrieveUserBy(sqlRetrieveUserBySerialNumber, serialNumber)
+    }
+
+    private fun retrieveUserBy(sql: String, value: String): User? {
         var result: User? = null
 
         val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveUserByUuid)
-        statement.setString(1, uuid)
+        val statement = conn.prepareStatement(sql)
+        statement.setString(1, value)
 
         val resultSet = statement.executeQuery()
         if (resultSet != null) {

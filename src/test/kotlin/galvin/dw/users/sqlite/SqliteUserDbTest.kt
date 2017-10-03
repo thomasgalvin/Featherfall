@@ -141,6 +141,35 @@ class SqliteUserDbTest {
     }
 
     @Test
+    fun should_store_and_retrieve_all_users_by_serial_number(){
+        val userdb = userDB()
+        val roles = generateRoles(userdb = userdb)
+        val expectedCount = 10
+
+        val map = mutableMapOf<String, User>()
+        for( i in 1..expectedCount ){
+            val user = generateUser(roles)
+            userdb.storeUser(user)
+            val serial = user.serialNumber
+            if( serial != null ){
+                map.put(serial, user)
+            }
+        }
+
+        for( key in map.keys ){
+            val expected = map[key]
+            val loaded = userdb.retrieveUserBySerialNumber(key)
+            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
+        }
+
+        val loadedUsers = userdb.retrieveUsers()
+        for( loaded in loadedUsers ){
+            val expected = map[loaded.serialNumber]
+            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
+        }
+    }
+
+    @Test
     fun should_store_and_retrieve_all_users(){
         val userdb = userDB()
         val roles = generateRoles(userdb = userdb)

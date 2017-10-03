@@ -4,6 +4,7 @@ import java.io.IOException
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.*
+import java.security.cert.X509Certificate
 
 class Utilities{}
 
@@ -66,3 +67,13 @@ fun close( conn: Connection, statement: PreparedStatement){
     conn.close()
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+/// X509 Certificate utility code
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+fun getSerialNumber(x509Certificate: X509Certificate): String {
+    return x509Certificate.serialNumber.toString(16)
+
+}
