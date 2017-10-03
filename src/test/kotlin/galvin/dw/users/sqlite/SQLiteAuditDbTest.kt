@@ -11,8 +11,6 @@ import java.util.*
 import galvin.dw.uuid
 
 class SQLiteAuditDbTest {
-    val console = false
-
     @Test
     fun should_not_create_tables_twice() {
         val audit = randomAuditDB()
@@ -275,7 +273,7 @@ class SQLiteAuditDbTest {
 
         for (i in 0 until expectedCount) {
             val info = randomAccessInfo(system.uuid)
-            audit.log(info, console)
+            audit.log(info)
             result.add(info)
 
             Thread.sleep(1)

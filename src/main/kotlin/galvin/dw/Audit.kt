@@ -13,7 +13,7 @@ interface AuditDB{
     fun retrieveCurrentSystemInfoUuid(): String
 
 
-    fun log( access: AccessInfo, console: Boolean = false )
+    fun log( access: AccessInfo )
     fun retrieveAccessInfo( systemInfoUuid: String? = null,
                             startTimestamp: Long? = null,
                             endTimestamp: Long? = null,

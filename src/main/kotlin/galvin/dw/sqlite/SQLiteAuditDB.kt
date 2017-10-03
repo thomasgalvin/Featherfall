@@ -6,7 +6,8 @@ import java.sql.Connection
 import java.sql.ResultSet
 import java.util.stream.Collectors
 
-class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
+class SQLiteAuditDB( databaseFile: File,
+                     private val console: Boolean = false) : AuditDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
 
     private val sqlCreateTableSystemInfo = loadSql("/galvin/dw/db/sqlite/audit/create_table_system_info.sql")
@@ -175,7 +176,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         return result
     }
 
-    override fun log(access: AccessInfo, console: Boolean) {
+    override fun log(access: AccessInfo) {
         synchronized(concurrencyLock) {
             val conn = conn()
             val statement = conn.prepareStatement(sqlStoreAccessInfo)

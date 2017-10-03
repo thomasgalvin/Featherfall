@@ -100,7 +100,7 @@ class LoginManager(private val userDB: UserDB,
         }
 
         if( auditDB != null ){
-            val accessInfo = generateAccessInfo(null, loginType, credentials, userUuid, credentials.username, false )
+            val accessInfo = generateAccessInfo("", loginType, credentials, userUuid, credentials.username, false )
             auditDB.log(accessInfo)
         }
     }
@@ -117,12 +117,12 @@ class LoginManager(private val userDB: UserDB,
         }
 
         if( auditDB != null ){
-            val accessInfo = generateAccessInfo(user, loginType, credentials, user.uuid, user.login, true )
+            val accessInfo = generateAccessInfo(user.uuid, loginType, credentials, user.uuid, user.login, true )
             auditDB.log(accessInfo)
         }
     }
 
-    private fun generateAccessInfo( user: User?,
+    private fun generateAccessInfo( actingUserUuid: String,
                                     loginType: LoginType,
                                     credentials: Credentials,
                                     targetUuid: String,
@@ -133,7 +133,6 @@ class LoginManager(private val userDB: UserDB,
         // we can get this info from the user object itselfm,
         // but if the login failed there is no user UUID available,
         // se we write an empty string instead
-        val actingUserUuid = if(user==null) "" else user.uuid
 
         return AccessInfo(
                 userUuid = actingUserUuid,
