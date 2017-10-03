@@ -32,9 +32,16 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     private val sqlUserExistsByUuid = loadSql("/galvin/dw/db/sqlite/users/user_exists_by_uuid.sql")
     private val sqlRetrieveUserByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_uuid.sql")
     private val sqlRetrieveUserBySerialNumber = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_serial_number.sql")
+    private val sqlRetrieveUserByLogin= loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_login.sql")
     private val sqlRetrieveAllUsers = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_users.sql")
     private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
     private val sqlRetrieveRolesForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_roles_for_user.sql")
+
+    private val sqlSetLockedByUuid = loadSql("/galvin/dw/db/sqlite/users/set_locked_by_uuid.sql")
+    private val sqlSetLockedByLogin = loadSql("/galvin/dw/db/sqlite/users/set_locked_by_login.sql")
+
+    private val sqlIsLockedByUuid = loadSql("/galvin/dw/db/sqlite/users/is_locked_by_uuid.sql")
+    private val sqlIsLockedByLogin = loadSql("/galvin/dw/db/sqlite/users/is_locked_by_login.sql")
 
     private val sqlDeleteContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/delete_contact_info_for_user.sql")
     private val sqlDeleteRolesForUser = loadSql("/galvin/dw/db/sqlite/users/delete_roles_for_user.sql")
@@ -228,12 +235,44 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         }
     }
 
+    override fun retrieveUsers(): List<User>{
+        val result = mutableListOf<User>()
+
+        val conn = conn()
+        val statement = conn.prepareStatement(sqlRetrieveAllUsers)
+
+        val resultSet = statement.executeQuery()
+        if (resultSet != null) {
+            if (resultSet.next()) {
+                result.add(unmarshalUser(resultSet, conn))
+            }
+        }
+
+        close(conn, statement)
+        return result
+    }
+
     override fun retrieveUser(uuid: String): User?{
         return retrieveUserBy(sqlRetrieveUserByUuid, uuid)
     }
 
     override fun retrieveUserBySerialNumber(serialNumber: String): User? {
         return retrieveUserBy(sqlRetrieveUserBySerialNumber, serialNumber)
+    }
+
+    override fun retrieveUserByLogin(login: String): User?{
+        return retrieveUserBy(sqlRetrieveUserByLogin, login)
+    }
+
+    override fun retrieveUserByLoginAndPassword(login: String, password: String): User?{
+        val user = retrieveUserByLogin(login)
+        if( user != null ){
+            if( !validate(user.passwordHash, password) ){
+                return null
+            }
+        }
+
+        return user
     }
 
     private fun retrieveUserBy(sql: String, value: String): User? {
@@ -247,23 +286,6 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         if (resultSet != null) {
             if (resultSet.next()) {
                 result = unmarshalUser(resultSet, conn)
-            }
-        }
-
-        close(conn, statement)
-        return result
-    }
-
-    override fun retrieveUsers(): List<User>{
-        val result = mutableListOf<User>()
-
-        val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveAllUsers)
-
-        val resultSet = statement.executeQuery()
-        if (resultSet != null) {
-            if (resultSet.next()) {
-                result.add(unmarshalUser(resultSet, conn))
             }
         }
 
@@ -341,5 +363,51 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         val exists = resultSet.next()
         close(conn, statement)
         return exists
+    }
+
+    override fun setLocked( uuid: String, locked: Boolean ){
+        setLockedBy(sqlSetLockedByUuid, uuid, locked)
+    }
+
+    override fun setLockedByLogin( login: String, locked: Boolean ){
+        setLockedBy(sqlSetLockedByLogin, login, locked)
+    }
+
+    private fun setLockedBy(sql: String, key: String, locked: Boolean){
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            val statement = conn.prepareStatement(sql)
+            val lockedValue = if(locked) 1 else 0
+            statement.setInt(1, lockedValue)
+            statement.setString(2, key)
+            executeAndClose(statement, conn)
+        }
+    }
+
+    override fun isLocked( uuid: String ): Boolean{
+        return isLockedBy( sqlIsLockedByUuid, uuid )
+    }
+
+    override fun isLockedByLogin( login: String ): Boolean{
+        return isLockedBy( sqlIsLockedByLogin, login )
+    }
+
+    private fun isLockedBy( sql: String, key: String): Boolean{
+        var result = false
+
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            val statement = conn.prepareStatement(sql)
+            statement.setString(1, key)
+            val results = statement.executeQuery()
+            if( results.next() ){
+                val locked = results.getInt("locked")
+                result = locked != 0
+            }
+
+            close(conn, statement)
+        }
+
+        return result
     }
 }

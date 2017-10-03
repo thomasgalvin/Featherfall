@@ -271,7 +271,6 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
 
         if( permissionGranted != null ){
             statement.setInt( index, if(permissionGranted) 1 else 0 )
-            index++
         }
 
         if( !criteria.isEmpty() ){

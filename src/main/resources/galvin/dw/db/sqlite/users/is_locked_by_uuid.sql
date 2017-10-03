@@ -1,0 +1,1 @@
+select locked from Users where uuid = ?

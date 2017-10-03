@@ -16,10 +16,19 @@ interface UserDB {
 
     //users
     fun storeUser(user: User, uuid: String? = null)
+    fun retrieveUsers(): List<User>
     fun retrieveUser(uuid: String): User?
     fun retrieveUserBySerialNumber(serialNumber: String): User?
-    fun retrieveUsers(): List<User>
+    fun retrieveUserByLogin(login: String): User?
+    fun retrieveUserByLoginAndPassword(login: String, password: String): User?
+
     fun userExists(uuid: String): Boolean
+
+    fun setLocked( uuid: String, locked: Boolean )
+    fun setLockedByLogin( login: String, locked: Boolean )
+
+    fun isLocked( uuid: String ): Boolean
+    fun isLockedByLogin( login: String ): Boolean
 }
 
 interface AccountRequestDB {

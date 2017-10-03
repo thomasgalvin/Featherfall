@@ -170,6 +170,35 @@ class SqliteUserDbTest {
     }
 
     @Test
+    fun should_store_and_retrieve_all_users_by_login(){
+        val userdb = userDB()
+        val roles = generateRoles(userdb = userdb)
+        val expectedCount = 10
+
+        val map = mutableMapOf<String, User>()
+        for( i in 1..expectedCount ){
+            val user = generateUser(roles)
+            userdb.storeUser(user)
+            val login = user.login
+            if( login != null ){
+                map.put(login, user)
+            }
+        }
+
+        for( key in map.keys ){
+            val expected = map[key]
+            val loaded = userdb.retrieveUserByLogin(key)
+            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
+        }
+
+        val loadedUsers = userdb.retrieveUsers()
+        for( loaded in loadedUsers ){
+            val expected = map[loaded.login]
+            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
+        }
+    }
+
+    @Test
     fun should_store_and_retrieve_all_users(){
         val userdb = userDB()
         val roles = generateRoles(userdb = userdb)
@@ -246,6 +275,94 @@ class SqliteUserDbTest {
         for( user in users ){
             val loaded = userdb.retrieveUser(user.uuid)
             Assert.assertNotEquals("Loaded user should have been modified", user, loaded)
+        }
+    }
+
+    @Test
+    fun should_lock_and_unlock_user_by_uuid(){
+        val userDB = userDB()
+        val roles = generateRoles(userdb = userDB)
+
+        val toBeLocked = generateUser(roles)
+        val neverLocked = generateUser(roles)
+
+        userDB.storeUser(toBeLocked)
+        userDB.storeUser(neverLocked)
+
+        Assert.assertFalse( "Account should not have been locked", toBeLocked.locked )
+        Assert.assertFalse( "Account should not have been locked", neverLocked.locked )
+
+        Assert.assertFalse( "Account should not have been locked", userDB.isLocked( toBeLocked.uuid) )
+        Assert.assertFalse( "Account should not have been locked", userDB.isLocked( neverLocked.uuid) )
+
+        userDB.setLocked( toBeLocked.uuid, true)
+
+        Assert.assertTrue( "Account should have been locked", userDB.isLocked( toBeLocked.uuid) )
+        Assert.assertFalse( "Account should not have been locked", userDB.isLocked( neverLocked.uuid) )
+
+        val shouldBeLocked = userDB.retrieveUser(toBeLocked.uuid)
+        if( shouldBeLocked == null ){
+            throw Exception( "Loaded account was null" )
+        }
+        else {
+            Assert.assertTrue("Account should have been locked", shouldBeLocked.locked)
+        }
+
+        userDB.setLocked( toBeLocked.uuid, false)
+
+        Assert.assertFalse( "Account should not have been locked", userDB.isLocked( toBeLocked.uuid) )
+        Assert.assertFalse( "Account should not have been locked", userDB.isLocked( neverLocked.uuid) )
+
+        val shouldBeUnlocked = userDB.retrieveUser(toBeLocked.uuid)
+        if( shouldBeUnlocked == null ){
+            throw Exception( "Loaded account was null" )
+        }
+        else {
+            Assert.assertFalse( "Account should not have been locked", shouldBeUnlocked.locked)
+        }
+    }
+
+    @Test
+    fun should_lock_and_unlock_user_by_login(){
+        val userDB = userDB()
+        val roles = generateRoles(userdb = userDB)
+
+        val toBeLocked = generateUser(roles)
+        val neverLocked = generateUser(roles)
+
+        userDB.storeUser(toBeLocked)
+        userDB.storeUser(neverLocked)
+
+        Assert.assertFalse( "Account should not have been locked", toBeLocked.locked )
+        Assert.assertFalse( "Account should not have been locked", neverLocked.locked )
+
+        Assert.assertFalse( "Account should not have been locked", userDB.isLocked( toBeLocked.login) )
+        Assert.assertFalse( "Account should not have been locked", userDB.isLocked( neverLocked.login) )
+
+        userDB.setLockedByLogin( toBeLocked.login, true)
+
+        Assert.assertTrue( "Account should have been locked", userDB.isLockedByLogin( toBeLocked.login) )
+        Assert.assertFalse( "Account should not have been locked", userDB.isLockedByLogin( neverLocked.login) )
+
+        val shouldBeLocked = userDB.retrieveUserByLogin(toBeLocked.login)
+        if( shouldBeLocked == null ){
+            throw Exception( "Loaded account was null" )
+        }
+        else {
+            Assert.assertTrue("Account should have been locked", shouldBeLocked.locked)
+        }
+
+        userDB.setLockedByLogin( toBeLocked.login, false)
+
+        Assert.assertFalse( "Account should not have been locked", userDB.isLockedByLogin( toBeLocked.login) )
+        Assert.assertFalse( "Account should not have been locked", userDB.isLockedByLogin( neverLocked.login) )
+
+        val shouldBeUnlocked = userDB.retrieveUserByLogin(toBeLocked.login)
+        if( shouldBeUnlocked == null ){
+            throw Exception( "Loaded account was null" )
+        }
+        else {
+            Assert.assertFalse( "Account should not have been locked", shouldBeUnlocked.locked)
         }
     }
 }

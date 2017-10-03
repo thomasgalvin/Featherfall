@@ -5,6 +5,7 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.*
 import java.security.cert.X509Certificate
+import org.mindrot.jbcrypt.BCrypt;
 
 class Utilities{}
 
@@ -66,6 +67,24 @@ fun close( conn: Connection, statement: PreparedStatement){
     statement.close()
     conn.close()
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+/// Password hashing utility code
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+fun validate( password: String?, hash: String ): Boolean{
+    if( password == null || isBlank(password) ){
+        return false
+    }
+    return BCrypt.checkpw( password, hash )
+}
+
+fun hash( password: String): String{
+    return BCrypt.hashpw( password, BCrypt.gensalt() )
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
