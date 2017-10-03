@@ -36,9 +36,8 @@ class LoginManager(private val userDB: UserDB,
 
 
     fun authenticate( credentials: Credentials ): LoginToken{
-        val ipAddress = credentials.ipAddress
-        if( ipAddress != null && !isBlank( ipAddress ) ){
-            if( loginAttemptsByIpAddress.maxFailedLoginAttemptsExceeded(ipAddress) ){
+        if( !isBlank( credentials.ipAddress ) ){
+            if( loginAttemptsByIpAddress.maxFailedLoginAttemptsExceeded( credentials.ipAddress ) ){
                 throw LoginException(LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED)
             }
         }
@@ -50,11 +49,10 @@ class LoginManager(private val userDB: UserDB,
             val serialNumber = getSerialNumber( credentials.x509)
             user = userDB.retrieveUserBySerialNumber(serialNumber)
         }
-        else if( credentials.x509SerialNumber != null && !isBlank(credentials.x509SerialNumber ) ){
+        else if( isBlank(credentials.x509SerialNumber ) ){
             user = userDB.retrieveUserBySerialNumber(credentials.x509SerialNumber)
         }
-        else if( credentials.username != null && !isBlank(credentials.username) &&
-                 credentials.password!= null && !isBlank(credentials.password) ){
+        else if( !isBlank(credentials.username) && !isBlank(credentials.password) ){
             user = userDB.retrieveUserByLoginAndPassword(credentials.username, credentials.password)
         }
         else{
@@ -80,32 +78,28 @@ class LoginManager(private val userDB: UserDB,
     }
 
     private fun badLoginAttempt( credentials: Credentials ){
-        val username = credentials.username
-        if( username != null && !isBlank(username) ){
-            loginAttemptsByLogin.incrementLoginAttempts( username)
+        if( !isBlank( credentials.username ) ){
+            loginAttemptsByLogin.incrementLoginAttempts( credentials.username )
 
-            if( loginAttemptsByLogin.maxFailedLoginAttemptsExceeded(username) ){
-                userDB.setLockedByLogin(username, true)
+            if( loginAttemptsByLogin.maxFailedLoginAttemptsExceeded( credentials.username ) ){
+                userDB.setLockedByLogin( credentials.username, true )
             }
         }
 
-        val ipAddress = credentials.ipAddress
-        if( ipAddress != null && !isBlank( ipAddress ) ){
-            loginAttemptsByIpAddress.incrementLoginAttempts( ipAddress )
+        if( !isBlank( credentials.ipAddress ) ){
+            loginAttemptsByIpAddress.incrementLoginAttempts( credentials.ipAddress )
         }
 
         if( auditDB != null ){}
     }
 
     private fun successfulLoginAttempt( credentials: Credentials, user: User ){
-        val username = credentials.username
-        if( username != null && !isBlank(username) ){
-            loginAttemptsByLogin.clearLoginAttempts( username )
+        if( isBlank( credentials.username ) ){
+            loginAttemptsByLogin.clearLoginAttempts( credentials.username )
         }
 
-        val ipAddress = credentials.ipAddress
-        if( ipAddress != null && !isBlank( ipAddress ) ){
-            loginAttemptsByIpAddress.clearLoginAttempts(ipAddress)
+        if( !isBlank( credentials.ipAddress ) ){
+            loginAttemptsByIpAddress.clearLoginAttempts(credentials.ipAddress)
         }
     }
 }
@@ -135,13 +129,13 @@ class LoginAttemptCounter(val maxFailedLoginAttempts: Int){
     }
 }
 
-class Credentials(val ipAddress: String? = null,
+class Credentials(val ipAddress: String = "",
                   val x509: X509Certificate? = null,
-                  val x509SerialNumber: String? = null,
-                  val username: String? = null,
-                  val password: String? = null,
-                  val loginProxyUuid: String? = null,
-                  val loginProxyName: String? = null) {
+                  val x509SerialNumber: String = "",
+                  val username: String = "",
+                  val password: String = "",
+                  val loginProxyUuid: String = "",
+                  val loginProxyName: String = "") {
     fun getLoginType(): LoginType {
         if (x509 != null || !isBlank(x509SerialNumber)) {
             return LoginType.PKI
@@ -158,8 +152,8 @@ class LoginToken(val uuid: String = uuid(),
                  val username: String = user.login,
                  val permissions: List<String>,
                  val loginType: LoginType,
-                 val loginProxyUuid: String? = null,
-                 val loginProxyName: String? = null) {
+                 val loginProxyUuid: String = "",
+                 val loginProxyName: String = "") {
     fun hasExpired(currentTime: Long): Boolean {
         return expires >= currentTime
     }
