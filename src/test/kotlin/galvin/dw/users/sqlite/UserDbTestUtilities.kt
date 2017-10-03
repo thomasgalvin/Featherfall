@@ -33,7 +33,7 @@ fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid(), passw
     )
 }
 
-fun generateUser( systemRoles: List<Role>, uuid: String = uuid() ): User {
+fun generateUser( systemRoles: List<Role>, uuid: String = uuid(), password: String = uuid() ): User {
     val contact = generateContactInfo()
 
     val userRoles = mutableListOf<String>()
@@ -41,9 +41,11 @@ fun generateUser( systemRoles: List<Role>, uuid: String = uuid() ): User {
         userRoles.add( role.name )
     }
 
+    val passwordHash = hash(password)
+
     return User(
             "login:" + uuid(),
-            "passwordHash:" + uuid(),
+            passwordHash,
             "name:" + uuid(),
             "displayName:" + uuid(),
             "sortName:" + uuid(),

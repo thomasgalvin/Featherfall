@@ -277,6 +277,24 @@ class SqliteUserDbTest {
     }
 
     @Test
+    fun should_retrieve_uuid_by_login(){
+        val userDB = userDB()
+        val roles = generateRoles(userdb = userDB)
+
+        val user = generateUser(roles)
+        userDB.storeUser(user)
+
+        val user2 = generateUser(roles)
+        userDB.storeUser(user2)
+
+        val uuid = userDB.retrieveUuidByLogin(user.login)
+        Assert.assertEquals("Unexpected UUID", user.uuid, uuid)
+
+        val uuid2 = userDB.retrieveUuidByLogin(user2.login)
+        Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2)
+    }
+
+    @Test
     fun should_lock_and_unlock_user_by_uuid(){
         val userDB = userDB()
         val roles = generateRoles(userdb = userDB)

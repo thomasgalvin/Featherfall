@@ -1,0 +1,1 @@
+select uuid from Users where login = ?

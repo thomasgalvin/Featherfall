@@ -16,11 +16,20 @@ class Utilities{}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 fun isBlank( string: String? ) :Boolean {
-    return string == null || string.isBlank();
+    return string == null || string.isBlank()
 }
 
 fun uuid(): String {
     return UUID.randomUUID().toString()
+}
+
+fun neverNull( string: String? ): String{
+    if( string == null ){
+        return ""
+    }
+    else{
+        return string
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,10 +83,15 @@ fun close( conn: Connection, statement: PreparedStatement){
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fun validate( password: String?, hash: String ): Boolean{
+fun validate( password: String?, hash: String? ): Boolean{
     if( password == null || isBlank(password) ){
         return false
     }
+
+    if( hash == null || isBlank(hash) ){
+        return false
+    }
+
     return BCrypt.checkpw( password, hash )
 }
 

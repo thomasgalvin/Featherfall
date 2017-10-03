@@ -36,6 +36,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     private val sqlRetrieveAllUsers = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_users.sql")
     private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
     private val sqlRetrieveRolesForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_roles_for_user.sql")
+    private val sqlRetrieveUuidByLogin= loadSql("/galvin/dw/db/sqlite/users/retrieve_uuid_by_login.sql")
 
     private val sqlSetLockedByUuid = loadSql("/galvin/dw/db/sqlite/users/set_locked_by_uuid.sql")
     private val sqlSetLockedByLogin = loadSql("/galvin/dw/db/sqlite/users/set_locked_by_login.sql")
@@ -286,7 +287,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     override fun retrieveUserByLoginAndPassword(login: String, password: String): User?{
         val user = retrieveUserByLogin(login)
         if( user != null ){
-            if( !validate(user.passwordHash, password) ){
+            if( !validate(password, user.passwordHash) ){
                 return null
             }
         }
@@ -362,6 +363,24 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
                 contact = contact,
                 roles = roles
         )
+    }
+
+    override fun retrieveUuidByLogin(login: String): String?{
+        synchronized(concurrencyLock){
+            var result: String? = null
+
+            val conn = conn()
+            val statement = conn.prepareStatement(sqlRetrieveUuidByLogin)
+            statement.setString(1, login)
+
+            val results = statement.executeQuery()
+            if( results.next() ){
+                result = results.getString("uuid")
+            }
+
+            close(conn, statement)
+            return result
+        }
     }
 
     private fun unmarshalContact( hit: ResultSet): ContactInfo {

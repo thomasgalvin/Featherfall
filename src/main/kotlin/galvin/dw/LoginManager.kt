@@ -11,27 +11,31 @@ const val LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED = "Login Exception: maximum logi
 
 class LoginManager(private val userDB: UserDB,
                    private val auditDB: AuditDB? = null,
-                   private val systemInfoUuid: String = "",
+                   val systemInfoUuid: String = "",
                    val allowConcurrentLogins: Boolean = true,
                    val tokenLifespan: Long = TOKEN_LIFESPAN,
                    val maxFailedLoginAttemptsPerUser: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_USER,
                    val maxFailedLoginAttemptsPerIpAddress: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS) {
     private val loginAttemptsByLogin = LoginAttemptCounter(maxFailedLoginAttemptsPerUser)
     private val loginAttemptsByIpAddress = LoginAttemptCounter(maxFailedLoginAttemptsPerIpAddress)
-    private val currentSystemInfo: String
+    private val currentSystemInfo: SystemInfo?
+    private val currentSystemInfoUuid: String
+    private val classification: String
+
 
     init{
         if( auditDB == null ){
-            currentSystemInfo = ""
+            currentSystemInfo = null
         }
         else{
-            if( isBlank(systemInfoUuid) ){
-                currentSystemInfo = auditDB.retrieveCurrentSystemInfoUuid()
-            }
-            else{
-                currentSystemInfo = systemInfoUuid
+            when( isBlank(systemInfoUuid) ){
+                true -> currentSystemInfo = auditDB.retrieveCurrentSystemInfo()
+                false -> currentSystemInfo = auditDB.retrieveSystemInfo(systemInfoUuid)
             }
         }
+
+        classification = if(currentSystemInfo==null) "N/A" else currentSystemInfo.maximumClassification
+        currentSystemInfoUuid = if(currentSystemInfo==null) "N/A" else currentSystemInfo.uuid
     }
 
 
@@ -43,28 +47,31 @@ class LoginManager(private val userDB: UserDB,
         }
 
         val loginType = credentials.getLoginType()
+        var userUuid: String = ""
         var user: User?
 
         if( credentials.x509 != null ){
             val serialNumber = getSerialNumber( credentials.x509)
             user = userDB.retrieveUserBySerialNumber(serialNumber)
         }
-        else if( isBlank(credentials.x509SerialNumber ) ){
+        else if( !isBlank(credentials.x509SerialNumber ) ){
             user = userDB.retrieveUserBySerialNumber(credentials.x509SerialNumber)
         }
         else if( !isBlank(credentials.username) && !isBlank(credentials.password) ){
             user = userDB.retrieveUserByLoginAndPassword(credentials.username, credentials.password)
+            userUuid = neverNull( userDB.retrieveUuidByLogin(credentials.username) )
         }
         else{
             throw LoginException(LOGIN_EXCEPTION_NO_CREDENTIALS)
         }
 
         if( user == null ){
-            badLoginAttempt(credentials)
+
+            badLoginAttempt(loginType, credentials, userUuid )
             throw LoginException(LOGIN_EXCEPTION_INVALID_CREDENTIALS)
         }
         else{
-            successfulLoginAttempt(credentials, user)
+            successfulLoginAttempt(loginType, credentials, user)
 
             val permissions = userDB.retrievePermissions(user.roles)
             return LoginToken(
@@ -77,7 +84,9 @@ class LoginManager(private val userDB: UserDB,
         }
     }
 
-    private fun badLoginAttempt( credentials: Credentials ){
+    private fun badLoginAttempt( loginType: LoginType,
+                                 credentials: Credentials,
+                                 userUuid: String){
         if( !isBlank( credentials.username ) ){
             loginAttemptsByLogin.incrementLoginAttempts( credentials.username )
 
@@ -90,10 +99,15 @@ class LoginManager(private val userDB: UserDB,
             loginAttemptsByIpAddress.incrementLoginAttempts( credentials.ipAddress )
         }
 
-        if( auditDB != null ){}
+        if( auditDB != null ){
+            val accessInfo = generateAccessInfo(null, loginType, credentials, userUuid, credentials.username, false )
+            auditDB.log(accessInfo)
+        }
     }
 
-    private fun successfulLoginAttempt( credentials: Credentials, user: User ){
+    private fun successfulLoginAttempt( loginType: LoginType,
+                                        credentials: Credentials,
+                                        user: User ){
         if( isBlank( credentials.username ) ){
             loginAttemptsByLogin.clearLoginAttempts( credentials.username )
         }
@@ -101,6 +115,40 @@ class LoginManager(private val userDB: UserDB,
         if( !isBlank( credentials.ipAddress ) ){
             loginAttemptsByIpAddress.clearLoginAttempts(credentials.ipAddress)
         }
+
+        if( auditDB != null ){
+            val accessInfo = generateAccessInfo(user, loginType, credentials, user.uuid, user.login, true )
+            auditDB.log(accessInfo)
+        }
+    }
+
+    private fun generateAccessInfo( user: User?,
+                                    loginType: LoginType,
+                                    credentials: Credentials,
+                                    targetUuid: String,
+                                    targetLogin: String,
+                                    accessGranted: Boolean ): AccessInfo{
+        // the "userUuid" in an access info is the ID of the user
+        // who performed the action; if the login succeeded
+        // we can get this info from the user object itselfm,
+        // but if the login failed there is no user UUID available,
+        // se we write an empty string instead
+        val actingUserUuid = if(user==null) "" else user.uuid
+
+        return AccessInfo(
+                userUuid = actingUserUuid,
+                loginType = loginType,
+                loginProxyUuid = credentials.loginProxyUuid,
+                ipAddress = credentials.ipAddress,
+                timestamp = System.currentTimeMillis(),
+                resourceUuid = targetUuid,
+                resourceName = targetLogin,
+                resourceType = RESOURCE_TYPE_USER_ACCOUNT,
+                classification = classification,
+                accessType = AccessType.LOGIN,
+                permissionGranted = accessGranted,
+                systemInfoUuid = currentSystemInfoUuid
+        )
     }
 }
 

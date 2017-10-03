@@ -1,6 +1,7 @@
 package galvin.dw
 
 const val ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT = "Audit Error: unable to store current system info: UUID did not match an existing system info"
+const val RESOURCE_TYPE_USER_ACCOUNT = "user_account"
 
 interface AuditDB{
     fun storeSystemInfo(systemInfo: SystemInfo )
