@@ -19,10 +19,10 @@ class LoginManager(private val userDB: UserDB,
     private val currentSystemInfoUuid: String
     private val classification: String
 
-    private val loginAttemptsByLogin = LoginAttemptCounter(maxFailedLoginAttemptsPerUser)
-    private val loginAttemptsByIpAddress = LoginAttemptCounter(maxFailedLoginAttemptsPerIpAddress)
+    private val loginAttemptsByLogin = LoginCooldown(maxFailedLoginAttempts = maxFailedLoginAttemptsPerUser)
+    private val loginAttemptsByIpAddress = LoginCooldown(maxFailedLoginAttempts = maxFailedLoginAttemptsPerIpAddress)
 
-    private val loginTokens = mutableMapOf<String, LoginToken>()
+    private val loginTokens = LoginTokenManager()
 
     init{
         if( auditDB == null ){
@@ -80,12 +80,7 @@ class LoginManager(private val userDB: UserDB,
         else if( !isBlank(credentials.tokenUuid) ){
             val loginToken = loginTokens[credentials.tokenUuid]
             if( loginToken != null ){
-                if( !loginToken.hasExpired() ) {
-                    return userDB.retrieveUser(loginToken.user.uuid)
-                }
-                else{
-                    loginTokens.remove(credentials.tokenUuid)
-                }
+                return userDB.retrieveUser(loginToken.user.uuid)
             }
         }
 
@@ -132,13 +127,11 @@ class LoginManager(private val userDB: UserDB,
     private fun successfulLoginAttempt( loginType: LoginType,
                                         credentials: Credentials,
                                         user: User ): LoginToken {
-        if( isBlank( credentials.username ) ){
-            loginAttemptsByLogin.clearLoginAttempts( credentials.username )
-        }
-
         if( !isBlank( credentials.ipAddress ) ){
             loginAttemptsByIpAddress.clearLoginAttempts(credentials.ipAddress)
         }
+
+        loginAttemptsByLogin.clearLoginAttempts( user.login )
 
         if( auditDB != null ){
             val accessInfo = generateAccessInfo(user.uuid, loginType, credentials.loginProxyUuid, credentials.ipAddress, user.uuid, user.login, true )
@@ -189,31 +182,6 @@ class LoginManager(private val userDB: UserDB,
     }
 }
 
-class LoginAttemptCounter(val maxFailedLoginAttempts: Int){
-    private val loginAttempts = mutableMapOf<String, Int>()
-
-    private fun getLoginAttempts( key: String ): Int{
-        val attempts = loginAttempts[key]
-        if( attempts == null ){
-            return 0
-        }
-        return attempts
-    }
-
-    fun incrementLoginAttempts( key: String ){
-        val attempts = getLoginAttempts(key)
-        loginAttempts.put( key, attempts + 1)
-    }
-
-    fun maxFailedLoginAttemptsExceeded(key: String): Boolean{
-        return getLoginAttempts(key) > maxFailedLoginAttempts
-    }
-
-    fun clearLoginAttempts( key: String ){
-        loginAttempts.put( key, 0)
-    }
-}
-
 class Credentials(val ipAddress: String = "",
                   val x509: X509Certificate? = null,
                   val x509SerialNumber: String = "",
@@ -250,6 +218,34 @@ class LoginToken(val uuid: String = uuid(),
 
     fun hasExpired(): Boolean {
         return hasExpired(System.currentTimeMillis())
+    }
+}
+
+class LoginTokenManager{
+    private val loginTokens = mutableMapOf<String, LoginToken>()
+
+    /**
+     * Returns a login token iff a token with that
+     * uuid exists, and the token has not expired
+     */
+    operator fun get( key: String ): LoginToken?{
+        val loginToken = loginTokens[key]
+        if( loginToken != null ){
+            if( !loginToken.hasExpired() ) {
+                return loginToken
+            }
+            else{
+                loginTokens.remove(key)
+            }
+        }
+
+        return null
+    }
+
+    operator fun set( key: String, loginToken: LoginToken ){
+        if( !loginToken.hasExpired() ) {
+            loginTokens[key] = loginToken
+        }
     }
 }
 
