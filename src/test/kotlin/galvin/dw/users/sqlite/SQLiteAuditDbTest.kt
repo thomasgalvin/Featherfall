@@ -72,6 +72,9 @@ class SQLiteAuditDbTest {
         audit.storeCurrentSystemInfo(system.uuid)
         val loaded = audit.retrieveCurrentSystemInfo()
         Assert.assertEquals("Loaded current system info did not match expected", system, loaded)
+
+        val uuid = audit.retrieveCurrentSystemInfoUuid()
+        Assert.assertEquals("Loaded current system info uuiddid not match expected", system.uuid, uuid)
     }
 
     @Test

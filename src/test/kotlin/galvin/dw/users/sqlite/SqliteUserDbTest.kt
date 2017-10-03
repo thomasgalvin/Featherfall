@@ -180,9 +180,7 @@ class SqliteUserDbTest {
             val user = generateUser(roles)
             userdb.storeUser(user)
             val login = user.login
-            if( login != null ){
-                map.put(login, user)
-            }
+            map.put(login, user)
         }
 
         for( key in map.keys ){

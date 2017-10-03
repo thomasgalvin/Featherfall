@@ -168,14 +168,12 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         val result = mutableListOf<String>()
 
         for( roleName in roleNames ){
-            if( roleName != null ) {
-                val role = retrieveRole(roleName)
-                if( role != null ){
-                    for( permission in role.permissions ){
-                        if( permission != null ){
-                            if( !result.contains(permission) ){
-                                result.add(permission)
-                            }
+            val role = retrieveRole(roleName)
+            if( role != null ){
+                for( permission in role.permissions ){
+                    if( !isBlank(permission) ){
+                        if( !result.contains(permission) ){
+                            result.add(permission)
                         }
                     }
                 }
