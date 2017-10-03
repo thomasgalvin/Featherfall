@@ -5,17 +5,16 @@ import java.security.cert.X509Certificate
 const val TOKEN_LIFESPAN: Long = 1000 * 60 * 60 * 24 * 5 //five days in miliseconds
 const val MAX_FAILED_LOGIN_ATTEMPTS_PER_USER = 5
 const val MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS = 15
-const val LOGIN_EXCEPTION_NO_CREDENTIALS = "Login Exception: no credentials provided"
-const val LOGIN_EXCEPTION_INVALID_CREDENTIALS = "Login Exception: the credentials provided were invalid"
+const val LOGIN_EXCEPTION_INVALID_CREDENTIALS = "Login Exception: the provided credentials were invalid"
 const val LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED = "Login Exception: maximum login attempts exceeded"
 
 class LoginManager(private val userDB: UserDB,
                    private val auditDB: AuditDB? = null,
-                   val systemInfoUuid: String = "",
+                   private val maxFailedLoginAttemptsPerUser: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_USER,
+                   private val maxFailedLoginAttemptsPerIpAddress: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS,
                    val allowConcurrentLogins: Boolean = true,
                    val tokenLifespan: Long = TOKEN_LIFESPAN,
-                   val maxFailedLoginAttemptsPerUser: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_USER,
-                   val maxFailedLoginAttemptsPerIpAddress: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS) {
+                   systemInfoUuid: String = "" ) {
     private val currentSystemInfo: SystemInfo?
     private val currentSystemInfoUuid: String
     private val classification: String
@@ -24,7 +23,6 @@ class LoginManager(private val userDB: UserDB,
     private val loginAttemptsByIpAddress = LoginAttemptCounter(maxFailedLoginAttemptsPerIpAddress)
 
     private val loginTokens = mutableMapOf<String, LoginToken>()
-
 
     init{
         if( auditDB == null ){
@@ -149,6 +147,7 @@ class LoginManager(private val userDB: UserDB,
 
         val permissions = userDB.retrievePermissions(user.roles)
         val loginToken = LoginToken(
+                tokenLifespan = tokenLifespan,
                 user = user.withoutPasswordHash(),
                 permissions = permissions,
                 loginType = loginType,
@@ -236,8 +235,9 @@ class Credentials(val ipAddress: String = "",
 }
 
 class LoginToken(val uuid: String = uuid(),
+                 val tokenLifespan: Long = TOKEN_LIFESPAN,
                  val timestamp: Long = System.currentTimeMillis(),
-                 val expires: Long = timestamp + TOKEN_LIFESPAN,
+                 val expires: Long = timestamp + tokenLifespan,
                  val user: User,
                  val username: String = user.login,
                  val permissions: List<String>,
