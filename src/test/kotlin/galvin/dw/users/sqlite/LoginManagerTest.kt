@@ -37,7 +37,7 @@ class LoginManagerTest{
             val credentials =  Credentials( username = user.login, password = password )
 
             val loginToken = loginManager.authenticate(credentials)
-            Assert.assertEquals("Unexpected user", user, loginToken.user )
+            Assert.assertEquals("Unexpected user", user.uuid, loginToken.user.uuid )
         }
 
         for( i in 0..count ){
@@ -45,7 +45,7 @@ class LoginManagerTest{
             val credentials =  Credentials( x509SerialNumber = neverNull(user.serialNumber) )
 
             val loginToken = loginManager.authenticate(credentials)
-            Assert.assertEquals("Unexpected user", user, loginToken.user )
+            Assert.assertEquals("Unexpected user", user.uuid, loginToken.user.uuid )
         }
 
         val auditEvents = auditDB.retrieveAccessInfo()
@@ -103,6 +103,55 @@ class LoginManagerTest{
             Assert.assertFalse("Unexpected access granted ${index}", event.permissionGranted )
         }
     }
+
+    @Test
+    fun should_login_successfully_by_login_token(){
+        val auditDB = randomAuditDB()
+        val userDB = userDB()
+        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB )
+
+        val roles = generateRoles(userdb = userDB)
+        val count = 10;
+
+        val passwords = mutableListOf<String>()
+        for( i in 0..count ){
+            passwords.add( uuid() )
+        }
+
+        val users = mutableListOf<User>()
+        for( i in 0..count ){
+            users.add( generateUser(roles, uuid(), passwords[i]) )
+            userDB.storeUser( users[i] )
+        }
+
+        val loginTokens = mutableListOf<LoginToken>()
+
+        for( i in 0..count ){
+            val user = users[i]
+            val password = passwords[i]
+            val credentials =  Credentials( username = user.login, password = password )
+
+            val loginToken = loginManager.authenticate(credentials)
+            loginTokens.add(loginToken)
+        }
+
+        for( loginToken in loginTokens ){
+            val credentials =  Credentials( tokenUuid = loginToken.uuid )
+            val newLoginToken = loginManager.authenticate(credentials)
+            Assert.assertEquals("Unexpected user", loginToken.user.uuid, newLoginToken.user.uuid )
+        }
+
+        try{
+            val credentials =  Credentials( tokenUuid = uuid() )
+            val newLoginToken = loginManager.authenticate(credentials)
+            throw Exception("Login manager should have thrown")
+        }
+        catch( ex: LoginException ){}
+    }
+
+    ///
+    /// utilities
+    ///
 
     private fun randomAuditDbFile(): File {
         return File("target/audit-" + uuid() + ".dat")

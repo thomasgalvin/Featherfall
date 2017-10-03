@@ -74,7 +74,46 @@ data class User(
 
         //roles
         val roles: List<String> = listOf<String>()
-)
+){
+    fun withoutPasswordHash(): User{
+        val newPasswordHash: String? = null
+
+        return User(
+                login,
+                newPasswordHash,
+                name,
+                displayName,
+                sortName,
+                prependToName,
+                appendToName,
+                credential,
+                serialNumber,
+                distinguishedName,
+                homeAgency,
+                agency,
+                countryCode,
+                citizenship,
+                created,
+                active,
+                locked,
+                uuid,
+                copyContact(),
+                copyRoles()
+        )
+    }
+
+    private fun copyContact(): List<ContactInfo>{
+        val newContact = mutableListOf<ContactInfo>()
+        newContact.addAll(contact)
+        return newContact
+    }
+
+    private fun copyRoles(): List<String>{
+        val newRoles = mutableListOf<String>()
+        newRoles.addAll(roles)
+        return newRoles
+    }
+}
 
 data class AccountRequest(
         //user details

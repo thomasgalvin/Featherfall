@@ -16,11 +16,14 @@ class LoginManager(private val userDB: UserDB,
                    val tokenLifespan: Long = TOKEN_LIFESPAN,
                    val maxFailedLoginAttemptsPerUser: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_USER,
                    val maxFailedLoginAttemptsPerIpAddress: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS) {
-    private val loginAttemptsByLogin = LoginAttemptCounter(maxFailedLoginAttemptsPerUser)
-    private val loginAttemptsByIpAddress = LoginAttemptCounter(maxFailedLoginAttemptsPerIpAddress)
     private val currentSystemInfo: SystemInfo?
     private val currentSystemInfoUuid: String
     private val classification: String
+
+    private val loginAttemptsByLogin = LoginAttemptCounter(maxFailedLoginAttemptsPerUser)
+    private val loginAttemptsByIpAddress = LoginAttemptCounter(maxFailedLoginAttemptsPerIpAddress)
+
+    private val loginTokens = mutableMapOf<String, LoginToken>()
 
 
     init{
@@ -34,80 +37,103 @@ class LoginManager(private val userDB: UserDB,
             }
         }
 
-        classification = if(currentSystemInfo==null) "N/A" else currentSystemInfo.maximumClassification
         currentSystemInfoUuid = if(currentSystemInfo==null) "N/A" else currentSystemInfo.uuid
+        classification = if(currentSystemInfo==null) "N/A" else currentSystemInfo.maximumClassification
     }
 
 
     fun authenticate( credentials: Credentials ): LoginToken{
-        if( !isBlank( credentials.ipAddress ) ){
-            if( loginAttemptsByIpAddress.maxFailedLoginAttemptsExceeded( credentials.ipAddress ) ){
-                throw LoginException(LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED)
-            }
-        }
+        checkIpAddressCooldown(credentials.ipAddress)
 
         val loginType = credentials.getLoginType()
-        var userUuid: String = ""
-        var user: User?
-
-        if( credentials.x509 != null ){
-            val serialNumber = getSerialNumber( credentials.x509)
-            user = userDB.retrieveUserBySerialNumber(serialNumber)
-        }
-        else if( !isBlank(credentials.x509SerialNumber ) ){
-            user = userDB.retrieveUserBySerialNumber(credentials.x509SerialNumber)
-        }
-        else if( !isBlank(credentials.username) && !isBlank(credentials.password) ){
-            user = userDB.retrieveUserByLoginAndPassword(credentials.username, credentials.password)
-            userUuid = neverNull( userDB.retrieveUuidByLogin(credentials.username) )
-        }
-        else{
-            throw LoginException(LOGIN_EXCEPTION_NO_CREDENTIALS)
-        }
+        val user = getUser(credentials)
 
         if( user == null ){
+            val userUuid = neverNull( userDB.retrieveUuidByLogin(credentials.username) )
+            val username = getUsername(credentials)
+            badLoginAttempt(loginType, credentials.loginProxyUuid, credentials.ipAddress, userUuid, username )
 
-            badLoginAttempt(loginType, credentials, userUuid )
             throw LoginException(LOGIN_EXCEPTION_INVALID_CREDENTIALS)
         }
         else{
-            successfulLoginAttempt(loginType, credentials, user)
-
-            val permissions = userDB.retrievePermissions(user.roles)
-            return LoginToken(
-                    user = user,
-                    permissions = permissions,
-                    loginType = loginType,
-                    loginProxyUuid = credentials.loginProxyUuid,
-                    loginProxyName = credentials.loginProxyName
-            )
+            return successfulLoginAttempt(loginType, credentials, user)
         }
     }
 
-    private fun badLoginAttempt( loginType: LoginType,
-                                 credentials: Credentials,
-                                 userUuid: String){
-        if( !isBlank( credentials.username ) ){
-            loginAttemptsByLogin.incrementLoginAttempts( credentials.username )
+    private fun checkIpAddressCooldown( ipAddress: String ){
+        if( !isBlank( ipAddress ) ){
+            if( loginAttemptsByIpAddress.maxFailedLoginAttemptsExceeded( ipAddress ) ){
+                throw LoginException(LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED)
+            }
+        }
+    }
 
-            if( loginAttemptsByLogin.maxFailedLoginAttemptsExceeded( credentials.username ) ){
-                userDB.setLockedByLogin( credentials.username, true )
+    private fun getUser( credentials: Credentials ): User?{
+        if( credentials.x509 != null ){
+            val serialNumber = getSerialNumber( credentials.x509)
+            return userDB.retrieveUserBySerialNumber(serialNumber)
+        }
+        else if( !isBlank(credentials.x509SerialNumber ) ){
+            return userDB.retrieveUserBySerialNumber(credentials.x509SerialNumber)
+        }
+        else if( !isBlank(credentials.username) && !isBlank(credentials.password) ){
+            return userDB.retrieveUserByLoginAndPassword(credentials.username, credentials.password)
+        }
+        else if( !isBlank(credentials.tokenUuid) ){
+            val loginToken = loginTokens[credentials.tokenUuid]
+            if( loginToken != null ){
+                if( !loginToken.hasExpired() ) {
+                    return userDB.retrieveUser(loginToken.user.uuid)
+                }
+                else{
+                    loginTokens.remove(credentials.tokenUuid)
+                }
             }
         }
 
-        if( !isBlank( credentials.ipAddress ) ){
-            loginAttemptsByIpAddress.incrementLoginAttempts( credentials.ipAddress )
+        return null
+    }
+
+    private fun getUsername( credentials: Credentials ): String{
+        if( !isBlank(credentials.username) ){
+            return credentials.username
+        }
+        else if( !isBlank(credentials.x509SerialNumber ) ){
+            return credentials.x509SerialNumber
+        }
+        else if( credentials.x509 != null ){
+            return getSerialNumber( credentials.x509)
+        }
+
+        return ""
+    }
+
+    private fun badLoginAttempt( loginType: LoginType,
+                                 loginProxyUuid: String,
+                                 ipAddress: String,
+                                 userUuid: String,
+                                 username: String ){
+        if( !isBlank( username ) ){
+            loginAttemptsByLogin.incrementLoginAttempts( username )
+
+            if( loginAttemptsByLogin.maxFailedLoginAttemptsExceeded( username ) ){
+                userDB.setLockedByLogin( username, true )
+            }
+        }
+
+        if( !isBlank( ipAddress ) ){
+            loginAttemptsByIpAddress.incrementLoginAttempts( ipAddress )
         }
 
         if( auditDB != null ){
-            val accessInfo = generateAccessInfo("", loginType, credentials, userUuid, credentials.username, false )
+            val accessInfo = generateAccessInfo("", loginType, loginProxyUuid, ipAddress, userUuid, username, false )
             auditDB.log(accessInfo)
         }
     }
 
     private fun successfulLoginAttempt( loginType: LoginType,
                                         credentials: Credentials,
-                                        user: User ){
+                                        user: User ): LoginToken {
         if( isBlank( credentials.username ) ){
             loginAttemptsByLogin.clearLoginAttempts( credentials.username )
         }
@@ -117,14 +143,27 @@ class LoginManager(private val userDB: UserDB,
         }
 
         if( auditDB != null ){
-            val accessInfo = generateAccessInfo(user.uuid, loginType, credentials, user.uuid, user.login, true )
+            val accessInfo = generateAccessInfo(user.uuid, loginType, credentials.loginProxyUuid, credentials.ipAddress, user.uuid, user.login, true )
             auditDB.log(accessInfo)
         }
+
+        val permissions = userDB.retrievePermissions(user.roles)
+        val loginToken = LoginToken(
+                user = user.withoutPasswordHash(),
+                permissions = permissions,
+                loginType = loginType,
+                loginProxyUuid = credentials.loginProxyUuid,
+                loginProxyName = credentials.loginProxyName
+        )
+        loginTokens[loginToken.uuid] = loginToken
+
+        return loginToken
     }
 
     private fun generateAccessInfo( actingUserUuid: String,
                                     loginType: LoginType,
-                                    credentials: Credentials,
+                                    loginProxyUuid: String,
+                                    ipAddress: String,
                                     targetUuid: String,
                                     targetLogin: String,
                                     accessGranted: Boolean ): AccessInfo{
@@ -137,8 +176,8 @@ class LoginManager(private val userDB: UserDB,
         return AccessInfo(
                 userUuid = actingUserUuid,
                 loginType = loginType,
-                loginProxyUuid = credentials.loginProxyUuid,
-                ipAddress = credentials.ipAddress,
+                loginProxyUuid = loginProxyUuid,
+                ipAddress = ipAddress,
                 timestamp = System.currentTimeMillis(),
                 resourceUuid = targetUuid,
                 resourceName = targetLogin,
@@ -181,11 +220,15 @@ class Credentials(val ipAddress: String = "",
                   val x509SerialNumber: String = "",
                   val username: String = "",
                   val password: String = "",
+                  val tokenUuid: String = "",
                   val loginProxyUuid: String = "",
                   val loginProxyName: String = "") {
     fun getLoginType(): LoginType {
         if (x509 != null || !isBlank(x509SerialNumber)) {
             return LoginType.PKI
+        }
+        else if( !isBlank(tokenUuid) ){
+            return LoginType.LOGIN_TOKEN
         }
 
         return LoginType.USERNAME_PASSWORD
@@ -202,7 +245,7 @@ class LoginToken(val uuid: String = uuid(),
                  val loginProxyUuid: String = "",
                  val loginProxyName: String = "") {
     fun hasExpired(currentTime: Long): Boolean {
-        return expires >= currentTime
+        return expires <= currentTime
     }
 
     fun hasExpired(): Boolean {
