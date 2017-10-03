@@ -6,6 +6,7 @@ const val TOKEN_LIFESPAN: Long = 1000 * 60 * 60 * 24 * 5 //five days in miliseco
 const val MAX_FAILED_LOGIN_ATTEMPTS = 5
 const val LOGIN_EXCEPTION_NO_CREDENTIALS = "Login Exception: no credentials provided"
 const val LOGIN_EXCEPTION_INVALID_CREDENTIALS = "Login Exception: the credentials provided were invalid"
+const val LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED = "Login Exception: maximum login attempts exceeded"
 
 class LoginManager(val userDB: UserDB,
                    val auditDB: AuditDB? = null,
@@ -16,6 +17,13 @@ class LoginManager(val userDB: UserDB,
     private val loginAttemptsByIpAddress = LoginAttemptCounter(maxFailedLoginAttempts)
 
     fun authenticate( credentials: Credentials ){
+        val ipAddress = credentials.ipAddress
+        if( ipAddress != null && !isBlank( ipAddress ) ){
+            if( loginAttemptsByIpAddress.maxFailedLoginAttemptsExceeded(ipAddress) ){
+                throw LoginException(LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED)
+            }
+        }
+
         var user: User?
 
         if( credentials.x509 != null ){
@@ -47,7 +55,7 @@ class LoginManager(val userDB: UserDB,
             loginAttemptsByLogin.incrementLoginAttempts( credentials.username )
 
             if( loginAttemptsByLogin.maxFailedLoginAttemptsExceeded(credentials.username) ){
-                userDB.isLockedByLogin(credentials.username)
+                userDB.setLockedByLogin(credentials.username, true)
             }
         }
 
@@ -57,6 +65,15 @@ class LoginManager(val userDB: UserDB,
     }
 
     private fun successfulLoginAttempt( credentials: Credentials, user: User ){
+        val username = credentials.username
+        if( username != null && !isBlank(username) ){
+            loginAttemptsByLogin.clearLoginAttempts( username )
+        }
+
+        val ipAddress = credentials.ipAddress
+        if( ipAddress != null && !isBlank( ipAddress ) ){
+            loginAttemptsByIpAddress.clearLoginAttempts(ipAddress)
+        }
     }
 }
 
@@ -78,6 +95,10 @@ class LoginAttemptCounter(val maxFailedLoginAttempts: Int){
 
     fun maxFailedLoginAttemptsExceeded(key: String): Boolean{
         return getLoginAttempts(key) > maxFailedLoginAttempts
+    }
+
+    fun clearLoginAttempts( key: String ){
+        loginAttempts.put( key, 0)
     }
 }
 

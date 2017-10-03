@@ -29,6 +29,7 @@ data class SystemInfo( val serialNumber: String,
 data class AccessInfo( val userUuid: String,
                        val loginType: LoginType,
                        val loginProxyUuid: String?, //used if a trusted system is logging in on behalf of the user
+                       val ipAddress: String?, //used if a trusted system is logging in on behalf of the user
 
                        val timestamp: Long,
                        val resourceUuid: String,

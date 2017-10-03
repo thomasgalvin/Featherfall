@@ -177,15 +177,16 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
             statement.setString(1, access.userUuid)
             statement.setString(2, access.loginType.name)
             statement.setString(3, access.loginProxyUuid)
-            statement.setLong(4, access.timestamp)
-            statement.setString(5, access.resourceUuid)
-            statement.setString(6, access.resourceName)
-            statement.setString(7, access.classification)
-            statement.setString(8, access.resourceType)
-            statement.setString(9, access.accessType.name)
-            statement.setInt(10, accessGranted )
-            statement.setString(11, access.systemInfoUuid)
-            statement.setString(12, access.uuid)
+            statement.setString(4, access.ipAddress)
+            statement.setLong(5, access.timestamp)
+            statement.setString(6, access.resourceUuid)
+            statement.setString(7, access.resourceName)
+            statement.setString(8, access.classification)
+            statement.setString(9, access.resourceType)
+            statement.setString(10, access.accessType.name)
+            statement.setInt(11, accessGranted )
+            statement.setString(12, access.systemInfoUuid)
+            statement.setString(13, access.uuid)
 
             executeAndClose( statement )
 
@@ -290,10 +291,10 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
     }
 
     private fun unmarshalAccessInfo(hit: ResultSet, conn: Connection): AccessInfo {
-        val loginType = LoginType.valueOf( hit.getString(2) )
-        val accessType = AccessType.valueOf( hit.getString(9) )
-        val permissionGranted = hit.getInt(10) != 0
-        val uuid = hit.getString(12)
+        val loginType = LoginType.valueOf( hit.getString("loginType") )
+        val accessType = AccessType.valueOf( hit.getString("accessType") )
+        val permissionGranted = hit.getInt("permissionGranted") != 0
+        val uuid = hit.getString("uuid")
 
         val mods = mutableListOf<Modification>()
 
@@ -315,6 +316,7 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
                 hit.getString("userUuid"),
                 loginType,
                 hit.getString("loginProxyUuid"),
+                hit.getString("ipAddress"),
                 hit.getLong("timestamp"),
                 hit.getString("resourceUuid"),
                 hit.getString("resourceName"),

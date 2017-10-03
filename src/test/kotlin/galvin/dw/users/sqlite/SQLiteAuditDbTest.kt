@@ -303,6 +303,7 @@ class SQLiteAuditDbTest {
                 "user" + uuid(),
                 loginType,
                 "proxy:" + uuid(),
+                "ipAddress:" + uuid(),
                 System.currentTimeMillis(),
                 "resourceUUID:" + uuid(),
                 "resourceName:" + uuid(),
