@@ -143,7 +143,7 @@ class LoginManagerTest{
 
         try{
             val credentials =  Credentials( tokenUuid = uuid() )
-            val newLoginToken = loginManager.authenticate(credentials)
+            loginManager.authenticate(credentials)
             throw Exception("Login manager should have thrown")
         }
         catch( ex: LoginException ){}

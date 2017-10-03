@@ -3,8 +3,14 @@ package galvin.dw
 import java.security.cert.X509Certificate
 
 const val TOKEN_LIFESPAN: Long = 1000 * 60 * 60 * 24 * 5 //five days in miliseconds
+
+const val MAX_UNHINDERED_LOGIN_ATTEMPTS = 0
+const val MAX_FAILED_LOGIN_ATTEMPTS = 15
+const val ATTEMPTS_EXPIRE_AFTER: Long = 1000 * 60 * 60 //one hour in ms
+
 const val MAX_FAILED_LOGIN_ATTEMPTS_PER_USER = 5
 const val MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS = 15
+
 const val LOGIN_EXCEPTION_INVALID_CREDENTIALS = "Login Exception: the provided credentials were invalid"
 const val LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED = "Login Exception: maximum login attempts exceeded"
 
@@ -47,8 +53,9 @@ class LoginManager(private val userDB: UserDB,
         val user = getUser(credentials)
 
         if( user == null ){
-            val userUuid = neverNull( userDB.retrieveUuidByLogin(credentials.username) )
             val username = getUsername(credentials)
+            val userUuid = neverNull( userDB.retrieveUuidByLogin(username) )
+
             badLoginAttempt(loginType, credentials.loginProxyUuid, credentials.ipAddress, userUuid, username )
 
             throw LoginException(LOGIN_EXCEPTION_INVALID_CREDENTIALS)
@@ -108,7 +115,6 @@ class LoginManager(private val userDB: UserDB,
                                  username: String ){
         if( !isBlank( username ) ){
             loginAttemptsByLogin.incrementLoginAttempts( username )
-
             if( loginAttemptsByLogin.maxFailedLoginAttemptsExceeded( username ) ){
                 userDB.setLockedByLogin( username, true )
             }
@@ -221,7 +227,11 @@ class LoginToken(val uuid: String = uuid(),
     }
 }
 
-class LoginTokenManager{
+class LoginException( message: String = "Login Exception",
+                      cause: Throwable? = null   ): Exception(message, cause)
+
+internal class LoginTokenManager{
+    private val concurrencyLock = Object()
     private val loginTokens = mutableMapOf<String, LoginToken>()
 
     /**
@@ -229,25 +239,109 @@ class LoginTokenManager{
      * uuid exists, and the token has not expired
      */
     operator fun get( key: String ): LoginToken?{
-        val loginToken = loginTokens[key]
-        if( loginToken != null ){
-            if( !loginToken.hasExpired() ) {
-                return loginToken
-            }
-            else{
-                loginTokens.remove(key)
-            }
-        }
+        purgeExpired()
 
-        return null
+        synchronized(concurrencyLock) {
+            return loginTokens[key]
+        }
     }
 
     operator fun set( key: String, loginToken: LoginToken ){
-        if( !loginToken.hasExpired() ) {
-            loginTokens[key] = loginToken
+        synchronized(concurrencyLock) {
+            if (!loginToken.hasExpired()) {
+                loginTokens[key] = loginToken
+            }
+        }
+    }
+
+    private fun purgeExpired(){
+        synchronized(concurrencyLock){
+            val keys = loginTokens.keys
+            for( key in keys ){
+                val loginToken = loginTokens[key]
+                if( loginToken != null ){
+                    if( loginToken.hasExpired() ){
+                        loginTokens.remove(key)
+                    }
+                }
+            }
         }
     }
 }
 
-class LoginException( message: String = "Login Exception",
-                      cause: Throwable? = null   ): Exception(message, cause)
+
+
+
+/**
+ * Tracks login attempts by a key, eg username or IP address.
+ *
+ * This class will sleep for a progressively longer period of
+ * time for each failed login attempt, unless doSleep is set
+ * to false.
+ */
+internal class LoginCooldown(
+        val maxUnhinderedAttempts: Int = MAX_UNHINDERED_LOGIN_ATTEMPTS,
+        val maxFailedLoginAttempts: Int = MAX_FAILED_LOGIN_ATTEMPTS,
+        val attemptsExpireAfter: Long = ATTEMPTS_EXPIRE_AFTER,
+        val doSleep: Boolean = true){
+    private val attempts = mutableMapOf<String, LoginAttempt>()
+
+    fun clearLoginAttempts( key: String ){
+        attempts.remove(key)
+    }
+
+    fun incrementLoginAttempts( key: String ){
+        val lastLoginAttempt = getAttempts(key)
+        val attemptCount = lastLoginAttempt.count + 1
+        val newLoginAttempt = LoginAttempt(attemptCount)
+        attempts[key] = newLoginAttempt
+
+        if( doSleep ) {
+            val badAttemptCount = attemptCount - maxUnhinderedAttempts
+            sleep(badAttemptCount)
+        }
+    }
+
+    fun maxFailedLoginAttemptsExceeded(key: String): Boolean{
+        val lastLoginAttempt = getAttempts(key)
+        return lastLoginAttempt.count > maxFailedLoginAttempts
+    }
+
+    private fun getAttempts( key: String ): LoginAttempt{
+        val result = attempts[key]
+        if( result != null ){
+            val now = System.currentTimeMillis()
+            val expires = result.timestamp + attemptsExpireAfter
+            if( now <= expires ){
+                attempts.remove(key)
+            }
+            else{
+                return result
+            }
+        }
+
+        return LoginAttempt()
+    }
+
+    private fun sleep( badAttemptCount: Int ){
+        val sleep = getSleepTime(badAttemptCount)
+        Thread.sleep(sleep)
+    }
+
+    private fun getSleepTime( badAttemptCount: Int ): Long{
+        if( badAttemptCount <= 0 ){
+            return 0
+        }
+
+        when(badAttemptCount){
+            1 -> return 1_000
+            2 -> return 2_000
+            3 -> return 5_000
+            4 -> return 10_000
+            else -> return 15_000
+        }
+    }
+}
+
+data class LoginAttempt(val count: Int = 0,
+                        val timestamp: Long = System.currentTimeMillis())
