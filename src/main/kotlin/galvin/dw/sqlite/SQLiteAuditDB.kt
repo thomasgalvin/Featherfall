@@ -103,21 +103,6 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
         return result
     }
 
-    override fun retrieveCurrentSystemInfo(): SystemInfo?{
-        var result : SystemInfo? = null
-        val conn = conn()
-
-        val statement = conn.prepareStatement(sqlRetrieveCurrentSystemInfo)
-        val resultSet = statement.executeQuery()
-        if( resultSet != null && resultSet.next() ){
-            val uuid = resultSet.getString("uuid")
-            result = retrieveSystemInfo(uuid)
-        }
-
-        close(conn, statement)
-        return result
-    }
-
     override fun storeCurrentSystemInfo(uuid: String) {
         synchronized(concurrencyLock) {
             val conn = conn()
@@ -137,6 +122,29 @@ class SQLiteAuditDB( databaseFile: File) : AuditDB, SQLiteDB(databaseFile) {
             storeStatement.setString(1, uuid)
             executeAndClose( storeStatement, conn )
         }
+    }
+
+    override fun retrieveCurrentSystemInfo(): SystemInfo?{
+        var result : SystemInfo? = null
+        val conn = conn()
+
+        val statement = conn.prepareStatement(sqlRetrieveCurrentSystemInfo)
+        val resultSet = statement.executeQuery()
+        if( resultSet != null && resultSet.next() ){
+            val uuid = resultSet.getString("uuid")
+            result = retrieveSystemInfo(uuid)
+        }
+
+        close(conn, statement)
+        return result
+    }
+
+    override fun retrieveCurrentSystemInfoUuid(): String{
+        val csi = retrieveCurrentSystemInfo()
+        if( csi != null ){
+            return csi.uuid
+        }
+        return ""
     }
 
     private fun unmarshalSystemInfo(hit: ResultSet, conn: Connection): SystemInfo {

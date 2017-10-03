@@ -9,14 +9,31 @@ const val LOGIN_EXCEPTION_NO_CREDENTIALS = "Login Exception: no credentials prov
 const val LOGIN_EXCEPTION_INVALID_CREDENTIALS = "Login Exception: the credentials provided were invalid"
 const val LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED = "Login Exception: maximum login attempts exceeded"
 
-class LoginManager(val userDB: UserDB,
-                   val auditDB: AuditDB? = null,
+class LoginManager(private val userDB: UserDB,
+                   private val auditDB: AuditDB? = null,
+                   private val systemInfoUuid: String = "",
                    val allowConcurrentLogins: Boolean = true,
                    val tokenLifespan: Long = TOKEN_LIFESPAN,
                    val maxFailedLoginAttemptsPerUser: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_USER,
                    val maxFailedLoginAttemptsPerIpAddress: Int = MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS) {
     private val loginAttemptsByLogin = LoginAttemptCounter(maxFailedLoginAttemptsPerUser)
     private val loginAttemptsByIpAddress = LoginAttemptCounter(maxFailedLoginAttemptsPerIpAddress)
+    private val currentSystemInfo: String
+
+    init{
+        if( auditDB == null ){
+            currentSystemInfo = ""
+        }
+        else{
+            if( isBlank(systemInfoUuid) ){
+                currentSystemInfo = auditDB.retrieveCurrentSystemInfoUuid()
+            }
+            else{
+                currentSystemInfo = systemInfoUuid
+            }
+        }
+    }
+
 
     fun authenticate( credentials: Credentials ): LoginToken{
         val ipAddress = credentials.ipAddress
@@ -26,17 +43,15 @@ class LoginManager(val userDB: UserDB,
             }
         }
 
+        val loginType = credentials.getLoginType()
         var user: User?
-        var loginType = LoginType.USERNAME_PASSWORD
 
         if( credentials.x509 != null ){
             val serialNumber = getSerialNumber( credentials.x509)
             user = userDB.retrieveUserBySerialNumber(serialNumber)
-            loginType = LoginType.PKI
         }
         else if( credentials.x509SerialNumber != null && !isBlank(credentials.x509SerialNumber ) ){
             user = userDB.retrieveUserBySerialNumber(credentials.x509SerialNumber)
-            loginType = LoginType.PKI
         }
         else if( credentials.username != null && !isBlank(credentials.username) &&
                  credentials.password!= null && !isBlank(credentials.password) ){
@@ -78,6 +93,8 @@ class LoginManager(val userDB: UserDB,
         if( ipAddress != null && !isBlank( ipAddress ) ){
             loginAttemptsByIpAddress.incrementLoginAttempts( ipAddress )
         }
+
+        if( auditDB != null ){}
     }
 
     private fun successfulLoginAttempt( credentials: Credentials, user: User ){
@@ -96,7 +113,7 @@ class LoginManager(val userDB: UserDB,
 class LoginAttemptCounter(val maxFailedLoginAttempts: Int){
     private val loginAttempts = mutableMapOf<String, Int>()
 
-    fun getLoginAttempts( key: String ): Int{
+    private fun getLoginAttempts( key: String ): Int{
         val attempts = loginAttempts[key]
         if( attempts == null ){
             return 0
@@ -118,14 +135,21 @@ class LoginAttemptCounter(val maxFailedLoginAttempts: Int){
     }
 }
 
-data class Credentials(val ipAddress: String? = null,
-                       val x509: X509Certificate? = null,
-                       val x509SerialNumber: String? = null,
-                       val username: String? = null,
-                       val password: String? = null,
-                       val loginProxyUuid: String? = null,
-                       val loginProxyName: String? = null
-)
+class Credentials(val ipAddress: String? = null,
+                  val x509: X509Certificate? = null,
+                  val x509SerialNumber: String? = null,
+                  val username: String? = null,
+                  val password: String? = null,
+                  val loginProxyUuid: String? = null,
+                  val loginProxyName: String? = null) {
+    fun getLoginType(): LoginType {
+        if (x509 != null || !isBlank(x509SerialNumber)) {
+            return LoginType.PKI
+        }
+
+        return LoginType.USERNAME_PASSWORD
+    }
+}
 
 class LoginToken(val uuid: String = uuid(),
                  val timestamp: Long = System.currentTimeMillis(),
