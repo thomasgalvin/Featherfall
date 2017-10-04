@@ -138,7 +138,8 @@ class LoginManagerTest{
     fun should_log_out(){
         val auditDB = randomAuditDB()
         val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB, config = LoginManagerConfig( sleepBetweenAttempts = false ) )
+        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
+                                         config = LoginManagerConfig( sleepBetweenAttempts = false ) )
 
         val roles = generateRoles(userdb = userDB)
         val count = 10;
@@ -182,10 +183,62 @@ class LoginManagerTest{
     }
 
     @Test
+    fun should_purge_expired(){
+        val auditDB = randomAuditDB()
+        val userDB = userDB()
+        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
+                config = LoginManagerConfig( tokenLifespan = 1, sleepBetweenAttempts = false ) )
+
+        val roles = generateRoles(userdb = userDB)
+        val count = 10;
+
+        val passwords = mutableListOf<String>()
+        for( i in 0..count ){
+            passwords.add( uuid() )
+        }
+
+        val users = mutableListOf<User>()
+        for( i in 0..count ){
+            users.add( generateUser(roles, uuid(), passwords[i]) )
+            userDB.storeUser( users[i] )
+        }
+
+        val loginTokens = mutableListOf<LoginToken>()
+
+        for( i in 0..count ){
+            val user = users[i]
+            val password = passwords[i]
+            val credentials =  Credentials( username = user.login, password = password )
+
+            val loginToken = loginManager.authenticate(credentials)
+            loginTokens.add(loginToken)
+        }
+
+        //let the tokens expire
+        Thread.sleep(10)
+
+        for( loginToken in loginTokens ){
+            try {
+                val credentials = Credentials(tokenUuid = loginToken.uuid)
+                loginManager.authenticate(credentials)
+                throw Exception( "Login manager should have thrown" )
+            }
+            catch(ex: LoginException){
+                //no-op
+            }
+        }
+
+        for( loginToken in loginTokens ){
+            Assert.assertTrue("Token should have expired", loginToken.hasExpired() )
+        }
+    }
+
+    @Test
     fun should_fail_login_by_password(){
         val auditDB = randomAuditDB()
         val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB, config = LoginManagerConfig( sleepBetweenAttempts = false ) )
+        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
+                                         config = LoginManagerConfig( sleepBetweenAttempts = false ) )
 
         val roles = generateRoles(userdb = userDB)
         val count = 10
@@ -229,7 +282,8 @@ class LoginManagerTest{
     fun should_lock_and_throw_on_max_failures(){
         val auditDB = randomAuditDB()
         val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB, config = LoginManagerConfig( sleepBetweenAttempts = false ) )
+        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
+                                         config = LoginManagerConfig( sleepBetweenAttempts = false ) )
 
         val roles = generateRoles(userdb = userDB)
         val user = generateUser(roles)

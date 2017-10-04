@@ -18,8 +18,18 @@ class LoginManager( private val userDB: UserDB,
                     private val auditDB: AuditDB = NoOpAuditDB(),
                     private val config: LoginManagerConfig = LoginManagerConfig() ){
     private val loginTokens = LoginTokenManager()
-    private val usernameCooldown = Cooldown( config.loginMaxUnhindered, config.loginMaxFailed, config.attemptsExpireAfter, config.sleepBetweenAttempts )
-    private val addressCooldown = Cooldown( config.addressMaxUnhindered, config.addressMaxFailed, config.attemptsExpireAfter, config.sleepBetweenAttempts )
+    private val usernameCooldown = Cooldown(
+            config.loginMaxUnhindered,
+            config.loginMaxFailed,
+            config.attemptsExpireAfter,
+            config.sleepBetweenAttempts
+    )
+    private val addressCooldown = Cooldown(
+            config.addressMaxUnhindered,
+            config.addressMaxFailed,
+            config.attemptsExpireAfter,
+            config.sleepBetweenAttempts
+    )
 
     fun authenticate( credentials: Credentials ): LoginToken{
         addressCooldown.doSleep( credentials.ipAddress )
@@ -28,7 +38,8 @@ class LoginManager( private val userDB: UserDB,
         val username = getUsername(credentials)
         val userUuid = neverNull( userDB.retrieveUuid(username) )
 
-        if( usernameCooldown.maxFailedLoginsExceeded(username) || addressCooldown.maxFailedLoginsExceeded(credentials.ipAddress) ) {
+        if( usernameCooldown.maxFailedLoginsExceeded(username) ||
+            addressCooldown.maxFailedLoginsExceeded(credentials.ipAddress) ) {
             loginFailed(loginType, credentials.loginProxyUuid, credentials.ipAddress, userUuid, username)
             throw LoginException(LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED)
         }
@@ -58,7 +69,8 @@ class LoginManager( private val userDB: UserDB,
         if( usernameCooldown.maxFailedLoginsExceeded(username) ){
             userDB.setLockedByLogin( username, true )
 
-            val lockInfo = accessInfo(loginType, loginProxyUuid, ipAddress, userUuid, username, true, AccessType.LOCKED )
+            val lockInfo = accessInfo(loginType, loginProxyUuid, ipAddress,
+                                      userUuid, username, true, AccessType.LOCKED )
             auditDB.log(lockInfo)
         }
 
@@ -197,12 +209,18 @@ data class LoginToken(val uuid: String = uuid(),
                       val permissions: List<String>,
                       val loginType: LoginType,
                       val loginProxyUuid: String = "") {
+    private var loggedOut = false
+
     fun hasExpired(currentTime: Long): Boolean {
         return expires <= currentTime
     }
 
     fun hasExpired(): Boolean {
-        return hasExpired(System.currentTimeMillis())
+        return loggedOut || hasExpired(System.currentTimeMillis())
+    }
+
+    fun logout(){
+        loggedOut = true
     }
 }
 
@@ -331,19 +349,32 @@ internal class LoginTokenManager{
     }
 
     fun remove( key: String ){
+        //in case someone has cached this for some (bad) reason
+        val loginToken = get(key)
+        if( loginToken != null ){
+            loginToken.logout()
+        }
+
         loginTokens.remove(key)
     }
 
     private fun purgeExpired(){
         synchronized(concurrencyLock){
+            val expiredTokens = mutableListOf<LoginToken>()
+
             val keys = loginTokens.keys
             for( key in keys ){
                 val loginToken = loginTokens[key]
                 if( loginToken != null ){
                     if( loginToken.hasExpired() ){
-                        loginTokens.remove(key)
+                        loginToken.logout()
+                        expiredTokens.add(loginToken)
                     }
                 }
+            }
+
+            for( loginToken in expiredTokens ){
+                loginTokens.remove(loginToken.uuid)
             }
         }
     }
