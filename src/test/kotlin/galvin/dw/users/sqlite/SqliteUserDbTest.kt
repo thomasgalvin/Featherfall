@@ -2,6 +2,7 @@ package galvin.dw.users.sqlite
 
 import galvin.dw.Role
 import galvin.dw.User
+import galvin.dw.neverNull
 import org.junit.Assert
 import org.junit.Test
 
@@ -292,6 +293,46 @@ class SqliteUserDbTest {
 
         val uuid2 = userDB.retrieveUuidByLogin(user2.login)
         Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2)
+    }
+
+    @Test
+    fun should_retrieve_uuid_by_serial_number(){
+        val userDB = userDB()
+        val roles = generateRoles(userdb = userDB)
+
+        val user = generateUser(roles)
+        userDB.storeUser(user)
+
+        val user2 = generateUser(roles)
+        userDB.storeUser(user2)
+
+        val uuid = userDB.retrieveUuidBySerialNumber( neverNull( user.serialNumber) )
+        Assert.assertEquals("Unexpected UUID", user.uuid, uuid)
+
+        val uuid2 = userDB.retrieveUuidBySerialNumber( neverNull(user2.serialNumber) )
+        Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2)
+    }
+
+    @Test
+    fun should_retrieve_uuid_by_login_or_serial_number(){
+        val userDB = userDB()
+        val roles = generateRoles(userdb = userDB)
+
+        val user = generateUser(roles)
+        userDB.storeUser(user)
+
+        val user2 = generateUser(roles)
+        userDB.storeUser(user2)
+
+        val uuidA = userDB.retrieveUuid(user.login)
+        val uuidB = userDB.retrieveUuid( neverNull( user.serialNumber) )
+        Assert.assertEquals("Unexpected UUID", user.uuid, uuidA)
+        Assert.assertEquals("Unexpected UUID", user.uuid, uuidB)
+
+        val uuid2A = userDB.retrieveUuid(user2.login)
+        val uuid2B = userDB.retrieveUuid( neverNull(user2.serialNumber) )
+        Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2A)
+        Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2B)
     }
 
     @Test
