@@ -91,6 +91,7 @@ class LoginManager( private val userDB: UserDB,
         val permissions = userDB.retrievePermissions(sanitizedUser.roles)
 
         val loginToken = LoginToken(
+                ipAddress = ipAddress,
                 tokenLifespan = config.tokenLifespan,
                 user = sanitizedUser,
                 permissions = permissions,
@@ -98,6 +99,11 @@ class LoginManager( private val userDB: UserDB,
                 loginProxyUuid = loginProxyUuid
         )
         loginTokens[loginToken.uuid] = loginToken
+
+        if( !config.allowConcurrentLogins ){
+            loginTokens.logoutExcept( ipAddress, user.uuid )
+        }
+
         return loginToken
     }
 
@@ -183,7 +189,7 @@ data class Credentials(val ipAddress: String = "",
                        val tokenUuid: String = "",
                        val loginProxyUuid: String = "") {
     fun getLoginType(): LoginType {
-        if (x509 != null || !isBlank(x509SerialNumber)) {
+        if ( !isBlank( getSerialNumber() ) ) {
             return LoginType.PKI
         } else if (!isBlank(tokenUuid)) {
             return LoginType.LOGIN_TOKEN
@@ -194,13 +200,18 @@ data class Credentials(val ipAddress: String = "",
 
     fun getSerialNumber(): String {
         if (x509 != null) {
-            return x509.serialNumber.toString(16)
+            val result = x509.serialNumber.toString(16)
+            if( !isBlank(result) ){
+                return result
+            }
         }
+
         return x509SerialNumber
     }
 }
 
 data class LoginToken(val uuid: String = uuid(),
+                      val ipAddress: String = "",
                       val tokenLifespan: Long = TOKEN_LIFESPAN,
                       val timestamp: Long = System.currentTimeMillis(),
                       val expires: Long = timestamp + tokenLifespan,
@@ -358,18 +369,29 @@ internal class LoginTokenManager{
         loginTokens.remove(key)
     }
 
+    fun logoutExcept( ipAddress: String, userUuid: String ){
+        synchronized(concurrencyLock){
+            val expiredTokens = mutableListOf<LoginToken>()
+
+            val tokens = loginTokens.values
+            for( token in tokens ){
+                if( token.user.uuid == userUuid && token.ipAddress != ipAddress ){
+                    token.logout()
+                    expiredTokens.add(token)
+                }
+            }
+        }
+    }
+
     private fun purgeExpired(){
         synchronized(concurrencyLock){
             val expiredTokens = mutableListOf<LoginToken>()
 
-            val keys = loginTokens.keys
-            for( key in keys ){
-                val loginToken = loginTokens[key]
-                if( loginToken != null ){
-                    if( loginToken.hasExpired() ){
-                        loginToken.logout()
-                        expiredTokens.add(loginToken)
-                    }
+            val tokens = loginTokens.values
+            for( token in tokens ){
+                if( token.hasExpired() ){
+                    token.logout()
+                    expiredTokens.add(token)
                 }
             }
 

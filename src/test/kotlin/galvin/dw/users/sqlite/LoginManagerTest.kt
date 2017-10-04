@@ -234,6 +234,45 @@ class LoginManagerTest{
     }
 
     @Test
+    fun should_log_out_concurrent_sessions(){
+        val auditDB = randomAuditDB()
+        val userDB = userDB()
+        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
+                config = LoginManagerConfig( sleepBetweenAttempts = false, allowConcurrentLogins = false ) )
+
+        val roles = generateRoles(userdb = userDB)
+        val user = generateUser(roles)
+        userDB.storeUser(user)
+
+        val count = 10
+        val badLogins = mutableListOf<LoginToken>()
+        val goodLogins = mutableListOf<LoginToken>()
+
+        for( i in 0..count){
+            val credentials =  Credentials( ipAddress = uuid(),
+                                            x509SerialNumber = neverNull( user.serialNumber) )
+            val loginToken = loginManager.authenticate(credentials)
+            badLogins.add(loginToken)
+        }
+
+        val address2 = "127.0.0.2"
+        for( i in 0..count ){
+            val credentials =  Credentials( ipAddress = address2,
+                                            x509SerialNumber = neverNull( user.serialNumber) )
+            val loginToken = loginManager.authenticate(credentials)
+            goodLogins.add(loginToken)
+        }
+
+        for( token in badLogins ){
+            Assert.assertTrue("Token should have been logged out", token.hasExpired() )
+        }
+
+        for( token in goodLogins ){
+            Assert.assertFalse("Token should not have been logged out", token.hasExpired() )
+        }
+    }
+
+    @Test
     fun should_fail_login_by_password(){
         val auditDB = randomAuditDB()
         val userDB = userDB()
