@@ -24,6 +24,8 @@ interface UserDB {
     fun retrieveUserByLogin(login: String): User?
     fun retrieveUserByLoginAndPassword(login: String, password: String): User?
     fun retrieveUuidByLogin(login: String): String?
+    fun retrieveUuidBySerialNumber(serial: String): String?
+    fun retrieveUuid(key: String): String?
 
     fun userExists(uuid: String): Boolean
 

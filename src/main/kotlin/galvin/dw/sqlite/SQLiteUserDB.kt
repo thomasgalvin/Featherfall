@@ -36,7 +36,8 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
     private val sqlRetrieveAllUsers = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_users.sql")
     private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
     private val sqlRetrieveRolesForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_roles_for_user.sql")
-    private val sqlRetrieveUuidByLogin= loadSql("/galvin/dw/db/sqlite/users/retrieve_uuid_by_login.sql")
+    private val sqlRetrieveUuidByLogin = loadSql("/galvin/dw/db/sqlite/users/retrieve_uuid_by_login.sql")
+    private val sqlRetrieveUuidBySerialNumber = loadSql("/galvin/dw/db/sqlite/users/retrieve_uuid_by_serial_number.sql")
 
     private val sqlSetLockedByUuid = loadSql("/galvin/dw/db/sqlite/users/set_locked_by_uuid.sql")
     private val sqlSetLockedByLogin = loadSql("/galvin/dw/db/sqlite/users/set_locked_by_login.sql")
@@ -365,22 +366,36 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
         )
     }
 
-    override fun retrieveUuidByLogin(login: String): String?{
-        synchronized(concurrencyLock){
-            var result: String? = null
-
-            val conn = conn()
-            val statement = conn.prepareStatement(sqlRetrieveUuidByLogin)
-            statement.setString(1, login)
-
-            val results = statement.executeQuery()
-            if( results.next() ){
-                result = results.getString("uuid")
-            }
-
-            close(conn, statement)
-            return result
+    override fun retrieveUuid(key: String): String?{
+        var uuid = neverNull( retrieveUuidByLogin(key) )
+        if( isBlank(uuid) ){
+            uuid = neverNull( retrieveUuidBySerialNumber(key) )
         }
+        return uuid
+    }
+
+    override fun retrieveUuidByLogin(login: String): String?{
+        return retrieveUuidBy(sqlRetrieveUuidByLogin, login)
+    }
+
+    override fun retrieveUuidBySerialNumber(serial: String): String?{
+        return retrieveUuidBy(sqlRetrieveUuidBySerialNumber, serial)
+    }
+
+    private fun retrieveUuidBy(sql: String, key: String): String?{
+        var result: String? = null
+
+        val conn = conn()
+        val statement = conn.prepareStatement(sql)
+        statement.setString(1, key)
+
+        val results = statement.executeQuery()
+        if( results.next() ){
+            result = results.getString("uuid")
+        }
+
+        close(conn, statement)
+        return result
     }
 
     private fun unmarshalContact( hit: ResultSet): ContactInfo {

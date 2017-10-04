@@ -26,7 +26,7 @@ data class SystemInfo( val serialNumber: String,
                        val version: String,
                        val maximumClassification: String,
                        val classificationGuide: String,
-                       val networks: List<String>,
+                       val networks: List<String> = listOf(),
                        val uuid: String = uuid() )
 
 data class AccessInfo( val userUuid: String,
@@ -66,9 +66,70 @@ enum class AccessType {
     DELETE,
 
     REJECT,
+    APPROVE,
+
+    LOCKED,
+    UNLOCKED,
+
+    ACTIVATED,
+    DEACTIVATED,
 
     LOGIN,
     LOGOUT,
 
     ASSERT_PERMISSION
+}
+
+///
+/// No-Op implementation
+///
+
+class NoOpAuditDB: AuditDB {
+    private val dummySystemInfo = galvin.dw.dummySystemInfo()
+
+    override fun storeSystemInfo(systemInfo: SystemInfo ){}
+
+    override fun retrieveAllSystemInfo(): List<SystemInfo>{
+        return listOf( dummySystemInfo )
+    }
+
+    override fun retrieveSystemInfo(uuid: String): SystemInfo?{
+        if( uuid == dummySystemInfo.uuid ){
+            return dummySystemInfo
+        }
+
+        return null
+    }
+
+    override fun storeCurrentSystemInfo(uuid: String){}
+
+    override fun retrieveCurrentSystemInfo(): SystemInfo?{
+        return dummySystemInfo
+    }
+
+    override fun retrieveCurrentSystemInfoUuid(): String{
+        return dummySystemInfo.uuid
+    }
+
+
+    override fun log( access: AccessInfo ){}
+
+    override fun retrieveAccessInfo(systemInfoUuid: String?,
+                                    startTimestamp: Long?,
+                                    endTimestamp: Long?,
+                                    accessType: AccessType?,
+                                    permissionGranted: Boolean?): List<AccessInfo> {
+        return listOf()
+    }
+}
+
+fun dummySystemInfo(): SystemInfo{
+    return SystemInfo(
+            serialNumber = "????",
+            name = "????",
+            version = "????",
+            maximumClassification = "U",
+            classificationGuide = "N/A",
+            uuid = "????"
+    )
 }
