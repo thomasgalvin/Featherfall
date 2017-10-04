@@ -89,6 +89,10 @@ class LoginManager( private val userDB: UserDB,
         return loginToken
     }
 
+    fun logout( loginTokenUuid: String ){
+        loginTokens.remove(loginTokenUuid)
+    }
+
     ///
     /// utilities
     ///
@@ -324,6 +328,10 @@ internal class LoginTokenManager{
                 loginTokens[key] = loginToken
             }
         }
+    }
+
+    fun remove( key: String ){
+        loginTokens.remove(key)
     }
 
     private fun purgeExpired(){
