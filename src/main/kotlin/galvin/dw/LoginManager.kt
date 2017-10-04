@@ -369,7 +369,14 @@ internal class LoginTokenManager{
         loginTokens.remove(key)
     }
 
+    /**
+     * Used to disable concurrent logins. This method will
+     * expire and remove any tokens that belong to the user
+     * (userUuid) but do *not* correspond to the given ip address.
+     */
     fun logoutExcept( ipAddress: String, userUuid: String ){
+        purgeExpired()
+
         synchronized(concurrencyLock){
             val expiredTokens = mutableListOf<LoginToken>()
 
