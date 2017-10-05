@@ -1,11 +1,14 @@
 package galvin.dw
 
-import java.io.IOException
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.*
 import java.security.cert.X509Certificate
 import org.mindrot.jbcrypt.BCrypt
+import java.nio.charset.Charset
+import jdk.nashorn.tools.ShellFunctions.input
+import java.io.*
+
 
 class Utilities{}
 
@@ -86,6 +89,45 @@ fun rollbackAndClose( conn: Connection? ){
         conn.rollback()
         conn.close()
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+/// IO utility code
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+fun loadResourceAndReadLines( resource: String ): List<String>{
+    val input = Utilities::class.java.classLoader.getResourceAsStream(resource)
+    val lines = readlines(input)
+    closeQuietly(input)
+    return lines
+}
+
+fun readlines( stream: InputStream, charset: Charset = Charset.defaultCharset() ): List<String>{
+    val r = InputStreamReader( stream, charset )
+    val reader = BufferedReader(r)
+    val list = mutableListOf<String>()
+
+    var line = reader.readLine()
+    while( line != null ){
+        list.add(line)
+        line = reader.readLine()
+    }
+
+    closeQuietly(reader)
+    closeQuietly(r)
+    closeQuietly(stream)
+    return list
+}
+
+fun closeQuietly( stream: Closeable? ){
+    try {
+        if (stream != null) {
+            stream.close()
+        }
+    }
+    catch( t: Throwable ){}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

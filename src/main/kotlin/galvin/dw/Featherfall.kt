@@ -16,7 +16,7 @@ import javax.net.ssl.*
 import javax.servlet.DispatcherType
 
 /**
- * This class provides a convenient wa of configuring and starting
+ * This class provides a convenient method of configuring and starting
  * a Dropwizard server.
  *
  * Usage will look something like this:
@@ -115,7 +115,7 @@ data class StaticResource( val location: String, val context: String = "", val i
 
 data class Keystore(val location: File, val password: String)
 
-class BlindTrustManager : X509TrustManager {
+internal class BlindTrustManager : X509TrustManager {
     override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? { return null }
 
     override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>?, authType: String?) {}
@@ -123,7 +123,7 @@ class BlindTrustManager : X509TrustManager {
     override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>?, authType: String?) {}
 }
 
-class AllHostsValid : HostnameVerifier {
+internal class AllHostsValid : HostnameVerifier {
     override fun verify(hostname: String, session: SSLSession): Boolean { return true }
 }
 
