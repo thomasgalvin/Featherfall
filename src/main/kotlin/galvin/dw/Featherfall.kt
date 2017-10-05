@@ -28,7 +28,7 @@ import javax.servlet.DispatcherType
  * server.start()
  */
 class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
-                                          serverRootPath: String? = null,
+                                          serverRootPath: String? = "",
                                           keystore: Keystore? = null,
                                           disableSslValidation: Boolean = false,
                                           private val jsonPrettyPrint: Boolean = true,
@@ -36,14 +36,13 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
                                           private val displayWADL: Boolean = true,
                                           private val apiResources: List<Any> = listOf<Any>(),
                                           private val healthChecks: List<HealthCheckContext> = listOf<HealthCheckContext>(),
-                                          private val staticResources: List<StaticResource> = listOf<StaticResource>()
-    ) :Application<T>() {
+                                          private val staticResources: List<StaticResource> = listOf<StaticResource>() ) :Application<T>() {
     init {
-        if (serverRootPath != null) System.setProperty("dw.server.rootPath", serverRootPath)
+        if ( !isBlank(serverRootPath) ) System.setProperty("dw.server.rootPath", serverRootPath)
 
         if (keystore != null) {
-            System.setProperty("javax.net.ssl.trustStore", keystore.location.absolutePath);
-            System.setProperty("javax.net.ssl.trustStorePassword", keystore.password);
+            System.setProperty("javax.net.ssl.trustStore", keystore.location.absolutePath)
+            System.setProperty("javax.net.ssl.trustStorePassword", keystore.password)
         }
 
         if (disableSslValidation) {
@@ -51,7 +50,7 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
             val sc = SSLContext.getInstance("SSL")
             sc.init(null, trustManagers, java.security.SecureRandom())
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.socketFactory)
-            HttpsURLConnection.setDefaultHostnameVerifier(AllHostsValid());
+            HttpsURLConnection.setDefaultHostnameVerifier(AllHostsValid())
         }
     }
 
@@ -62,8 +61,8 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
     override fun initialize( bootstrap : Bootstrap<T>){
         super.initialize( bootstrap )
 
-        for ( (location, context, index, onClasspth, uuid) in staticResources){
-            if( onClasspth ) {
+        for ( (location, context, index, onClasspath, uuid) in staticResources){
+            if( onClasspath ) {
                 bootstrap.addBundle(AssetsBundle(location, context, index, uuid))
             }
             else{
@@ -103,7 +102,10 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
     }
 
     private fun buildRuntimeArgs(): Array<String> {
-        if (configFile == null) return arrayOf("server") else return arrayOf("server", configFile.absolutePath)
+        when( configFile ){
+            null -> return arrayOf("server")
+            else -> return arrayOf("server", configFile.absolutePath)
+        }
     }
 }
 
