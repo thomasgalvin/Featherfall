@@ -27,11 +27,11 @@ fun main(args: Array<String>) {
     }
 }
 
-class HelloConfig: Configuration(){}
+class HelloConfig: Configuration()
 
 @Path("/")
 @Produces(MediaType.TEXT_PLAIN)
-class HelloResource(){
+class HelloResource {
     @GET
     fun hello() :String{
         return "Hello, world!"

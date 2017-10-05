@@ -5,6 +5,4 @@ import galvin.dw.*
 class UserResource( userDB: UserDB,
                     loginManager: LoginManager,
                     passwordRequirements: PasswordRequirements = PasswordRequirements(),
-                    auditDB: AuditDB = NoOpAuditDB() ){
-
-}
+                    auditDB: AuditDB = NoOpAuditDB() )

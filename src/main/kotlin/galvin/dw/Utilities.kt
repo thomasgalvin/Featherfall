@@ -7,7 +7,7 @@ import java.sql.PreparedStatement
 import java.util.*
 
 
-class Utilities{}
+class Utilities
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -120,9 +120,7 @@ fun readlines( stream: InputStream, charset: Charset = Charset.defaultCharset() 
 
 fun closeQuietly( stream: Closeable? ){
     try {
-        if (stream != null) {
-            stream.close()
-        }
+        stream?.close()
     }
     catch( t: Throwable ){}
 }
