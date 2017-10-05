@@ -1,12 +1,12 @@
 package galvin.dw.users.sqlite
 
 import galvin.dw.*
+import galvin.dw.sqlite.SQLiteAccountRequestDB
 import org.junit.Assert
 import org.junit.Test
 
 
 class SqliteAccountRequestDBTest {
-
     @Test
     fun should_not_create_tables_twice(){
         val userDB = userDB()
@@ -20,9 +20,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_store_and_retrieve_account_request(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
         accountRequestDB.storeAccountRequest(request)
@@ -33,13 +31,10 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_store_and_retrieve_all_account_requests(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
-        val expectedCount = 10
+        val( _, accountRequestDB, roles, count ) = testObjects()
 
         val map = mutableMapOf<String, AccountRequest>()
-        for( i in 1..expectedCount ){
+        for( i in 1..count ){
             val request = generateAccountRequest(roles)
             accountRequestDB.storeAccountRequest(request)
             map.put( request.uuid, request )
@@ -60,9 +55,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_update_and_retrieve_account_request(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
         accountRequestDB.storeAccountRequest(request)
@@ -78,12 +71,10 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_update_multiple_account_requests(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
-        for( i in 1 .. 10 ) {
+        for( i in 1 .. count ) {
             requests.add(generateAccountRequest(roles))
         }
 
@@ -117,9 +108,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_approve_account_requests(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
         accountRequestDB.storeAccountRequest(request)
@@ -137,12 +126,10 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_approve_multiple_account_requests(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
-        for( i in 1 .. 10 ) {
+        for( i in 1 .. count ) {
             requests.add(generateAccountRequest(roles))
         }
 
@@ -174,9 +161,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_reject_account_requests(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
         accountRequestDB.storeAccountRequest(request)
@@ -196,12 +181,10 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_reject_multiple_account_requests(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
-        for( i in 1 .. 10 ) {
+        for( i in 1 .. count ) {
             requests.add(generateAccountRequest(roles))
         }
 
@@ -233,9 +216,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_throw_when_passwords_mismatch() {
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, _ ) = testObjects()
 
         try{
             val request = generateAccountRequest(roles, uuid(), uuid(), uuid() )
@@ -248,8 +229,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_throw_when_no_account_request_exists_to_approve() {
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
+        val( _, accountRequestDB, _, _ ) = testObjects()
 
         try {
             accountRequestDB.approve(uuid(), uuid())
@@ -262,8 +242,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_throw_when_no_account_request_exists_to_reject() {
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
+        val( _, accountRequestDB, _, _ ) = testObjects()
 
         try {
             accountRequestDB.reject(uuid(), uuid())
@@ -276,10 +255,8 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_throw_when_user_alrady_exists() {
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
+        val( userDB, accountRequestDB, roles, _ ) = testObjects()
 
-        val roles = generateRoles(userdb = userDB)
         val user = generateUser(roles)
         userDB.storeUser(user)
 
@@ -296,9 +273,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_throw_when_rejecting_an_approved_account(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
         accountRequestDB.storeAccountRequest(request)
@@ -315,9 +290,7 @@ class SqliteAccountRequestDBTest {
 
     @Test
     fun should_retrieve_by_status(){
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
-        val roles = generateRoles(userdb = userDB)
+        val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val pending = mutableMapOf<String, AccountRequest>()
         val approved = mutableMapOf<String, AccountRequest>()
@@ -363,6 +336,25 @@ class SqliteAccountRequestDBTest {
             map[request.uuid] = request
             accountRequestDB.storeAccountRequest(request)
         }
+    }
+
+    class SqliteAccountRequestDBTestObjects(val userDB: UserDB,
+                                            val accountRequestDB: AccountRequestDB,
+                                            val roles: List<Role>,
+                                            val count: Int = 10) {
+        operator fun component1(): UserDB{ return userDB }
+        operator fun component2(): AccountRequestDB{ return accountRequestDB }
+        operator fun component3(): List<Role>{ return roles }
+        operator fun component4(): Int{ return count }
+    }
+
+    private fun testObjects(): SqliteAccountRequestDBTestObjects{
+        val userDB = userDB()
+        val accountRequestDB = accountRequestDB(userDB)
+        val roles = generateRoles(userdb = userDB)
+        val count = 10
+
+        return SqliteAccountRequestDBTestObjects(userDB, accountRequestDB, roles, count)
     }
 }
 
