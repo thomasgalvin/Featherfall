@@ -50,9 +50,9 @@ fun loadSql( classpathEntry: String ): String{
     return sql
 }
 
-fun runSql(conn: Connection, sql: String ){
+fun executeUpdate(conn: Connection, sql: String ){
     val statement = conn.prepareStatement(sql)
-    executeAndClose(statement, conn)
+    statement.executeUpdate()
 }
 
 fun executeAndClose(statement: PreparedStatement? = null, conn: Connection? = null){
@@ -75,6 +75,17 @@ fun commitAndClose(conn: Connection){
 fun close( conn: Connection, statement: PreparedStatement){
     statement.close()
     conn.close()
+}
+
+/**
+ * If the connection is not null and is still open,
+ * calls rollback() and then close()
+ */
+fun rollbackAndClose( conn: Connection? ){
+    if( conn != null && !conn.isClosed ){
+        conn.rollback()
+        conn.close()
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

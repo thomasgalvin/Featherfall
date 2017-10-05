@@ -22,7 +22,15 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
 
     init{
         //create tables
-        runSql( conn(), sqlCreateTableAccountRequests )
+
+        val conn = conn()
+        try {
+            executeUpdate(conn, sqlCreateTableAccountRequests)
+            commitAndClose(conn)
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 
     override fun storeAccountRequest(request: AccountRequest) {
@@ -36,43 +44,54 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             accountRequestUserInfoDB.storeUser(request.user, request.uuid)
 
             val conn = conn()
-            val statement = conn.prepareStatement(sqlStoreAccountRequest)
-            val approved = if( request.approved ) 1 else 0
-            val rejected = if( request.rejected ) 1 else 0
 
-            statement.setString(1, request.password)
-            statement.setString(2, request.reasonForAccount)
-            statement.setString(3, request.vouchName)
-            statement.setString(4, request.vouchContactInfo)
-            statement.setInt(5, approved)
-            statement.setString(6, request.approvedByUuid)
-            statement.setLong(7, request.approvedTimestamp)
-            statement.setInt(8, rejected)
-            statement.setString(9, request.rejectedByUuid)
-            statement.setLong(10, request.rejectedTimestamp)
-            statement.setString(11, request.rejectedReason)
-            statement.setString(12, request.uuid)
+            try {
+                val statement = conn.prepareStatement(sqlStoreAccountRequest)
+                val approved = if (request.approved) 1 else 0
+                val rejected = if (request.rejected) 1 else 0
 
-            executeAndClose(statement, conn)
+                statement.setString(1, request.password)
+                statement.setString(2, request.reasonForAccount)
+                statement.setString(3, request.vouchName)
+                statement.setString(4, request.vouchContactInfo)
+                statement.setInt(5, approved)
+                statement.setString(6, request.approvedByUuid)
+                statement.setLong(7, request.approvedTimestamp)
+                statement.setInt(8, rejected)
+                statement.setString(9, request.rejectedByUuid)
+                statement.setLong(10, request.rejectedTimestamp)
+                statement.setString(11, request.rejectedReason)
+                statement.setString(12, request.uuid)
+
+                executeAndClose(statement, conn)
+            }
+            finally{
+                rollbackAndClose(conn)
+            }
         }
     }
 
     override fun retrieveAccountRequest(uuid: String): AccountRequest? {
-        var result: AccountRequest? = null
-
         val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveAccountRequestByUuid)
-        statement.setString(1, uuid)
 
-        val resultSet = statement.executeQuery()
-        if (resultSet != null) {
-            if (resultSet.next()) {
-                result = unmarshalAccountRequest(resultSet)
+        try {
+            var result: AccountRequest? = null
+            val statement = conn.prepareStatement(sqlRetrieveAccountRequestByUuid)
+            statement.setString(1, uuid)
+
+            val resultSet = statement.executeQuery()
+            if (resultSet != null) {
+                if (resultSet.next()) {
+                    result = unmarshalAccountRequest(resultSet)
+                }
             }
-        }
 
-        close( conn, statement )
-        return result
+            close(conn, statement)
+            return result
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 
 
@@ -93,20 +112,25 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
     }
 
     private fun retrieveAccountRequests( sql: String ): List<AccountRequest> {
-        val result = mutableListOf<AccountRequest>()
-
         val conn = conn()
-        val statement = conn.prepareStatement(sql)
 
-        val resultSet = statement.executeQuery()
-        if (resultSet != null) {
-            while (resultSet.next()) {
-                result.add(unmarshalAccountRequest(resultSet))
+        try {
+            val result = mutableListOf<AccountRequest>()
+            val statement = conn.prepareStatement(sql)
+
+            val resultSet = statement.executeQuery()
+            if (resultSet != null) {
+                while (resultSet.next()) {
+                    result.add(unmarshalAccountRequest(resultSet))
+                }
             }
-        }
 
-        close( conn, statement )
-        return result
+            close(conn, statement)
+            return result
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 
     override fun approve( uuid: String, approvedByUuid: String, timestamp: Long ){
@@ -125,12 +149,18 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
             userDB.storeUser(accountRequest.user)
 
             val conn = conn()
-            val statement = conn.prepareStatement(sqlApproveAccountRequest)
-            statement.setString(1, approvedByUuid)
-            statement.setLong(2, timestamp)
-            statement.setString(3, uuid)
 
-            executeAndClose(statement, conn)
+            try {
+                val statement = conn.prepareStatement(sqlApproveAccountRequest)
+                statement.setString(1, approvedByUuid)
+                statement.setLong(2, timestamp)
+                statement.setString(3, uuid)
+
+                executeAndClose(statement, conn)
+            }
+            finally{
+                rollbackAndClose(conn)
+            }
         }
     }
 
@@ -150,13 +180,19 @@ class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB
 
         synchronized(concurrencyLock) {
             val conn = conn()
-            val statement = conn.prepareStatement(sqlRejectAccountRequest)
-            statement.setString(1, rejectedByUuid)
-            statement.setLong(2, timestamp)
-            statement.setString(3, reason)
-            statement.setString(4, uuid)
 
-            executeAndClose(statement, conn)
+            try {
+                val statement = conn.prepareStatement(sqlRejectAccountRequest)
+                statement.setString(1, rejectedByUuid)
+                statement.setLong(2, timestamp)
+                statement.setString(3, reason)
+                statement.setString(4, uuid)
+
+                executeAndClose(statement, conn)
+            }
+            finally{
+                rollbackAndClose(conn)
+            }
         }
     }
 

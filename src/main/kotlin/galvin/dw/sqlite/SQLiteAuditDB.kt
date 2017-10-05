@@ -33,32 +33,43 @@ class SQLiteAuditDB( databaseFile: File,
     private val sqlCurrentSystemInfoExistsByUuid = loadSql("/galvin/dw/db/sqlite/audit/current_system_info_exists_by_uuid.sql")
 
     init{
-        runSql( conn(), sqlCreateTableSystemInfo )
-        runSql( conn(), sqlCreateTableSystemInfoNetworks )
-
-        runSql( conn(), sqlCreateTableAccessInfo )
-        runSql( conn(), sqlCreateTableAccessInfoMods )
-
-        runSql( conn(), sqlCreateTableCurrentSystemInfo )
+        val conn = conn()
+        try {
+            executeUpdate(conn, sqlCreateTableSystemInfo)
+            executeUpdate(conn, sqlCreateTableSystemInfoNetworks)
+            executeUpdate(conn, sqlCreateTableAccessInfo)
+            executeUpdate(conn, sqlCreateTableAccessInfoMods)
+            executeUpdate(conn, sqlCreateTableCurrentSystemInfo)
+            commitAndClose(conn)
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 
     override fun storeSystemInfo(systemInfo: SystemInfo) {
         synchronized(concurrencyLock) {
-            val conn = conn();
-            val statement = conn.prepareStatement(sqlStoreSystemInfo)
+            val conn = conn()
 
-            statement.setString(1, systemInfo.serialNumber)
-            statement.setString(2, systemInfo.name)
-            statement.setString(3, systemInfo.version)
-            statement.setString(4, systemInfo.maximumClassification)
-            statement.setString(5, systemInfo.classificationGuide)
-            statement.setString(6, systemInfo.uuid)
+            try {
+                val statement = conn.prepareStatement(sqlStoreSystemInfo)
 
-            for ((ordinal, network) in systemInfo.networks.withIndex()) {
-                storeNetwork(conn, systemInfo.uuid, network, ordinal)
+                statement.setString(1, systemInfo.serialNumber)
+                statement.setString(2, systemInfo.name)
+                statement.setString(3, systemInfo.version)
+                statement.setString(4, systemInfo.maximumClassification)
+                statement.setString(5, systemInfo.classificationGuide)
+                statement.setString(6, systemInfo.uuid)
+
+                for ((ordinal, network) in systemInfo.networks.withIndex()) {
+                    storeNetwork(conn, systemInfo.uuid, network, ordinal)
+                }
+
+                executeAndClose(statement, conn)
             }
-
-            executeAndClose( statement, conn )
+            finally{
+                rollbackAndClose(conn)
+            }
         }
     }
 
@@ -74,70 +85,93 @@ class SQLiteAuditDB( databaseFile: File,
 
     override fun retrieveAllSystemInfo(): List<SystemInfo> {
         val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveAllSystemInfo)
-        val result = mutableListOf<SystemInfo>()
 
-        val resultSet = statement.executeQuery()
-        if(resultSet != null){
-            while( resultSet.next() ){
-                result.add( unmarshalSystemInfo(resultSet, conn) )
+        try {
+            val statement = conn.prepareStatement(sqlRetrieveAllSystemInfo)
+            val result = mutableListOf<SystemInfo>()
+
+            val resultSet = statement.executeQuery()
+            if (resultSet != null) {
+                while (resultSet.next()) {
+                    result.add(unmarshalSystemInfo(resultSet, conn))
+                }
             }
-        }
 
-        close(conn, statement)
-        return result
+            close(conn, statement)
+            return result
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 
     override fun retrieveSystemInfo(uuid: String): SystemInfo? {
         val conn = conn()
-        val statement = conn.prepareStatement(sqlRetrieveSystemInfoByUuid)
-        var result: SystemInfo? = null
 
-        statement.setString(1, uuid)
+        try {
+            val statement = conn.prepareStatement(sqlRetrieveSystemInfoByUuid)
+            var result: SystemInfo? = null
 
-        val resultSet = statement.executeQuery()
-        if( resultSet != null && resultSet.next() ){
-            result = unmarshalSystemInfo(resultSet, conn)
+            statement.setString(1, uuid)
+
+            val resultSet = statement.executeQuery()
+            if (resultSet != null && resultSet.next()) {
+                result = unmarshalSystemInfo(resultSet, conn)
+            }
+
+            close(conn, statement)
+            return result
         }
-
-        close(conn, statement)
-        return result
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 
     override fun storeCurrentSystemInfo(uuid: String) {
         synchronized(concurrencyLock) {
             val conn = conn()
 
-            val existsStatement = conn.prepareStatement(sqlCurrentSystemInfoExistsByUuid)
-            existsStatement.setString(1, uuid)
-            val existsResult = existsStatement.executeQuery()
-            if( !existsResult.next() ){
-                conn.close()
-                throw Exception( ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT )
+            try {
+                val existsStatement = conn.prepareStatement(sqlCurrentSystemInfoExistsByUuid)
+                existsStatement.setString(1, uuid)
+                val existsResult = existsStatement.executeQuery()
+                if (!existsResult.next()) {
+                    conn.close()
+                    throw Exception(ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT)
+                }
+
+                val deleteStatement = conn.prepareStatement(sqlDeleteCurrentSystemInfo)
+                executeAndClose(deleteStatement)
+
+                val storeStatement = conn.prepareStatement(sqlSetCurrentSystemInfo)
+                storeStatement.setString(1, uuid)
+                executeAndClose(storeStatement, conn)
             }
-
-            val deleteStatement = conn.prepareStatement(sqlDeleteCurrentSystemInfo)
-            executeAndClose( deleteStatement )
-
-            val storeStatement = conn.prepareStatement(sqlSetCurrentSystemInfo)
-            storeStatement.setString(1, uuid)
-            executeAndClose( storeStatement, conn )
+            finally{
+                rollbackAndClose(conn)
+            }
         }
     }
 
     override fun retrieveCurrentSystemInfo(): SystemInfo?{
-        var result : SystemInfo? = null
         val conn = conn()
 
-        val statement = conn.prepareStatement(sqlRetrieveCurrentSystemInfo)
-        val resultSet = statement.executeQuery()
-        if( resultSet != null && resultSet.next() ){
-            val uuid = resultSet.getString("uuid")
-            result = retrieveSystemInfo(uuid)
-        }
+        try {
+            var result: SystemInfo? = null
 
-        close(conn, statement)
-        return result
+            val statement = conn.prepareStatement(sqlRetrieveCurrentSystemInfo)
+            val resultSet = statement.executeQuery()
+            if (resultSet != null && resultSet.next()) {
+                val uuid = resultSet.getString("uuid")
+                result = retrieveSystemInfo(uuid)
+            }
+
+            close(conn, statement)
+            return result
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 
     override fun retrieveCurrentSystemInfoUuid(): String{
@@ -179,31 +213,36 @@ class SQLiteAuditDB( databaseFile: File,
     override fun log(access: AccessInfo) {
         synchronized(concurrencyLock) {
             val conn = conn()
-            val statement = conn.prepareStatement(sqlStoreAccessInfo)
 
-            val accessGranted = if(access.permissionGranted) 1 else 0
+            try {
+                val statement = conn.prepareStatement(sqlStoreAccessInfo)
+                val accessGranted = if (access.permissionGranted) 1 else 0
 
-            statement.setString(1, access.userUuid)
-            statement.setString(2, access.loginType.name)
-            statement.setString(3, access.loginProxyUuid)
-            statement.setString(4, access.ipAddress)
-            statement.setLong(5, access.timestamp)
-            statement.setString(6, access.resourceUuid)
-            statement.setString(7, access.resourceName)
-            statement.setString(8, access.classification)
-            statement.setString(9, access.resourceType)
-            statement.setString(10, access.accessType.name)
-            statement.setInt(11, accessGranted )
-            statement.setString(12, access.systemInfoUuid)
-            statement.setString(13, access.uuid)
+                statement.setString(1, access.userUuid)
+                statement.setString(2, access.loginType.name)
+                statement.setString(3, access.loginProxyUuid)
+                statement.setString(4, access.ipAddress)
+                statement.setLong(5, access.timestamp)
+                statement.setString(6, access.resourceUuid)
+                statement.setString(7, access.resourceName)
+                statement.setString(8, access.classification)
+                statement.setString(9, access.resourceType)
+                statement.setString(10, access.accessType.name)
+                statement.setInt(11, accessGranted)
+                statement.setString(12, access.systemInfoUuid)
+                statement.setString(13, access.uuid)
 
-            executeAndClose( statement )
+                executeAndClose(statement)
 
-            for ((ordinal, mod) in access.modifications.withIndex()) {
-                storeMod(conn, access.uuid, mod, ordinal)
+                for ((ordinal, mod) in access.modifications.withIndex()) {
+                    storeMod(conn, access.uuid, mod, ordinal)
+                }
+
+                commitAndClose(conn)
             }
-
-            commitAndClose(conn)
+            finally{
+                rollbackAndClose(conn)
+            }
         }
 
         if(console) println( access )
@@ -254,48 +293,54 @@ class SQLiteAuditDB( databaseFile: File,
         }
 
         sql.append( criteria.stream().collect( Collectors.joining( " and " ) ) )
+
         val conn = conn()
-        val statement = conn.prepareStatement(sql.toString())
+        try {
+            val statement = conn.prepareStatement(sql.toString())
 
-        var index = 1
+            var index = 1
 
-        if( systemInfoUuid != null ){
-            statement.setString(index, systemInfoUuid)
-            index++
+            if (systemInfoUuid != null) {
+                statement.setString(index, systemInfoUuid)
+                index++
+            }
+
+            if (startTimestamp != null) {
+                statement.setLong(index, startTimestamp)
+                index++
+            }
+
+            if (endTimestamp != null) {
+                statement.setLong(index, endTimestamp)
+                index++
+            }
+
+            if (accessType != null) {
+                statement.setInt(index, accessType.ordinal)
+                index++
+            }
+
+            if (permissionGranted != null) {
+                statement.setInt(index, if (permissionGranted) 1 else 0)
+            }
+
+            if (!criteria.isEmpty()) {
+                sql.append(" where ")
+            }
+
+            val result = mutableListOf<AccessInfo>()
+
+            val resultSet = statement.executeQuery()
+            while (resultSet.next()) {
+                result.add(unmarshalAccessInfo(resultSet, conn))
+            }
+
+            close(conn, statement)
+            return result
         }
-
-        if( startTimestamp != null ){
-            statement.setLong(index, startTimestamp)
-            index++
+        finally{
+            rollbackAndClose(conn)
         }
-
-        if( endTimestamp != null ){
-            statement.setLong(index, endTimestamp)
-            index++
-        }
-
-        if( accessType != null ){
-            statement.setInt(index, accessType.ordinal)
-            index++
-        }
-
-        if( permissionGranted != null ){
-            statement.setInt( index, if(permissionGranted) 1 else 0 )
-        }
-
-        if( !criteria.isEmpty() ){
-            sql.append(" where " )
-        }
-
-        val result = mutableListOf<AccessInfo>()
-
-        val resultSet = statement.executeQuery()
-        while( resultSet.next() ){
-            result.add( unmarshalAccessInfo(resultSet, conn) )
-        }
-
-        close(conn, statement)
-        return result
 
     }
 
