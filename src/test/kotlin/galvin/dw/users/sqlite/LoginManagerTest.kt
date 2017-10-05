@@ -1,14 +1,8 @@
 package galvin.dw.users.sqlite
 
 import galvin.dw.*
-import galvin.dw.sqlite.SQLiteAuditDB
 import org.junit.Assert
 import org.junit.Test
-
-import java.io.File
-import java.util.*
-
-import galvin.dw.uuid
 
 class LoginManagerTest{
     @Test

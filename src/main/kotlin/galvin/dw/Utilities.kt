@@ -1,13 +1,10 @@
 package galvin.dw
 
+import java.io.*
+import java.nio.charset.Charset
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.*
-import java.security.cert.X509Certificate
-import org.mindrot.jbcrypt.BCrypt
-import java.nio.charset.Charset
-import jdk.nashorn.tools.ShellFunctions.input
-import java.io.*
 
 
 class Utilities{}
@@ -130,30 +127,3 @@ fun closeQuietly( stream: Closeable? ){
     catch( t: Throwable ){}
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-/// Password hashing utility code
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-fun validate( password: String?, hash: String? ): Boolean{
-    if( password == null || isBlank(password) ){
-        return false
-    }
-
-    if( hash == null || isBlank(hash) ){
-        return false
-    }
-
-    return BCrypt.checkpw( password, hash )
-}
-
-fun hash( password: String): String{
-    return BCrypt.hashpw( password, BCrypt.gensalt() )
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-/// Permissions utility code
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
