@@ -1,5 +1,6 @@
 package galvin.dw.users.sqlite
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import galvin.dw.*
 import galvin.dw.sqlite.SQLiteAuditDB
 import org.junit.Assert
@@ -13,12 +14,7 @@ import galvin.dw.uuid
 class LoginManagerTest{
     @Test
     fun should_login_successfully_by_password(){
-        val auditDB = randomAuditDB()
-        val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB )
-
-        val roles = generateRoles(userdb = userDB)
-        val count = 10;
+        val (auditDB, userDB, loginManager, roles, count) = testObjects()
 
         val passwords = mutableListOf<String>()
         for( i in 0..count ){
@@ -62,12 +58,7 @@ class LoginManagerTest{
 
     @Test
     fun should_login_successfully_by_serial_number(){
-        val auditDB = randomAuditDB()
-        val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB )
-
-        val roles = generateRoles(userdb = userDB)
-        val count = 10;
+        val (_, userDB, loginManager, roles, count) = testObjects()
 
         val passwords = mutableListOf<String>()
         for( i in 0..count ){
@@ -91,12 +82,7 @@ class LoginManagerTest{
 
     @Test
     fun should_login_successfully_by_login_token(){
-        val auditDB = randomAuditDB()
-        val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB )
-
-        val roles = generateRoles(userdb = userDB)
-        val count = 10;
+        val (_, userDB, loginManager, roles, count) = testObjects()
 
         val passwords = mutableListOf<String>()
         for( i in 0..count ){
@@ -136,13 +122,7 @@ class LoginManagerTest{
 
     @Test
     fun should_log_out(){
-        val auditDB = randomAuditDB()
-        val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
-                                         config = LoginManagerConfig( sleepBetweenAttempts = false ) )
-
-        val roles = generateRoles(userdb = userDB)
-        val count = 10;
+        val (_, userDB, loginManager, roles, count) = testObjects()
 
         val passwords = mutableListOf<String>()
         for( i in 0..count ){
@@ -184,13 +164,7 @@ class LoginManagerTest{
 
     @Test
     fun should_purge_expired(){
-        val auditDB = randomAuditDB()
-        val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
-                config = LoginManagerConfig( tokenLifespan = 1, sleepBetweenAttempts = false ) )
-
-        val roles = generateRoles(userdb = userDB)
-        val count = 10;
+        val (_, userDB, loginManager, roles, count) = testObjects(tokenLifespan=1)
 
         val passwords = mutableListOf<String>()
         for( i in 0..count ){
@@ -215,7 +189,7 @@ class LoginManagerTest{
         }
 
         //let the tokens expire
-        Thread.sleep(10)
+        Thread.sleep(100)
 
         for( loginToken in loginTokens ){
             try {
@@ -235,16 +209,11 @@ class LoginManagerTest{
 
     @Test
     fun should_log_out_concurrent_sessions(){
-        val auditDB = randomAuditDB()
-        val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
-                config = LoginManagerConfig( sleepBetweenAttempts = false, allowConcurrentLogins = false ) )
+        val (_, userDB, loginManager, roles, count) = testObjects(allowConcurrentLogins = false)
 
-        val roles = generateRoles(userdb = userDB)
         val user = generateUser(roles)
         userDB.storeUser(user)
 
-        val count = 10
         val badLogins = mutableListOf<LoginToken>()
         val goodLogins = mutableListOf<LoginToken>()
 
@@ -274,13 +243,7 @@ class LoginManagerTest{
 
     @Test
     fun should_fail_login_by_password(){
-        val auditDB = randomAuditDB()
-        val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
-                                         config = LoginManagerConfig( sleepBetweenAttempts = false ) )
-
-        val roles = generateRoles(userdb = userDB)
-        val count = 10
+        val (auditDB, userDB, loginManager, roles, count) = testObjects()
 
         val passwords = mutableListOf<String>()
         for( i in 0..count ){
@@ -319,12 +282,8 @@ class LoginManagerTest{
 
     @Test
     fun should_lock_and_throw_on_max_failures(){
-        val auditDB = randomAuditDB()
-        val userDB = userDB()
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB,
-                                         config = LoginManagerConfig( sleepBetweenAttempts = false ) )
+        val (_, userDB, loginManager, roles, _) = testObjects()
 
-        val roles = generateRoles(userdb = userDB)
         val user = generateUser(roles)
         userDB.storeUser(user)
 
@@ -385,5 +344,30 @@ class LoginManagerTest{
                 ),
                 "uuid:" + uuid()
         )
+    }
+
+    class LoginManagerTestObjects(val auditDB: AuditDB,
+                                  val userDB: UserDB,
+                                  val loginManager: LoginManager,
+                                  val roles: List<Role>,
+                                  val count: Int = 10 ){
+        operator fun component1(): AuditDB{ return auditDB }
+        operator fun component2(): UserDB{ return userDB }
+        operator fun component3(): LoginManager{ return loginManager }
+        operator fun component4(): List<Role>{ return roles }
+        operator fun component5(): Int{ return count }
+    }
+
+    private fun testObjects( allowConcurrentLogins: Boolean = true, tokenLifespan: Long = 1_000_000): LoginManagerTestObjects {
+        val auditDB = randomAuditDB()
+        val userDB = userDB()
+        val roles = generateRoles(userdb = userDB)
+
+        val config = LoginManagerConfig( tokenLifespan = tokenLifespan,
+                                         sleepBetweenAttempts = false,
+                                         allowConcurrentLogins = allowConcurrentLogins)
+        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB, config = config )
+
+        return LoginManagerTestObjects(auditDB, userDB, loginManager, roles )
     }
 }
