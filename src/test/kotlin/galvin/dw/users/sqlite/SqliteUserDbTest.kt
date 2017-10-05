@@ -2,17 +2,12 @@ package galvin.dw.users.sqlite
 
 import galvin.dw.Role
 import galvin.dw.User
+import galvin.dw.UserDB
 import galvin.dw.neverNull
 import org.junit.Assert
 import org.junit.Test
 
 class SqliteUserDbTest {
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // Roles tests
-    //
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Test
     fun should_not_create_tables_twice(){
@@ -22,6 +17,12 @@ class SqliteUserDbTest {
         Assert.assertNotNull(userdb)
         Assert.assertNotNull(userdb2)
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Roles tests
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Test
     fun should_store_and_retrieve_roles(){
@@ -123,34 +124,30 @@ class SqliteUserDbTest {
         }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Users tests
     //
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Test
     fun should_store_and_retrieve_user(){
-        val userdb = userDB()
-        val roles = generateRoles(userdb = userdb)
+        val( userDB, user ) = testObjects()
+        userDB.storeUser(user)
 
-        val user = generateUser(roles)
-        userdb.storeUser(user)
-
-        val loaded = userdb.retrieveUser(user.uuid)
+        val loaded = userDB.retrieveUser(user.uuid)
         Assert.assertEquals("Loaded user did not match expected", user, loaded)
     }
 
     @Test
     fun should_store_and_retrieve_all_users_by_serial_number(){
-        val userdb = userDB()
-        val roles = generateRoles(userdb = userdb)
+        val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
         val map = mutableMapOf<String, User>()
         for( i in 1..expectedCount ){
             val user = generateUser(roles)
-            userdb.storeUser(user)
+            userDB.storeUser(user)
             val serial = user.serialNumber
             if( serial != null ){
                 map.put(serial, user)
@@ -159,11 +156,11 @@ class SqliteUserDbTest {
 
         for( key in map.keys ){
             val expected = map[key]
-            val loaded = userdb.retrieveUserBySerialNumber(key)
+            val loaded = userDB.retrieveUserBySerialNumber(key)
             Assert.assertEquals("Loaded user did not match expected", expected, loaded)
         }
 
-        val loadedUsers = userdb.retrieveUsers()
+        val loadedUsers = userDB.retrieveUsers()
         for( loaded in loadedUsers ){
             val expected = map[loaded.serialNumber]
             Assert.assertEquals("Loaded user did not match expected", expected, loaded)
@@ -172,25 +169,24 @@ class SqliteUserDbTest {
 
     @Test
     fun should_store_and_retrieve_all_users_by_login(){
-        val userdb = userDB()
-        val roles = generateRoles(userdb = userdb)
+        val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
         val map = mutableMapOf<String, User>()
         for( i in 1..expectedCount ){
             val user = generateUser(roles)
-            userdb.storeUser(user)
+            userDB.storeUser(user)
             val login = user.login
             map.put(login, user)
         }
 
         for( key in map.keys ){
             val expected = map[key]
-            val loaded = userdb.retrieveUserByLogin(key)
+            val loaded = userDB.retrieveUserByLogin(key)
             Assert.assertEquals("Loaded user did not match expected", expected, loaded)
         }
 
-        val loadedUsers = userdb.retrieveUsers()
+        val loadedUsers = userDB.retrieveUsers()
         for( loaded in loadedUsers ){
             val expected = map[loaded.login]
             Assert.assertEquals("Loaded user did not match expected", expected, loaded)
@@ -199,24 +195,23 @@ class SqliteUserDbTest {
 
     @Test
     fun should_store_and_retrieve_all_users(){
-        val userdb = userDB()
-        val roles = generateRoles(userdb = userdb)
+        val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
         val map = mutableMapOf<String, User>()
         for( i in 1..expectedCount ){
             val user = generateUser(roles)
-            userdb.storeUser(user)
+            userDB.storeUser(user)
             map.put( user.uuid, user )
         }
 
         for( key in map.keys ){
             val expected = map[key]
-            val loaded = userdb.retrieveUser(key)
+            val loaded = userDB.retrieveUser(key)
             Assert.assertEquals("Loaded user did not match expected", expected, loaded)
         }
 
-        val loadedUsers = userdb.retrieveUsers()
+        val loadedUsers = userDB.retrieveUsers()
         for( loaded in loadedUsers ){
             val expected = map[loaded.uuid]
             Assert.assertEquals("Loaded user did not match expected", expected, loaded)
@@ -225,24 +220,20 @@ class SqliteUserDbTest {
 
     @Test
     fun should_update_user(){
-        val userdb = userDB()
-        val roles = generateRoles(userdb = userdb)
+        val( userDB, user ) = testObjects()
+        userDB.storeUser(user)
 
-        val user = generateUser(roles)
-        userdb.storeUser(user)
-
-        val updateRoles = generateRoles(userdb = userdb)
+        val updateRoles = generateRoles(userdb = userDB)
         val updated = generateUser(updateRoles, user.uuid)
-        userdb.storeUser(updated)
+        userDB.storeUser(updated)
 
-        val loaded = userdb.retrieveUser(user.uuid)
+        val loaded = userDB.retrieveUser(user.uuid)
         Assert.assertEquals("Loaded user did not match expected", updated, loaded)
     }
 
     @Test
     fun should_update_multiple_users(){
-        val userdb = userDB()
-        val roles = generateRoles(userdb = userdb)
+        val( userDB, _, _, roles ) = testObjects()
 
         val users = mutableListOf<User>()
         for( i in 1 .. 10 ) {
@@ -251,41 +242,36 @@ class SqliteUserDbTest {
 
         val map = mutableMapOf<String, User>()
         for( user in users ){
-            userdb.storeUser( user )
+            userDB.storeUser( user )
             map[user.uuid] = user
         }
 
         for( key in map.keys ){
-            val loaded = userdb.retrieveUser(key)
+            val loaded = userDB.retrieveUser(key)
             Assert.assertEquals("Loaded user did not match expected", map[key], loaded)
         }
 
         for( key in map.keys ){
             val user = generateUser(roles, key)
             map[key] = user
-            userdb.storeUser( user )
+            userDB.storeUser( user )
         }
 
         for( key in map.keys ){
-            val loaded = userdb.retrieveUser(key)
+            val loaded = userDB.retrieveUser(key)
             Assert.assertEquals("Loaded user did not match expected", map[key], loaded)
         }
 
         for( user in users ){
-            val loaded = userdb.retrieveUser(user.uuid)
+            val loaded = userDB.retrieveUser(user.uuid)
             Assert.assertNotEquals("Loaded user should have been modified", user, loaded)
         }
     }
 
     @Test
     fun should_retrieve_uuid_by_login(){
-        val userDB = userDB()
-        val roles = generateRoles(userdb = userDB)
-
-        val user = generateUser(roles)
+        val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
-
-        val user2 = generateUser(roles)
         userDB.storeUser(user2)
 
         val uuid = userDB.retrieveUuidByLogin(user.login)
@@ -297,13 +283,8 @@ class SqliteUserDbTest {
 
     @Test
     fun should_retrieve_uuid_by_serial_number(){
-        val userDB = userDB()
-        val roles = generateRoles(userdb = userDB)
-
-        val user = generateUser(roles)
+        val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
-
-        val user2 = generateUser(roles)
         userDB.storeUser(user2)
 
         val uuid = userDB.retrieveUuidBySerialNumber( neverNull( user.serialNumber) )
@@ -315,13 +296,8 @@ class SqliteUserDbTest {
 
     @Test
     fun should_retrieve_uuid_by_login_or_serial_number(){
-        val userDB = userDB()
-        val roles = generateRoles(userdb = userDB)
-
-        val user = generateUser(roles)
+        val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
-
-        val user2 = generateUser(roles)
         userDB.storeUser(user2)
 
         val uuidA = userDB.retrieveUuid(user.login)
@@ -337,11 +313,7 @@ class SqliteUserDbTest {
 
     @Test
     fun should_lock_and_unlock_user_by_uuid(){
-        val userDB = userDB()
-        val roles = generateRoles(userdb = userDB)
-
-        val toBeLocked = generateUser(roles)
-        val neverLocked = generateUser(roles)
+        val( userDB, toBeLocked, neverLocked ) = testObjects()
 
         userDB.storeUser(toBeLocked)
         userDB.storeUser(neverLocked)
@@ -381,11 +353,7 @@ class SqliteUserDbTest {
 
     @Test
     fun should_lock_and_unlock_user_by_login(){
-        val userDB = userDB()
-        val roles = generateRoles(userdb = userDB)
-
-        val toBeLocked = generateUser(roles)
-        val neverLocked = generateUser(roles)
+        val( userDB, toBeLocked, neverLocked ) = testObjects()
 
         userDB.storeUser(toBeLocked)
         userDB.storeUser(neverLocked)
@@ -421,5 +389,21 @@ class SqliteUserDbTest {
         else {
             Assert.assertFalse( "Account should not have been locked", shouldBeUnlocked.locked)
         }
+    }
+
+    private fun testObjects(): SqliteUserDbTestObjects{
+        val userDB = userDB()
+        val roles = generateRoles(userdb = userDB)
+        val user1 = generateUser(roles)
+        val user2 = generateUser(roles)
+
+        return SqliteUserDbTestObjects(userDB, user1, user2, roles )
+    }
+
+    class SqliteUserDbTestObjects(val userDB: UserDB, val user1: User, val user2: User, val roles: List<Role> ){
+        operator fun component1(): UserDB{ return userDB }
+        operator fun component2(): User{ return user1 }
+        operator fun component3(): User{ return user2 }
+        operator fun component4(): List<Role>{ return roles }
     }
 }
