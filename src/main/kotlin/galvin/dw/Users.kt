@@ -123,7 +123,7 @@ data class AccountRequest(
         val password: String,
         val confirmPassword: String,
 
-        //confirmation; some accounts will only be approved for people with need-to-know or
+        //confirmation some accounts will only be approved for people with need-to-know or
         // some other compelling reason to have access to the system.
         val reasonForAccount: String?, //an explanation for why this account is being requested
         val vouchName: String?, //the name of someone who can vouch for you

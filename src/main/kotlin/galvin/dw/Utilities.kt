@@ -5,7 +5,7 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.*
 import java.security.cert.X509Certificate
-import org.mindrot.jbcrypt.BCrypt;
+import org.mindrot.jbcrypt.BCrypt
 
 class Utilities{}
 

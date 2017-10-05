@@ -28,7 +28,7 @@ class SQLiteUserDbTest {
     fun should_store_and_retrieve_roles(){
         val userdb = randomUserDB()
 
-        val expectedCount = 10;
+        val expectedCount = 10
         val map = mutableMapOf<String, Role>()
 
         val roles = generateRoles(expectedCount)
@@ -97,7 +97,7 @@ class SQLiteUserDbTest {
     fun should_update_role(){
         val userdb = randomUserDB()
 
-        val expectedCount = 10;
+        val expectedCount = 10
         val map = mutableMapOf<String, Role>()
 
         val roles = generateRoles(expectedCount)
