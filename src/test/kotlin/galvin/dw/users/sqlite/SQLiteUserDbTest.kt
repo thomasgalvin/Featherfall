@@ -7,12 +7,12 @@ import galvin.dw.neverNull
 import org.junit.Assert
 import org.junit.Test
 
-class SqliteUserDbTest {
+class SQLiteUserDbTest {
 
     @Test
     fun should_not_create_tables_twice(){
-        val userdb = userDB()
-        val userdb2 = userDB()
+        val userdb = randomUserDB()
+        val userdb2 = randomUserDB()
 
         Assert.assertNotNull(userdb)
         Assert.assertNotNull(userdb2)
@@ -26,7 +26,7 @@ class SqliteUserDbTest {
 
     @Test
     fun should_store_and_retrieve_roles(){
-        val userdb = userDB()
+        val userdb = randomUserDB()
 
         val expectedCount = 10;
         val map = mutableMapOf<String, Role>()
@@ -53,7 +53,7 @@ class SqliteUserDbTest {
 
     @Test
     fun should_activate_role(){
-        val userdb = userDB()
+        val userdb = randomUserDB()
 
         val inactiveToActive = generateRole( active=false )
         val alwaysInactive = generateRole( active=false )
@@ -74,7 +74,7 @@ class SqliteUserDbTest {
 
     @Test
     fun should_deactivate_role(){
-        val userdb = userDB()
+        val userdb = randomUserDB()
 
         val activeToInactive = generateRole( active=true )
         val alwaysActive = generateRole( active=true )
@@ -95,7 +95,7 @@ class SqliteUserDbTest {
 
     @Test
     fun should_update_role(){
-        val userdb = userDB()
+        val userdb = randomUserDB()
 
         val expectedCount = 10;
         val map = mutableMapOf<String, Role>()
@@ -392,7 +392,7 @@ class SqliteUserDbTest {
     }
 
     private fun testObjects(): SqliteUserDbTestObjects{
-        val userDB = userDB()
+        val userDB = randomUserDB()
         val roles = generateRoles(userdb = userDB)
         val user1 = generateUser(roles)
         val user2 = generateUser(roles)

@@ -2,20 +2,25 @@ package galvin.dw.users.sqlite
 
 import galvin.dw.*
 import galvin.dw.sqlite.SQLiteAccountRequestDB
+import galvin.dw.sqlite.SQLiteAuditDB
 import galvin.dw.sqlite.SQLiteUserDB
 import java.io.File
 import java.util.*
 
-fun randomUserDbFile(): File {
-    return File( "target/users-" + uuid() + ".dat" )
+fun randomDbFile(): File {
+    return File( "target/" + uuid() + ".dat" )
 }
 
-fun userDB(): UserDB{
-    return SQLiteUserDB( randomUserDbFile() )
+fun randomUserDB(): UserDB{
+    return SQLiteUserDB( randomDbFile() )
 }
 
-fun accountRequestDB( userDB: UserDB ): AccountRequestDB {
-    return SQLiteAccountRequestDB( randomUserDbFile(), userDB )
+fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
+    return SQLiteAccountRequestDB( randomDbFile(), userDB )
+}
+
+fun randomAuditDB() : AuditDB {
+    return SQLiteAuditDB( randomDbFile() )
 }
 
 fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid(), password: String = uuid(), confirmPassword: String = password ) : AccountRequest {
@@ -114,5 +119,23 @@ fun generateRole( permissionCount: Int = 10, active: Boolean? = null, name: Stri
             name,
             permissions,
             isActive
+    )
+}
+
+fun randomSystemInfo(): SystemInfo {
+    return SystemInfo(
+            "serial:" + uuid(),
+            "name:" + uuid(),
+            "version" + uuid(),
+            "Unclassified-" + uuid(),
+            "guide:" + uuid(),
+            Arrays.asList(
+                    uuid(),
+                    uuid(),
+                    uuid(),
+                    uuid(),
+                    uuid()
+            ),
+            "uuid:" + uuid()
     )
 }

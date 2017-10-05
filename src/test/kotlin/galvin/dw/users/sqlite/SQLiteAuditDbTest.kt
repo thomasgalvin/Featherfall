@@ -68,6 +68,7 @@ class SQLiteAuditDbTest {
         val system = randomSystemInfo()
         audit.storeSystemInfo(system)
         audit.storeCurrentSystemInfo(system.uuid)
+
         val loaded = audit.retrieveCurrentSystemInfo()
         Assert.assertEquals("Loaded current system info did not match expected", system, loaded)
 
@@ -241,32 +242,6 @@ class SQLiteAuditDbTest {
     ///
     /// Utility code
     ///
-
-    private fun randomAuditDbFile(): File {
-        return File("target/audit-" + uuid() + ".dat")
-    }
-
-    private fun randomAuditDB() : AuditDB {
-        return SQLiteAuditDB( randomAuditDbFile() )
-    }
-
-    private fun randomSystemInfo(): SystemInfo {
-        return SystemInfo(
-                "serial:" + uuid(),
-                "name:" + uuid(),
-                "version" + uuid(),
-                "Unclassified-" + uuid(),
-                "guide:" + uuid(),
-                Arrays.asList(
-                        uuid(),
-                        uuid(),
-                        uuid(),
-                        uuid(),
-                        uuid()
-                ),
-                "uuid:" + uuid()
-        )
-    }
 
     private fun generateAccessInfo(system: SystemInfo, expectedCount: Int, audit: AuditDB): List<AccessInfo> {
         val result = ArrayList<AccessInfo>()

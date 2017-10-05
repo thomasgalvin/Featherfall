@@ -1,6 +1,5 @@
 package galvin.dw.users.sqlite
 
-import com.sun.org.apache.xpath.internal.operations.Bool
 import galvin.dw.*
 import galvin.dw.sqlite.SQLiteAuditDB
 import org.junit.Assert
@@ -316,36 +315,6 @@ class LoginManagerTest{
     /// utilities
     ///
 
-    private fun randomAuditDbFile(): File {
-        return File("target/audit-" + uuid() + ".dat")
-    }
-
-    private fun randomAuditDB() : AuditDB {
-        val result = SQLiteAuditDB( randomAuditDbFile(), false )
-        val systemInfo = randomSystemInfo()
-        result.storeSystemInfo(systemInfo)
-        result.storeCurrentSystemInfo(systemInfo.uuid)
-        return result
-    }
-
-    private fun randomSystemInfo(): SystemInfo {
-        return SystemInfo(
-                "serial:" + uuid(),
-                "name:" + uuid(),
-                "version" + uuid(),
-                "Unclassified-" + uuid(),
-                "guide:" + uuid(),
-                Arrays.asList(
-                        uuid(),
-                        uuid(),
-                        uuid(),
-                        uuid(),
-                        uuid()
-                ),
-                "uuid:" + uuid()
-        )
-    }
-
     class LoginManagerTestObjects(val auditDB: AuditDB,
                                   val userDB: UserDB,
                                   val loginManager: LoginManager,
@@ -360,7 +329,7 @@ class LoginManagerTest{
 
     private fun testObjects( allowConcurrentLogins: Boolean = true, tokenLifespan: Long = 1_000_000): LoginManagerTestObjects {
         val auditDB = randomAuditDB()
-        val userDB = userDB()
+        val userDB = randomUserDB()
         val roles = generateRoles(userdb = userDB)
 
         val config = LoginManagerConfig( tokenLifespan = tokenLifespan,

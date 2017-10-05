@@ -1,7 +1,6 @@
 package galvin.dw.users.sqlite
 
 import galvin.dw.*
-import galvin.dw.sqlite.SQLiteAccountRequestDB
 import org.junit.Assert
 import org.junit.Test
 
@@ -9,10 +8,10 @@ import org.junit.Test
 class SqliteAccountRequestDBTest {
     @Test
     fun should_not_create_tables_twice(){
-        val userDB = userDB()
+        val userDB = randomUserDB()
 
-        val accountRequestDB = accountRequestDB(userDB)
-        val accountRequestDB2 = accountRequestDB(userDB)
+        val accountRequestDB = randomAccountRequestDB(userDB)
+        val accountRequestDB2 = randomAccountRequestDB(userDB)
 
         Assert.assertNotNull(accountRequestDB)
         Assert.assertNotNull(accountRequestDB2)
@@ -349,8 +348,8 @@ class SqliteAccountRequestDBTest {
     }
 
     private fun testObjects(): SqliteAccountRequestDBTestObjects{
-        val userDB = userDB()
-        val accountRequestDB = accountRequestDB(userDB)
+        val userDB = randomUserDB()
+        val accountRequestDB = randomAccountRequestDB(userDB)
         val roles = generateRoles(userdb = userDB)
         val count = 10
 
