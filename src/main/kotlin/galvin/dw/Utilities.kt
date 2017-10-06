@@ -90,7 +90,7 @@ fun rollbackAndClose( conn: Connection? ){
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-/// IO utility code
+/// IO utility code: mostly stolen from Apache Commons IOUtils
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -116,6 +116,16 @@ fun readlines( stream: InputStream, charset: Charset = Charset.defaultCharset() 
     closeQuietly(r)
     closeQuietly(stream)
     return list
+}
+
+fun loadResourceAndReadString( resource: String ): String{
+    val builder = StringBuilder()
+    val lines = loadResourceAndReadLines(resource)
+    for( line in lines ){
+        builder.append(line)
+        builder.append("\n")
+    }
+    return builder.toString()
 }
 
 fun closeQuietly( stream: Closeable? ){

@@ -1,0 +1,46 @@
+
+Audit Manager
+=============
+
+usage: `audit-manager.sh [args]`
+
+General Options
+===============
+
+`--verbose` or `-v` - Verbose mode. Prints out database connection info, and additional success/error messages
+
+`--man` or `-m` - Prints this help file.
+
+`--help` or `-h` - Prints a short summary of command line flags.
+
+Displaying System Info
+======================
+
+`audit-manager.sh --system-info`
+`audit-manager.sh -si`
+
+Either version of this command will display the C2WE System Info, including the
+system's serial number, name, version, maximum classification, classification
+guide, and list of connected networks
+
+Querying Audit Events
+=====================
+
+The following flags can be used to retrieve audit events:
+
+`--start` or `-s` - Query for audit events on or after this date
+
+`--end` or `-e` - Query for audit events on or before this date
+
+The following date formats are supported:
+
+* `"yyyy.MM.dd"` - eg `2017.12.01`, which parses to midnight on December 1st, 2017
+* `"yyyy.MM.dd.HH.mm"` - eg `2017.12.01.15.45`, which parses to 3:45PM on December 1st, 2017
+* `"yyyy.MM.dd.HH.mm.ss"` - eg `2017.12.01.15.45.12`
+
+`--user` or `-u` - Query for audit events for a given user.
+
+`-success` - Query for events where access to the requested resource was granted
+
+`-fail` - Query for events where access to the requested resource was denied
+
