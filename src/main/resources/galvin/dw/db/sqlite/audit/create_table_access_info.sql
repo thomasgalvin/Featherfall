@@ -8,7 +8,7 @@ create table if not exists AccessInfo(
     resourceName text not null,
     classification text not null,
     resourceType text not null,
-    accessType text not null,
+    accessType int not null,
     permissionGranted INT not null,
     systemInfoUuid text not null,
     uuid text not null primary key

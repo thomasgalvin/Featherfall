@@ -227,7 +227,7 @@ class SQLiteAuditDB( databaseFile: File,
                 statement.setString(7, access.resourceName)
                 statement.setString(8, access.classification)
                 statement.setString(9, access.resourceType)
-                statement.setString(10, access.accessType.name)
+                statement.setInt(10, access.accessType.ordinal)
                 statement.setInt(11, accessGranted)
                 statement.setString(12, access.systemInfoUuid)
                 statement.setString(13, access.uuid)
@@ -327,7 +327,7 @@ class SQLiteAuditDB( databaseFile: File,
             }
 
             if (accessType != null) {
-                statement.setString(index, accessType.name)
+                statement.setInt(index, accessType.ordinal)
                 index++
             }
 
@@ -351,8 +351,10 @@ class SQLiteAuditDB( databaseFile: File,
     }
 
     private fun unmarshalAccessInfo(hit: ResultSet, conn: Connection): AccessInfo {
+        val accessTypeOrdinal = hit.getInt("accessType")
+
         val loginType = LoginType.valueOf( hit.getString("loginType") )
-        val accessType = AccessType.valueOf( hit.getString("accessType") )
+        val accessType = AccessType.values()[accessTypeOrdinal]
         val permissionGranted = hit.getInt("permissionGranted") != 0
         val uuid = hit.getString("uuid")
 
