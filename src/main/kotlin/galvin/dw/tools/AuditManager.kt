@@ -10,8 +10,6 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormatter
 import org.joda.time.format.DateTimeFormatterBuilder
 import java.io.File
-import javax.jws.soap.SOAPBinding
-
 
 val programName = "audit-manager.sh"
 val helpFile = "galvin/dw/manual/audit-manager.txt"
@@ -37,9 +35,9 @@ val userdb = Opt( short = "sqliteuserdb",  desc = "Connect to an SQLite user dat
 
 
 class AuditManager(){
-    val options = Options()
-    var isVerbose: Boolean = false
-    val dateTimeFormats: List<DateTimeFormatter>
+    private val options = Options()
+    private var isVerbose: Boolean = false
+    private val dateTimeFormats: List<DateTimeFormatter>
 
     init{
         initOptions()
@@ -142,10 +140,7 @@ class AuditManager(){
         }
 
         val result = runQuery(options)
-
-        for( hit in result ){
-
-        }
+        print(result, options)
     }
 
     private fun runQuery(options: AuditManagerOptions): List<AccessInfo>{
@@ -179,6 +174,10 @@ class AuditManager(){
         }
 
         return listOf()
+    }
+
+    private fun print( events: List<AccessInfo>, options: AuditManagerOptions ){
+
     }
 
     private fun getUserUuid( options: AuditManagerOptions ): String?{
