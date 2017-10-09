@@ -12,6 +12,7 @@ import org.joda.time.format.DateTimeFormatter
 import java.io.File
 import java.util.stream.Collectors
 import org.joda.time.format.DateTimeFormat
+import java.io.PrintStream
 
 
 val programName = "audit-manager.sh"
@@ -72,12 +73,6 @@ class AuditManager(){
         )
     }
 
-    fun main(args: Array<String>) {
-        val auditManager = AuditManager()
-        val options = auditManager.parse(args)
-        auditManager.run(options)
-    }
-
     fun parse( args: Array<String>): AuditManagerOptions{
         val cmd = DefaultParser().parse(options, args)
 
@@ -102,7 +97,13 @@ class AuditManager(){
         )
     }
 
-    private fun run(options: AuditManagerOptions) {
+    fun main(args: Array<String>) {
+        val auditManager = AuditManager()
+        val options = auditManager.parse(args)
+        auditManager.run(options)
+    }
+
+    fun run(options: AuditManagerOptions) {
         if( options.showHelp ){
             help()
         }
@@ -151,7 +152,7 @@ class AuditManager(){
         return listOf()
     }
 
-    fun print( events: List<AuditEvent>, options: AuditManagerOptions ){
+    fun print( events: List<AuditEvent>, options: AuditManagerOptions, out: PrintStream = System.out ){
         val systemName = createList( "System Name" )
         val systemVersion = createList( "Version" )
         val timestamp = createList( "Timestamp" )
@@ -225,7 +226,7 @@ class AuditManager(){
                 accessType,
                 accessGranted,
                 modifications )
-        println(table)
+        out.println(table)
     }
 
     private fun getMods( mods: List<Modification>, options: AuditManagerOptions ): String{
@@ -327,7 +328,7 @@ class AuditManager(){
         println(table)
     }
 
-    fun verbose( message: String ){
+    private fun verbose( message: String ){
         if( isVerbose ){
             println(message)
         }
