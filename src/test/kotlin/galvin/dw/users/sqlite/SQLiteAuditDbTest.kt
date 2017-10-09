@@ -115,6 +115,41 @@ class SQLiteAuditDbTest {
     }
 
     @Test
+    fun should_retrieve_access_info_by_type(){
+        val audit = randomAuditDB()
+        val map = mutableMapOf<AccessType, AccessInfo>()
+
+        for( type in AccessType.values() ){
+            val info = AccessInfo(
+                    "uuid:" + uuid(),
+                    LoginType.LOGIN_TOKEN,
+                    "proxy:" + uuid(),
+                    "ipAddress:" + uuid(),
+                    System.currentTimeMillis(),
+                    "resourceUUID:" + uuid(),
+                    "resourceName:" + uuid(),
+                    "classification" + uuid(),
+                    "resource" + uuid(),
+                    type,
+                    true,
+                    "system:" + uuid(),
+                    listOf(),
+                    "uuid:" + uuid()
+
+            )
+            audit.log(info)
+            map.put( type, info )
+        }
+
+        for( type in AccessType.values() ){
+            val expected = map.get(type)
+            val hits = audit.retrieveAccessInfo(accessType = type)
+            Assert.assertEquals("Unexpected hit count", 1, hits.size)
+            Assert.assertEquals("Query by access type failed", expected, hits[0])
+        }
+    }
+
+    @Test
     fun should_retrieve_access_info_by_dates() {
         val now = System.currentTimeMillis()
         val then = now - 10000

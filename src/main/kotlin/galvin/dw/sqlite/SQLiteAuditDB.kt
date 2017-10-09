@@ -327,7 +327,7 @@ class SQLiteAuditDB( databaseFile: File,
             }
 
             if (accessType != null) {
-                statement.setInt(index, accessType.ordinal)
+                statement.setString(index, accessType.name)
                 index++
             }
 
