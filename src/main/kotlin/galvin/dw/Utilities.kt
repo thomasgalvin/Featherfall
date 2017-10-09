@@ -165,31 +165,5 @@ fun parseToDateTime( string: String,
         catch(t: Throwable){}
     }
 
-//    println("parsing date/time: ${string}")
-//    for( format in dateTimeFormats ){
-//        try{
-//            println("    trying format: ${format}")
-//            val dtf = DateTimeFormat.forPattern(format)
-//            return dtf.parseDateTime(format)
-//        }
-//        catch(t: Throwable){
-//            t.printStackTrace()
-//        }
-//    }
-
-//    try{
-//        return DateTimeFormatterBuilder()
-//                .appendYear(4,4)
-//                .appendLiteral('/')
-//                .appendMonthOfYear(2)
-//                .appendLiteral('/')
-//                .appendDayOfMonth(2)
-//                .toFormatter().parseDateTime(string)
-//
-//    }
-//    catch(t: Throwable){
-//        t.printStackTrace()
-//    }
-
     return null
 }

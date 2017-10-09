@@ -78,7 +78,7 @@ class AuditManagerTest{
         val filepath = "target/" + uuid()
         val expected = AuditManagerOptions(sqliteUserdb = filepath)
         val audit = AuditManager()
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-sqliteuserdb", filepath ) ) )
+        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-userdb", filepath ) ) )
     }
 
     @Test

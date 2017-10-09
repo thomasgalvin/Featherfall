@@ -20,11 +20,10 @@ val programName = "audit-manager.sh"
 val helpFile = "galvin/dw/manual/audit-manager.txt"
 
 val verbose = Opt( short = "v", long = "verbose", desc = "Show extra debugging info" )
+val help = Opt( short = "h", long = "help", desc = "Show the concise help summary" )
 val manual = Opt( short = "m", long = "man", desc = "Show the complete help manual" )
-
 val systemInfo = Opt( short = "si", long="system-info", desc = "Shows the system information, including classification and network info" )
 
-val help = Opt( short = "h", long = "help", desc = "Show the concise help summary" )
 val start = Opt( short = "s", long = "start", desc = "Specify the start date of the query", argName = "<yyyy.MM.dd.HH.mm.ss>" )
 val end = Opt( short = "e", long = "end", desc = "Specify the end date of the query", argName = "<yyyy.MM.dd.HH.mm.ss>" )
 val user = Opt( short = "u", long = "user", desc = "Query for audit events from a user", argName = "<user>" )
@@ -35,7 +34,7 @@ val access = Opt( short = "a", long = "access", desc = "Show events with the spe
 val deltas = Opt( short = "d", long = "deltas", desc = "Show the complete modification history for each event" )
 
 val sqlite = Opt( short = "sqlite",  desc = "Connect to an SQLite audit database", argName = "<sqlite filepath>" )
-val userdb = Opt( short = "sqliteuserdb",  desc = "Connect to an SQLite user database", argName = "<sqlite userdb filepath>" )
+val userdb = Opt( short = "userdb",  desc = "Connect to an SQLite user database", argName = "<sqlite userdb filepath>" )
 
 
 
@@ -46,9 +45,6 @@ class AuditManager(){
 
     init{
         initOptions()
-
-
-
         dateTimeFormats = initDateTimeFormats()
     }
 
@@ -69,41 +65,47 @@ class AuditManager(){
     }
 
     private fun initDateTimeFormats(): List<DateTimeFormatter>{
-        val dtf1 = DateTimeFormatterBuilder()
-                .appendYear(4,4)
-                .appendLiteral('/')
-                .appendMonthOfYear(2)
-                .appendLiteral('/')
-                .appendDayOfMonth(2)
-                .appendLiteral('-')
-                .appendHourOfDay(2)
-                .appendLiteral(':')
-                .appendMinuteOfHour(2)
-                .appendLiteral(':')
-                .appendSecondOfMinute(2)
-                .toFormatter()
+        return listOf(
+                DateTimeFormatterBuilder()
+                        .appendYear(4,4)
+                        .appendLiteral('/')
+                        .appendMonthOfYear(2)
+                        .appendLiteral('/')
+                        .appendDayOfMonth(2)
+                        .appendLiteral('-')
+                        .appendHourOfDay(2)
+                        .appendLiteral(':')
+                        .appendMinuteOfHour(2)
+                        .appendLiteral(':')
+                        .appendSecondOfMinute(2)
+                        .toFormatter(),
 
-        val dtf2 = DateTimeFormatterBuilder()
-                .appendYear(4,4)
-                .appendLiteral('/')
-                .appendMonthOfYear(2)
-                .appendLiteral('/')
-                .appendDayOfMonth(2)
-                .appendLiteral('-')
-                .appendHourOfDay(2)
-                .appendLiteral(':')
-                .appendMinuteOfHour(2)
-                .toFormatter()
+                DateTimeFormatterBuilder()
+                        .appendYear(4,4)
+                        .appendLiteral('/')
+                        .appendMonthOfYear(2)
+                        .appendLiteral('/')
+                        .appendDayOfMonth(2)
+                        .appendLiteral('-')
+                        .appendHourOfDay(2)
+                        .appendLiteral(':')
+                        .appendMinuteOfHour(2)
+                        .toFormatter(),
 
-        val dtf3 = DateTimeFormatterBuilder()
-                .appendYear(4,4)
-                .appendLiteral('/')
-                .appendMonthOfYear(2)
-                .appendLiteral('/')
-                .appendDayOfMonth(2)
-                .toFormatter()
+                DateTimeFormatterBuilder()
+                        .appendYear(4,4)
+                        .appendLiteral('/')
+                        .appendMonthOfYear(2)
+                        .appendLiteral('/')
+                        .appendDayOfMonth(2)
+                        .toFormatter()
+        )
+    }
 
-        return listOf(dtf1, dtf2, dtf3)
+    fun main(args: Array<String>) {
+        val auditManager = AuditManager()
+        val options = auditManager.parse(args)
+        auditManager.run(options)
     }
 
     fun parse( args: Array<String>): AuditManagerOptions{
@@ -130,12 +132,6 @@ class AuditManager(){
         )
     }
 
-    fun main(args: Array<String>) {
-        val auditManager = AuditManager()
-        val options = auditManager.parse(args)
-        auditManager.run(options)
-    }
-
     private fun run(options: AuditManagerOptions) {
         if( options.showHelp ){
             help()
@@ -151,7 +147,7 @@ class AuditManager(){
         print(result, options)
     }
 
-    private fun executeQuery(options: AuditManagerOptions): List<AuditEvent>{
+    fun executeQuery(options: AuditManagerOptions): List<AuditEvent>{
         isVerbose = options.verbose
 
         if( options.shouldQuery() ) {
@@ -185,7 +181,7 @@ class AuditManager(){
         return listOf()
     }
 
-    private fun print( events: List<AuditEvent>, options: AuditManagerOptions ){
+    fun print( events: List<AuditEvent>, options: AuditManagerOptions ){
         val systemName = createList( "System Name" )
         val systemVersion = createList( "Version" )
         val timestamp = createList( "Timestamp" )
