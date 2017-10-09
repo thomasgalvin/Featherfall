@@ -1,5 +1,6 @@
 package galvin.dw.users.sqlite
 
+import galvin.dw.AccessType
 import galvin.dw.tools.AuditManager
 import galvin.dw.tools.AuditManagerOptions
 import galvin.dw.uuid
@@ -80,6 +81,13 @@ class AuditManagerTest{
         Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-sqliteuserdb", filepath ) ) )
     }
 
+    @Test
+    fun should_parse_access_type(){
+        for( type in AccessType.values() ){
+            testAccessType(type)
+        }
+    }
+
     ///
     /// utilities
     ///
@@ -117,5 +125,13 @@ class AuditManagerTest{
         val audit = AuditManager()
         Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-u", username ) ) )
         Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--user", username ) ) )
+    }
+
+    private fun testAccessType( type: AccessType ){
+        val name = type.name
+        val expected = AuditManagerOptions(accessType = name)
+        val audit = AuditManager()
+        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-a", name ) ) )
+        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--access", name ) ) )
     }
 }

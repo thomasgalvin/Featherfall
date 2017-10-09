@@ -27,6 +27,7 @@ val end = Opt( short = "e", long = "end", desc = "Specify the end date of the qu
 val user = Opt( short = "u", long = "user", desc = "Query for audit events from a user", argName = "<user>" )
 val success = Opt( short = "success", desc = "Show events where permission was granted" )
 val fail = Opt( short = "failure", desc = "Show events where permission was denied" )
+val access = Opt( short = "a", long = "access", desc = "Show events with the specified access type", argName = "<access_type>" )
 
 val deltas = Opt( short = "d", long = "deltas", desc = "Show the complete modification history for each event" )
 
@@ -58,6 +59,7 @@ class AuditManager(){
         options.addOption( user.build() )
         options.addOption( success.build() )
         options.addOption( fail.build() )
+        options.addOption( access.build() )
         options.addOption( systemInfo.build() )
         options.addOption( sqlite.build() )
         options.addOption( userdb.build() )
@@ -114,6 +116,7 @@ class AuditManager(){
                 showManual = manual.on(cmd),
                 showSuccess = success.on(cmd),
                 showFailure = fail.on(cmd),
+                accessType = access.get(cmd),
                 start = start,
                 end = end,
                 username = username,
@@ -155,12 +158,15 @@ class AuditManager(){
             val end = options.end?.millis
             val permission = options.calculatePermission()
             val userUuid = getUserUuid(options)
+            val accessType = getAccessType(options)
 
             val result =  auditDB.retrieveAccessInfo(
                     userUuid = userUuid,
                     startTimestamp = start,
                     endTimestamp = end,
-                    permissionGranted = permission)
+                    permissionGranted = permission,
+                    accessType = accessType
+            )
 
             if( result.isEmpty() ){
                 verbose("<No results match query>")
@@ -180,6 +186,12 @@ class AuditManager(){
 
         val userDB = connectUserDB(options)
         return userDB.retrieveUuidByLogin(options.username)
+    }
+
+    private fun getAccessType( options: AuditManagerOptions ): AccessType?{
+        val name = options.accessType
+        if( isBlank(name) ) return null
+        return AccessType.valueOf(name)
     }
 
     private fun connect( options: AuditManagerOptions ): AuditDB {
@@ -239,6 +251,7 @@ data class AuditManagerOptions( val verbose: Boolean = false,
                                 val start: DateTime? = null,
                                 val end: DateTime? = null,
                                 val username: String = "",
+                                val accessType: String = "",
                                 val showDeltas: Boolean = false,
                                 val showSystemInfo: Boolean = false,
                                 val sqlite: String = "",

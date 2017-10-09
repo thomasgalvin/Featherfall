@@ -50,3 +50,5 @@ The following date formats are supported:
 
 `-fail` - Query for events where access to the requested resource was denied
 
+`--access` or `-a` - Query for events where the access type was one of: [create | modify | retrieve | delete | reject | approve | locked | unlocked | activated | deactivated | login | logout | assert_permission]
+
