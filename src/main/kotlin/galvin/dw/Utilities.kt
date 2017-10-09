@@ -1,5 +1,9 @@
 package galvin.dw
 
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.DateTimeFormatter
+import org.joda.time.format.DateTimeFormatterBuilder
 import java.io.*
 import java.nio.charset.Charset
 import java.sql.Connection
@@ -135,3 +139,48 @@ fun closeQuietly( stream: Closeable? ){
     catch( t: Throwable ){}
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Date parsing utilities
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+fun parseToDateTime( string: String,
+                     dateTimeFormats: List<DateTimeFormatter> ): DateTime?{
+    if( isBlank(string) ) return null
+
+    for( format in dateTimeFormats ){
+        try{
+            return format.parseDateTime(string)
+        }
+        catch(t: Throwable){}
+    }
+
+//    println("parsing date/time: ${string}")
+//    for( format in dateTimeFormats ){
+//        try{
+//            println("    trying format: ${format}")
+//            val dtf = DateTimeFormat.forPattern(format)
+//            return dtf.parseDateTime(format)
+//        }
+//        catch(t: Throwable){
+//            t.printStackTrace()
+//        }
+//    }
+
+//    try{
+//        return DateTimeFormatterBuilder()
+//                .appendYear(4,4)
+//                .appendLiteral('/')
+//                .appendMonthOfYear(2)
+//                .appendLiteral('/')
+//                .appendDayOfMonth(2)
+//                .toFormatter().parseDateTime(string)
+//
+//    }
+//    catch(t: Throwable){
+//        t.printStackTrace()
+//    }
+
+    return null
+}

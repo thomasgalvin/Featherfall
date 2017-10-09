@@ -25,4 +25,8 @@ data class Opt( val short: String,
     fun on( cmd: CommandLine ): Boolean{
         return cmd.hasOption( short ) || cmd.hasOption( long )
     }
+
+    fun get( cmd: CommandLine ): String{
+        return neverNull( cmd.getOptionValue(short) )
+    }
 }
