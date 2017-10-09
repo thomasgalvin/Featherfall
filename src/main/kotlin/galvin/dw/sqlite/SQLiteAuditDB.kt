@@ -391,4 +391,24 @@ class SQLiteAuditDB( databaseFile: File,
                 uuid
         )
     }
+
+    override fun toAuditEvent( userDB: UserDB, accessInfo: List<AccessInfo> ): List<AuditEvent>{
+        val result = mutableListOf<AuditEvent>()
+
+        for( info in accessInfo ){
+            val systemInfo = retrieveSystemInfo(info.systemInfoUuid)
+            val user = userDB.retrieveUser(info.userUuid)
+            val commandLineUserName = if( info.loginType == LoginType.COMMAND_LINE) info.userUuid else ""
+
+            result.add( AuditEvent(
+                    systemInfo = systemInfo,
+                    user = user,
+                    commandLineUserName = commandLineUserName,
+                    loginType = info.loginType,
+                    accessInfo = info
+            ) )
+        }
+
+        return result
+    }
 }

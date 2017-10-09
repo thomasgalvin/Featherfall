@@ -274,7 +274,6 @@ class PadToTest{
     @Test
     @Throws(Exception::class)
     fun testPaddedTableHeader() {
-
         val PADDED_TABLE =
                 "asdas         adasdkasdjkasjdkasdas asdasd          adsadsda      adasdadsasd dasdasdasd \n" +
                 "-----------------------------------------------------------------------------------------\n" +
@@ -387,7 +386,8 @@ class PadToTest{
     @Test
     @Throws(Exception::class)
     fun testPaddedTableHeaderTwo() {
-        val PADDED_TABLE = "asdas         adasdkasdjkasjdkasdas asdasd          adsadsda      adasdadsasd dasdasdasd \n" +
+        val PADDED_TABLE =
+                "asdas         adasdkasdjkasjdkasdas asdasd          adsadsda      adasdadsasd dasdasdasd \n" +
                 "=========================================================================================\n" +
                 "asdas         adsasdadas            adasdasdasdadas adsdasd       asdasdads   adsadasd   \n" +
                 "adsdasasdad   asdasdadas            asdadasdasd     adsdasdasdasd asdadasdads adsasdadads\n" +

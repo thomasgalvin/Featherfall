@@ -20,6 +20,8 @@ interface AuditDB{
                             endTimestamp: Long? = null,
                             accessType: AccessType? = null,
                             permissionGranted: Boolean? = null ): List<AccessInfo>
+
+    fun toAuditEvent( userDB: UserDB, accessInfo: List<AccessInfo> ): List<AuditEvent>
 }
 
 data class SystemInfo( val serialNumber: String,
@@ -54,10 +56,17 @@ data class Modification( val field: String,
                          val oldValue: String,
                          val newValue: String )
 
+data class AuditEvent(val systemInfo: SystemInfo? = null,
+                      val user: User? = null,
+                      val commandLineUserName: String = "",
+                      val loginType: LoginType,
+                      val accessInfo: AccessInfo )
+
 enum class LoginType{
     PKI,
     USERNAME_PASSWORD,
-    LOGIN_TOKEN
+    LOGIN_TOKEN,
+    COMMAND_LINE
 }
 
 enum class AccessType {
@@ -121,6 +130,10 @@ class NoOpAuditDB: AuditDB {
                                     endTimestamp: Long?,
                                     accessType: AccessType?,
                                     permissionGranted: Boolean?): List<AccessInfo> {
+        return listOf()
+    }
+
+    override fun toAuditEvent( userDB: UserDB, accessInfo: List<AccessInfo> ): List<AuditEvent>{
         return listOf()
     }
 }

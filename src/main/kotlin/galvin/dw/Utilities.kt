@@ -7,6 +7,9 @@ import java.nio.charset.Charset
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.UUID
+import java.util.ArrayList
+
+
 
 
 
@@ -34,6 +37,12 @@ fun neverNull( string: String? ): String{
     else{
         return string
     }
+}
+
+fun createList(firstEntry: String): MutableList<String> {
+    val result = mutableListOf<String>()
+    result.add(firstEntry)
+    return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

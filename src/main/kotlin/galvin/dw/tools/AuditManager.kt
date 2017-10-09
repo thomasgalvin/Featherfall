@@ -1,6 +1,7 @@
 package galvin.dw.tools
 
 import galvin.dw.*
+import galvin.dw.PadTo.paddedLayout
 import galvin.dw.sqlite.SQLiteAuditDB
 import galvin.dw.sqlite.SQLiteUserDB
 import org.apache.commons.cli.Options
@@ -10,6 +11,10 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormatter
 import org.joda.time.format.DateTimeFormatterBuilder
 import java.io.File
+import java.util.stream.Collectors
+import com.sun.webkit.graphics.WCGraphicsManager.getResourceName
+
+
 
 val programName = "audit-manager.sh"
 val helpFile = "galvin/dw/manual/audit-manager.txt"
@@ -138,16 +143,20 @@ class AuditManager(){
         if( options.showManual ){
             manual()
         }
+        if( options.showSystemInfo ){
+            systemInfo(options)
+        }
 
-        val result = runQuery(options)
+        val result = executeQuery(options)
         print(result, options)
     }
 
-    private fun runQuery(options: AuditManagerOptions): List<AccessInfo>{
+    private fun executeQuery(options: AuditManagerOptions): List<AuditEvent>{
         isVerbose = options.verbose
 
         if( options.shouldQuery() ) {
             val auditDB = connect(options)
+            val userDB = connectUserDB(options)
 
             val start = options.start?.millis
             val end = options.end?.millis
@@ -167,7 +176,7 @@ class AuditManager(){
                 verbose("<No results match query>")
             }
 
-            return result
+            return auditDB.toAuditEvent(userDB, result)
         }
         else{
             verbose( "No query specified: must specify at least one of [start | end | user]" )
@@ -176,8 +185,90 @@ class AuditManager(){
         return listOf()
     }
 
-    private fun print( events: List<AccessInfo>, options: AuditManagerOptions ){
+    private fun print( events: List<AuditEvent>, options: AuditManagerOptions ){
+        val systemName = createList( "System Name" )
+        val systemVersion = createList( "Version" )
+        val timestamp = createList( "Timestamp" )
+        val userLogin = createList( "User Login" )
+        val userLegalName = createList( "User Legal Name" )
+        val loginType = createList( "Login Type" )
+        val resourceUuid = createList( "Resource UUID" )
+        val resourceName = createList( "Resource Name" )
+        val resourceClassification = createList( "Classification" )
+        val resourceType = createList( "Resource Type" )
+        val accessType = createList( "Access Type" )
+        val accessGranted = createList( "Access Granted" )
+        val modifications = createList( "Modifications" )
 
+        for( event in events ){
+            val info = event.accessInfo
+
+            val accessGrantedValue = if (info.permissionGranted) "granted" else "denied"
+            val mods = getMods( info.modifications, options )
+            var userName: String
+            var legalName: String
+            val systemInfoName: String
+            val systemInfoVersion: String
+
+            val user = event.user
+            if (user != null) {
+                userName = user.login
+                legalName = user.sortName
+            } else {
+                userName = event.commandLineUserName
+                legalName = ""
+            }
+
+            if( event.systemInfo != null ){
+                systemInfoName = event.systemInfo.name
+                systemInfoVersion = event.systemInfo.version
+            }
+            else{
+                systemInfoName = ""
+                systemInfoVersion = ""
+            }
+
+            systemName.add(systemInfoName)
+            systemVersion.add(systemInfoVersion)
+            timestamp.add( info.timestamp.toString() )
+            userLogin.add(userName)
+            userLegalName.add(legalName)
+            loginType.add(event.loginType.name)
+            resourceUuid.add( info.resourceUuid )
+            resourceName.add( info.resourceName )
+            resourceClassification.add( info.classification )
+            resourceType.add( info.resourceType )
+            accessType.add( info.accessType.name )
+            accessGranted.add(accessGrantedValue)
+            modifications.add(mods)
+        }
+
+        val separator = '-'
+        val table = paddedLayout(
+                separator,
+                systemName,
+                systemVersion,
+                timestamp,
+                userLogin,
+                userLegalName,
+                loginType,
+                resourceUuid,
+                resourceName,
+                resourceClassification,
+                resourceType,
+                accessType,
+                accessGranted,
+                modifications )
+        println(table)
+    }
+
+    private fun getMods( mods: List<Modification>, options: AuditManagerOptions ): String{
+        if( options.showDeltas ){
+            return mods.stream().map({ d -> d.toString() }).collect(Collectors.joining(", "))
+        }
+        else{
+            return if( mods.isEmpty() ) "No modifications" else "Modifications made"
+        }
     }
 
     private fun getUserUuid( options: AuditManagerOptions ): String?{
@@ -233,6 +324,41 @@ class AuditManager(){
     private fun manual(){
         val text = loadResourceAndReadString(helpFile)
         println(text)
+    }
+
+    private fun systemInfo(options: AuditManagerOptions){
+        val auditDB = connect(options)
+        val current = auditDB.retrieveCurrentSystemInfo()
+        if( current != null ){
+            print(current)
+        }
+        else{
+            println("<no current System Info has been assigned>")
+        }
+    }
+
+    private fun print(info: SystemInfo){
+        val fields = listOf(
+                "Serial Number",
+                "System Name",
+                "Version",
+                "Maximum Classification",
+                "Classification Guide",
+                "Networks"
+        )
+
+        val networkList = info.networks.stream().collect( Collectors.joining( ", " ) );
+        val values = listOf(
+                info.serialNumber,
+                info.name,
+                info.version,
+                info.maximumClassification,
+                info.classificationGuide,
+                networkList
+        )
+
+        val table = paddedLayout( fields, values );
+        println(table)
     }
 
     fun verbose( message: String ){
