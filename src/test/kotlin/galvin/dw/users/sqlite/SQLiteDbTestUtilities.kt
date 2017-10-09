@@ -126,7 +126,7 @@ fun randomSystemInfo(): SystemInfo {
     return SystemInfo(
             "serial:" + uuid(),
             "name:" + uuid(),
-            "version" + uuid(),
+            "version:" + uuid(),
             "Unclassified-" + uuid(),
             "guide:" + uuid(),
             Arrays.asList(

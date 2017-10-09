@@ -18,7 +18,7 @@ class AuditManagerQueryTest{
 
         val expected = mutableListOf<AccessInfo>()
         for( i in 1..10 ){
-            val info = accessInfo(setup.user.uuid )
+            val info = accessInfo(setup.user.uuid, systemInfoUuid=setup.systemInfo.uuid)
             setup.auditDB.log(info)
             expected.add(info)
             Thread.sleep(10)
@@ -31,6 +31,66 @@ class AuditManagerQueryTest{
             val expectedInfo = expected[index]
             Assert.assertEquals("Unexpected access info", expectedInfo, result.accessInfo)
         }
+    }
+
+    @Test
+    fun should_print_query_results_by_user_uuid(){
+        val setup = AuditManagerQueryTestObjects()
+
+        val expected = mutableListOf<AccessInfo>()
+        for( i in 1..10 ){
+            val info = accessInfo(setup.user.uuid, systemInfoUuid=setup.systemInfo.uuid)
+            setup.auditDB.log(info)
+            expected.add(info)
+            Thread.sleep(10)
+        }
+
+        val manager = AuditManager()
+        manager.main(args( setup, "-u", setup.user.uuid ))
+    }
+
+    @Test
+    fun should_print_query_results_with_mods_as_flag_by_user_uuid(){
+        val setup = AuditManagerQueryTestObjects()
+
+        val expected = mutableListOf<AccessInfo>()
+        for( i in 1..10 ){
+            val mods = mutableListOf<Modification>()
+            for( j in 1..2){
+                mods.add(
+                        Modification("field:" + uuid(), "old:" + uuid(), "new:" + uuid() )
+                )
+            }
+            val info = accessInfo(userUuid=setup.user.uuid, systemInfoUuid=setup.systemInfo.uuid, mods=mods)
+            setup.auditDB.log(info)
+            expected.add(info)
+            Thread.sleep(10)
+        }
+
+        val manager = AuditManager()
+        manager.main(args( setup, "-u", setup.user.uuid ))
+    }
+
+    @Test
+    fun should_print_query_results_with_mods_as_deltas_by_user_uuid(){
+        val setup = AuditManagerQueryTestObjects()
+
+        val expected = mutableListOf<AccessInfo>()
+        for( i in 1..10 ){
+            val mods = mutableListOf<Modification>()
+            for( j in 1..2){
+                mods.add(
+                        Modification("field:" + uuid(), "old:" + uuid(), "new:" + uuid() )
+                )
+            }
+            val info = accessInfo(userUuid=setup.user.uuid, systemInfoUuid=setup.systemInfo.uuid, mods=mods)
+            setup.auditDB.log(info)
+            expected.add(info)
+            Thread.sleep(10)
+        }
+
+        val manager = AuditManager()
+        manager.main(args( setup, "-u", setup.user.uuid, "-d" ))
     }
 
     @Test
@@ -175,7 +235,8 @@ class AuditManagerQueryTest{
                             accessType: AccessType = AccessType.RETRIEVE,
                             mods: List<Modification> = listOf(),
                             timestamp: Long = System.currentTimeMillis(),
-                            permissionGranted: Boolean = true): AccessInfo{
+                            permissionGranted: Boolean = true,
+                            systemInfoUuid: String = "system:" + uuid() ): AccessInfo{
         return AccessInfo(
                 userUuid,
                 LoginType.LOGIN_TOKEN,
@@ -184,11 +245,11 @@ class AuditManagerQueryTest{
                 timestamp,
                 "resourceUUID:" + uuid(),
                 "resourceName:" + uuid(),
-                "classification" + uuid(),
-                "resource" + uuid(),
+                "classification:" + uuid(),
+                "type:" + uuid(),
                 accessType,
                 permissionGranted,
-                "system:" + uuid(),
+                systemInfoUuid,
                 mods,
                 "uuid:" + uuid()
 
