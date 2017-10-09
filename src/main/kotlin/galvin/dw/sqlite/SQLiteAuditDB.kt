@@ -261,6 +261,7 @@ class SQLiteAuditDB( databaseFile: File,
     }
 
     override fun retrieveAccessInfo( systemInfoUuid: String?,
+                                     userUuid: String?,
                                      startTimestamp: Long?,
                                      endTimestamp: Long?,
                                      accessType: AccessType?,
@@ -270,6 +271,10 @@ class SQLiteAuditDB( databaseFile: File,
 
         if( systemInfoUuid != null ){
             criteria.add("systemInfoUuid = ?")
+        }
+
+        if( userUuid != null ){
+            criteria.add("userUuid = ?")
         }
 
         if( startTimestamp != null ){
@@ -293,6 +298,7 @@ class SQLiteAuditDB( databaseFile: File,
         }
 
         sql.append( criteria.stream().collect( Collectors.joining( " and " ) ) )
+        sql.append( " order by timestamp" )
 
         val conn = conn()
         try {
@@ -302,6 +308,11 @@ class SQLiteAuditDB( databaseFile: File,
 
             if (systemInfoUuid != null) {
                 statement.setString(index, systemInfoUuid)
+                index++
+            }
+
+            if( userUuid != null ){
+                statement.setString(index, userUuid)
                 index++
             }
 
@@ -324,12 +335,7 @@ class SQLiteAuditDB( databaseFile: File,
                 statement.setInt(index, if (permissionGranted) 1 else 0)
             }
 
-            if (!criteria.isEmpty()) {
-                sql.append(" where ")
-            }
-
             val result = mutableListOf<AccessInfo>()
-
             val resultSet = statement.executeQuery()
             while (resultSet.next()) {
                 result.add(unmarshalAccessInfo(resultSet, conn))

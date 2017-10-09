@@ -15,6 +15,7 @@ interface AuditDB{
 
     fun log( access: AccessInfo )
     fun retrieveAccessInfo( systemInfoUuid: String? = null,
+                            userUuid: String? = null,
                             startTimestamp: Long? = null,
                             endTimestamp: Long? = null,
                             accessType: AccessType? = null,
@@ -115,6 +116,7 @@ class NoOpAuditDB: AuditDB {
     override fun log( access: AccessInfo ){}
 
     override fun retrieveAccessInfo(systemInfoUuid: String?,
+                                    userUuid: String?,
                                     startTimestamp: Long?,
                                     endTimestamp: Long?,
                                     accessType: AccessType?,

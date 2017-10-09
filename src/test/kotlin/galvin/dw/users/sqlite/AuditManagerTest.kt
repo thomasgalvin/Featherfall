@@ -2,6 +2,7 @@ package galvin.dw.users.sqlite
 
 import galvin.dw.tools.AuditManager
 import galvin.dw.tools.AuditManagerOptions
+import galvin.dw.uuid
 import org.joda.time.DateTime
 import org.junit.Assert
 import org.junit.Test
@@ -58,6 +59,27 @@ class AuditManagerTest{
         testEndDate( DateTime(2017, 4, 7, 1, 37, 55), "2017/04/07-01:37:55", "2017/4/7-1:37:55" )
     }
 
+    @Test
+    fun should_parse_user_name(){
+        testUsername("thomas")
+    }
+
+    @Test
+    fun should_parse_sqlite_filepath(){
+        val filepath = "target/" + uuid()
+        val expected = AuditManagerOptions(sqlite = filepath)
+        val audit = AuditManager()
+        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-sqlite", filepath ) ) )
+    }
+
+    @Test
+    fun should_parse_sqlite_userdb_filepath(){
+        val filepath = "target/" + uuid()
+        val expected = AuditManagerOptions(sqliteUserdb = filepath)
+        val audit = AuditManager()
+        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-sqliteuserdb", filepath ) ) )
+    }
+
     ///
     /// utilities
     ///
@@ -65,23 +87,35 @@ class AuditManagerTest{
     private fun testBooleanOptions(expected: AuditManagerOptions,
                                    short: String,
                                    long: String? = null ){
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, AuditManager().parse( arrayOf( short ) ) )
+        val audit = AuditManager()
+        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( short ) ) )
         if( long != null ){
-            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, AuditManager().parse( arrayOf( long ) ) )
+            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( long ) ) )
         }
     }
 
     private fun testStartDate( date: DateTime, vararg args: String ){
+        val expected = AuditManagerOptions(start=date)
+        val audit = AuditManager()
         for( arg in args ){
-            Assert.assertEquals( UNEXPECTED_OPTIONS, AuditManagerOptions(start=date), AuditManager().parse( arrayOf( "-s", arg ) ) )
-            Assert.assertEquals( UNEXPECTED_OPTIONS, AuditManagerOptions(start=date), AuditManager().parse( arrayOf( "--start", arg ) ) )
+            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-s", arg ) ) )
+            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--start", arg ) ) )
         }
     }
 
     private fun testEndDate( date: DateTime, vararg args: String ){
+        val expected = AuditManagerOptions(end=date)
+        val audit = AuditManager()
         for( arg in args ){
-            Assert.assertEquals( UNEXPECTED_OPTIONS, AuditManagerOptions(end=date), AuditManager().parse( arrayOf( "-e", arg ) ) )
-            Assert.assertEquals( UNEXPECTED_OPTIONS, AuditManagerOptions(end=date), AuditManager().parse( arrayOf( "--end", arg ) ) )
+            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-e", arg ) ) )
+            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--end", arg ) ) )
         }
+    }
+
+    private fun testUsername(username: String){
+        val expected = AuditManagerOptions(username = username)
+        val audit = AuditManager()
+        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-u", username ) ) )
+        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--user", username ) ) )
     }
 }

@@ -139,7 +139,60 @@ class SQLiteAuditDbTest {
     }
 
     @Test
-    fun should_retrieve_access_info_by_dates_and_uuid() {
+    fun should_retrieve_access_info_by_user_uuid(){
+        val audit = randomAuditDB()
+        val system = randomSystemInfo()
+
+        val count = 10
+        val myUserUuid = uuid()
+
+        generateAccessInfo(system, count, audit )
+        val mine = generateAccessInfo(system, count, audit, myUserUuid)
+        generateAccessInfo(system, count, audit )
+
+        val loadedMine = audit.retrieveAccessInfo(userUuid = myUserUuid)
+        Assert.assertEquals("Loaded access info did not match expected", mine, loadedMine)
+    }
+
+    @Test
+    fun should_retrieve_access_info_by_user_uuid_and_permission_granted(){
+        val audit = randomAuditDB()
+        val system = randomSystemInfo()
+
+        val count = 10
+        val myUserUuid = uuid()
+
+        generateAccessInfo(system, count, audit )
+        val mineSuccess = generateAccessInfo(system, count, audit, myUserUuid, true)
+        generateAccessInfo(system, count, audit )
+        val mineFail = generateAccessInfo(system, count, audit, myUserUuid, false)
+        generateAccessInfo(system, count, audit )
+
+        val loadedMineSuccess = audit.retrieveAccessInfo(userUuid = myUserUuid, permissionGranted = true)
+        Assert.assertEquals("Loaded access info did not match expected", mineSuccess, loadedMineSuccess)
+
+        val loadedMineFail = audit.retrieveAccessInfo(userUuid = myUserUuid, permissionGranted = false)
+        Assert.assertEquals("Loaded access info did not match expected", mineFail, loadedMineFail)
+    }
+
+    @Test
+    fun should_retrieve_access_info_by_permission_granted(){
+        val audit = randomAuditDB()
+        val system = randomSystemInfo()
+
+        val count = 10
+        val success = generateAccessInfo(system, count, audit, uuid(), true)
+        val fail = generateAccessInfo(system, count, audit, uuid(),  false)
+
+        val loadedSuccess = audit.retrieveAccessInfo(permissionGranted = true)
+        Assert.assertEquals("Loaded access info did not match expected", success, loadedSuccess)
+
+        val loadedFail = audit.retrieveAccessInfo(permissionGranted = false)
+        Assert.assertEquals("Loaded access info did not match expected", fail, loadedFail)
+    }
+
+    @Test
+    fun should_retrieve_access_info_by_dates_and_system_info_uuid() {
         val now = System.currentTimeMillis()
         val then = now - 10000
         val later = now + 10000
@@ -162,7 +215,7 @@ class SQLiteAuditDbTest {
         for (system in systems) {
             val systemUuid = system.uuid
             val expectedEntries = map[systemUuid]
-            val loadedEntries = audit.retrieveAccessInfo(systemUuid, then, later)
+            val loadedEntries = audit.retrieveAccessInfo(systemUuid, null, then, later)
 
             Assert.assertNotNull( "Expected entries was null", expectedEntries )
             Assert.assertNotNull( "Loaded entries was null", loadedEntries )
@@ -238,11 +291,15 @@ class SQLiteAuditDbTest {
     /// Utility code
     ///
 
-    private fun generateAccessInfo(system: SystemInfo, expectedCount: Int, audit: AuditDB): List<AccessInfo> {
+    private fun generateAccessInfo(system: SystemInfo,
+                                   expectedCount: Int,
+                                   audit: AuditDB,
+                                   userUuid: String = "user" + uuid(),
+                                   permissionGranted: Boolean? = null ): List<AccessInfo> {
         val result = ArrayList<AccessInfo>()
 
         for (i in 0 until expectedCount) {
-            val info = randomAccessInfo(system.uuid)
+            val info = randomAccessInfo(system.uuid, userUuid, permissionGranted)
             audit.log(info)
             result.add(info)
 
@@ -252,7 +309,7 @@ class SQLiteAuditDbTest {
         return result
     }
 
-    private fun randomAccessInfo(systemInfoUuid: String): AccessInfo {
+    private fun randomAccessInfo(systemInfoUuid: String, userUuid: String, permissionGranted: Boolean? ): AccessInfo {
         val mods = ArrayList<Modification>()
         for (i in 0..9) {
             mods.add(Modification(
@@ -268,10 +325,11 @@ class SQLiteAuditDbTest {
 
         val loginType = loginTypes[random.nextInt(loginTypes.size)]
         val accessType = accessTypes[random.nextInt(accessTypes.size)]
-        val permissionGranted = random.nextBoolean()
+
+        val permission = if(permissionGranted!=null) permissionGranted else random.nextBoolean()
 
         return AccessInfo(
-                "user" + uuid(),
+                userUuid,
                 loginType,
                 "proxy:" + uuid(),
                 "ipAddress:" + uuid(),
@@ -281,7 +339,7 @@ class SQLiteAuditDbTest {
                 "classification" + uuid(),
                 "resource" + uuid(),
                 accessType,
-                permissionGranted,
+                permission,
                 systemInfoUuid,
                 mods,
                 "uuid:" + uuid()

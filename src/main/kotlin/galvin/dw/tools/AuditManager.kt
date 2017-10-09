@@ -1,13 +1,16 @@
 package galvin.dw.tools
 
-import galvin.dw.loadResourceAndReadString
-import galvin.dw.parseToDateTime
+import galvin.dw.*
+import galvin.dw.sqlite.SQLiteAuditDB
+import galvin.dw.sqlite.SQLiteUserDB
 import org.apache.commons.cli.Options
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormatter
 import org.joda.time.format.DateTimeFormatterBuilder
+import java.io.File
+import javax.jws.soap.SOAPBinding
 
 
 val programName = "audit-manager.sh"
@@ -15,16 +18,20 @@ val helpFile = "galvin/dw/manual/audit-manager.txt"
 
 val verbose = Opt( short = "v", long = "verbose", desc = "Show extra debugging info" )
 val manual = Opt( short = "m", long = "man", desc = "Show the complete help manual" )
-val help = Opt( short = "h", long = "help", desc = "Show the concise help summary" )
-val deltas = Opt( short = "d", long = "deltas", desc = "Show the complete modification history for each event" )
 
+val systemInfo = Opt( short = "si", long="system-info", desc = "Shows the system information, including classification and network info" )
+
+val help = Opt( short = "h", long = "help", desc = "Show the concise help summary" )
 val start = Opt( short = "s", long = "start", desc = "Specify the start date of the query", argName = "<yyyy.MM.dd.HH.mm.ss>" )
 val end = Opt( short = "e", long = "end", desc = "Specify the end date of the query", argName = "<yyyy.MM.dd.HH.mm.ss>" )
 val user = Opt( short = "u", long = "user", desc = "Query for audit events from a user", argName = "<user>" )
 val success = Opt( short = "success", desc = "Show events where permission was granted" )
 val fail = Opt( short = "failure", desc = "Show events where permission was denied" )
 
-val systemInfo = Opt( short = "si", long="system-info", desc = "Shows the system information, including classification and network info" )
+val deltas = Opt( short = "d", long = "deltas", desc = "Show the complete modification history for each event" )
+
+val sqlite = Opt( short = "sqlite",  desc = "Connect to an SQLite audit database", argName = "<sqlite filepath>" )
+val userdb = Opt( short = "sqliteuserdb",  desc = "Connect to an SQLite user database", argName = "<sqlite userdb filepath>" )
 
 
 
@@ -34,6 +41,14 @@ class AuditManager(){
     val dateTimeFormats: List<DateTimeFormatter>
 
     init{
+        initOptions()
+
+
+
+        dateTimeFormats = initDateTimeFormats()
+    }
+
+    private fun initOptions(){
         options.addOption( verbose.build() )
         options.addOption( manual.build() )
         options.addOption( help.build() )
@@ -44,7 +59,11 @@ class AuditManager(){
         options.addOption( success.build() )
         options.addOption( fail.build() )
         options.addOption( systemInfo.build() )
+        options.addOption( sqlite.build() )
+        options.addOption( userdb.build() )
+    }
 
+    private fun initDateTimeFormats(): List<DateTimeFormatter>{
         val dtf1 = DateTimeFormatterBuilder()
                 .appendYear(4,4)
                 .appendLiteral('/')
@@ -79,7 +98,7 @@ class AuditManager(){
                 .appendDayOfMonth(2)
                 .toFormatter()
 
-        dateTimeFormats = listOf(dtf1, dtf2, dtf3)
+        return listOf(dtf1, dtf2, dtf3)
     }
 
     fun parse( args: Array<String>): AuditManagerOptions{
@@ -99,7 +118,9 @@ class AuditManager(){
                 end = end,
                 username = username,
                 showDeltas = deltas.on(cmd),
-                showSystemInfo = systemInfo.on(cmd)
+                showSystemInfo = systemInfo.on(cmd),
+                sqlite = sqlite.get(cmd),
+                sqliteUserdb = userdb.get(cmd)
         )
     }
 
@@ -109,15 +130,88 @@ class AuditManager(){
         auditManager.run(options)
     }
 
-    fun run(options: AuditManagerOptions){
-        isVerbose = options.verbose
-
+    private fun run(options: AuditManagerOptions) {
         if( options.showHelp ){
             help()
         }
         if( options.showManual ){
             manual()
         }
+
+        val result = runQuery(options)
+
+        for( hit in result ){
+
+        }
+    }
+
+    private fun runQuery(options: AuditManagerOptions): List<AccessInfo>{
+        isVerbose = options.verbose
+
+        if( options.shouldQuery() ) {
+            val auditDB = connect(options)
+
+            val start = options.start?.millis
+            val end = options.end?.millis
+            val permission = options.calculatePermission()
+            val userUuid = getUserUuid(options)
+
+            val result =  auditDB.retrieveAccessInfo(
+                    userUuid = userUuid,
+                    startTimestamp = start,
+                    endTimestamp = end,
+                    permissionGranted = permission)
+
+            if( result.isEmpty() ){
+                verbose("<No results match query>")
+            }
+
+            return result
+        }
+        else{
+            verbose( "No query specified: must specify at least one of [start | end | user]" )
+        }
+
+        return listOf()
+    }
+
+    private fun getUserUuid( options: AuditManagerOptions ): String?{
+        if( isBlank(options.username) ) return null
+
+        val userDB = connectUserDB(options)
+        return userDB.retrieveUuidByLogin(options.username)
+    }
+
+    private fun connect( options: AuditManagerOptions ): AuditDB {
+        if( isBlank(options.sqlite) ){
+            throw Exception("Unable to connect to audit DB: no filepath specified")
+        }
+
+        val file = File(options.sqlite)
+        if( !file.exists() ){
+            throw Exception( "Unable to connect to audit DB: ${file.absolutePath} does not exist" )
+        }
+        else if( !file.canRead() ){
+            throw Exception( "Unable to connect to audit DB: ${file.absolutePath} cannot be read" )
+        }
+
+        return SQLiteAuditDB(file)
+    }
+
+    private fun connectUserDB(options: AuditManagerOptions): UserDB{
+        if( isBlank(options.sqliteUserdb) ){
+            throw Exception("Unable to connect to user DB: no filepath specified")
+        }
+
+        val file = File(options.sqliteUserdb)
+        if( !file.exists() ){
+            throw Exception( "Unable to connect to user DB: ${file.absolutePath} does not exist" )
+        }
+        else if( !file.canRead() ){
+            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be read" )
+        }
+
+        return SQLiteUserDB(file)
     }
 
     private fun help(){
@@ -146,4 +240,19 @@ data class AuditManagerOptions( val verbose: Boolean = false,
                                 val end: DateTime? = null,
                                 val username: String = "",
                                 val showDeltas: Boolean = false,
-                                val showSystemInfo: Boolean = false )
+                                val showSystemInfo: Boolean = false,
+                                val sqlite: String = "",
+                                val sqliteUserdb: String = ""){
+    fun shouldQuery(): Boolean{
+        return start != null ||
+                end != null ||
+                !isBlank(username)
+    }
+    fun calculatePermission(): Boolean?{
+        if( showSuccess != showFailure ){
+            if(showSuccess) return true
+            if(showFailure) return false
+        }
+        return null
+    }
+}

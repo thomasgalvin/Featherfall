@@ -13,6 +13,12 @@ General Options
 
 `--help` or `-h` - Prints a short summary of command line flags.
 
+Connection Options
+==================
+
+`-sqlite <filepath>` - Connects to an SQLite audit database
+`-sqlite-userdb` - Connect to an SQLite user database
+
 Displaying System Info
 ======================
 
