@@ -40,9 +40,11 @@ The following flags can be used to retrieve audit events:
 
 The following date formats are supported:
 
-* `"yyyy.MM.dd"` - eg `2017.12.01`, which parses to midnight on December 1st, 2017
-* `"yyyy.MM.dd.kk.mm"` - eg `2017.12.01.15.45`, which parses to 3:45PM on December 1st, 2017
-* `"yyyy.MM.dd.kk.mm.ss"` - eg `2017.12.01.15.45.12`
+* `"yyyy"` - eg `2017`, which parses to midnight on January 1st, 2017
+* `"yyyy/MM"` - eg `2017/01`, which parses to midnight on January 1st, 2017
+* `"yyyy/MM/dd"` - eg `2017/01/01`, which parses to midnight on January 1st, 2017
+* `"yyyy/MM/dd-kk.mm"` - eg `2017/01/01-15:45`, which parses to 3:45PM on January 1st, 2017
+* `"yyyy/MM/dd-kk.mm.ss"` - eg `2017/01/01-15:45:12`, which parses to 3:45:12PM on January 1st, 2017
 
 `--user` or `-u` - Query for audit events for a given user.
 

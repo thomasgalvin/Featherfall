@@ -13,7 +13,7 @@ import org.joda.time.format.DateTimeFormatterBuilder
 import java.io.File
 import java.util.stream.Collectors
 import com.sun.webkit.graphics.WCGraphicsManager.getResourceName
-
+import org.joda.time.format.DateTimeFormat
 
 
 val programName = "audit-manager.sh"
@@ -66,39 +66,11 @@ class AuditManager(){
 
     private fun initDateTimeFormats(): List<DateTimeFormatter>{
         return listOf(
-                DateTimeFormatterBuilder()
-                        .appendYear(4,4)
-                        .appendLiteral('/')
-                        .appendMonthOfYear(2)
-                        .appendLiteral('/')
-                        .appendDayOfMonth(2)
-                        .appendLiteral('-')
-                        .appendHourOfDay(2)
-                        .appendLiteral(':')
-                        .appendMinuteOfHour(2)
-                        .appendLiteral(':')
-                        .appendSecondOfMinute(2)
-                        .toFormatter(),
-
-                DateTimeFormatterBuilder()
-                        .appendYear(4,4)
-                        .appendLiteral('/')
-                        .appendMonthOfYear(2)
-                        .appendLiteral('/')
-                        .appendDayOfMonth(2)
-                        .appendLiteral('-')
-                        .appendHourOfDay(2)
-                        .appendLiteral(':')
-                        .appendMinuteOfHour(2)
-                        .toFormatter(),
-
-                DateTimeFormatterBuilder()
-                        .appendYear(4,4)
-                        .appendLiteral('/')
-                        .appendMonthOfYear(2)
-                        .appendLiteral('/')
-                        .appendDayOfMonth(2)
-                        .toFormatter()
+                DateTimeFormat.forPattern("yyyy/MM/dd-kk:mm:ss"),
+                DateTimeFormat.forPattern("yyyy/MM/dd-kk:mm"),
+                DateTimeFormat.forPattern("yyyy/MM/dd"),
+                DateTimeFormat.forPattern("yyyy/MM"),
+                DateTimeFormat.forPattern("yyyy")
         )
     }
 

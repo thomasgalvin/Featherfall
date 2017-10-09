@@ -48,6 +48,8 @@ class AuditManagerTest{
 
     @Test
     fun should_parse_start_dates(){
+        testStartDate( DateTime(2017, 1, 1, 0, 0), "2017", "2017" )
+        testStartDate( DateTime(2017, 4, 1, 0, 0), "2017/04", "2017/4" )
         testStartDate( DateTime(2017, 4, 7, 0, 0), "2017/04/07", "2017/4/7" )
         testStartDate( DateTime(2017, 4, 7, 1, 37), "2017/04/07-01:37", "2017/4/7-1:37" )
         testStartDate( DateTime(2017, 4, 7, 1, 37, 55), "2017/04/07-01:37:55", "2017/4/7-1:37:55" )
@@ -55,6 +57,8 @@ class AuditManagerTest{
 
     @Test
     fun should_parse_end_dates(){
+        testEndDate( DateTime(2017, 1, 1, 0, 0), "2017", "2017" )
+        testEndDate( DateTime(2017, 4, 1, 0, 0), "2017/04", "2017/4" )
         testEndDate( DateTime(2017, 4, 7, 0, 0), "2017/04/07", "2017/4/7" )
         testEndDate( DateTime(2017, 4, 7, 1, 37), "2017/04/07-01:37", "2017/4/7-1:37" )
         testEndDate( DateTime(2017, 4, 7, 1, 37, 55), "2017/04/07-01:37:55", "2017/4/7-1:37:55" )
