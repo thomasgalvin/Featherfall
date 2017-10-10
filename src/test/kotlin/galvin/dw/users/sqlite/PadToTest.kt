@@ -1,9 +1,9 @@
 package galvin.dw.users.sqlite
 
+import galvin.dw.PadTo.padTo
+import galvin.dw.PadTo.paddedLayout
 import org.junit.Assert
 import org.junit.Test
-import galvin.dw.PadTo.*
-
 
 
 class PadToTest{

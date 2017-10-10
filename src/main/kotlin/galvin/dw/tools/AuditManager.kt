@@ -4,15 +4,15 @@ import galvin.dw.*
 import galvin.dw.PadTo.paddedLayout
 import galvin.dw.sqlite.SQLiteAuditDB
 import galvin.dw.sqlite.SQLiteUserDB
-import org.apache.commons.cli.Options
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
+import org.apache.commons.cli.Options
 import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 import org.joda.time.format.DateTimeFormatter
 import java.io.File
-import java.util.stream.Collectors
-import org.joda.time.format.DateTimeFormat
 import java.io.PrintStream
+import java.util.stream.Collectors
 
 
 val programName = "audit-manager.sh"
