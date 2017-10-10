@@ -21,7 +21,7 @@ import javax.servlet.DispatcherType
  *
  * Usage will look something like this:
  *
- * val config = File( "path/t/config )
+ * val config = File( "path/to/config )
  * val resources = listOf( UserResource(), SomeOtherResource() )
  *
  * val server = FeatherfallServer( configFile=config, apiResources=resources  )
