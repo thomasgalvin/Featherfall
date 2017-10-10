@@ -48,7 +48,10 @@ class AuditManagerQueryTest{
         val manager = AuditManager()
         val options = manager.parse( args( setup, "-u", setup.user.uuid ) )
         val results = manager.executeQuery(options)
+
+        ConsoleGrabber.grabConsole()
         manager.print(results, options)
+        ConsoleGrabber.releaseConsole(false)
     }
 
     @Test
@@ -72,7 +75,10 @@ class AuditManagerQueryTest{
         val manager = AuditManager()
         val options = manager.parse( args( setup, "-u", setup.user.uuid ) )
         val results = manager.executeQuery(options)
+
+        ConsoleGrabber.grabConsole()
         manager.print(results, options)
+        ConsoleGrabber.releaseConsole(false)
     }
 
     @Test
@@ -96,7 +102,10 @@ class AuditManagerQueryTest{
         val manager = AuditManager()
         val options = manager.parse( args( setup, "-u", setup.user.uuid, "-d" ) )
         val results = manager.executeQuery(options)
+
+        ConsoleGrabber.grabConsole()
         manager.print(results, options)
+        ConsoleGrabber.releaseConsole(false)
     }
 
     @Test
