@@ -22,6 +22,16 @@ class AccountManager{
         return userDB.retrieveUsersByLocked(false)
     }
 
+    fun retrieveInactiveUsers(options: AccountManagerOptions): List<User>{
+        val userDB = connectUserDB(options)
+        return userDB.retrieveUsersByActive(false)
+    }
+
+    fun retrieveActiveUsers(options: AccountManagerOptions): List<User>{
+        val userDB = connectUserDB(options)
+        return userDB.retrieveUsersByActive(true)
+    }
+
     private fun connectUserDB(options: AccountManagerOptions): UserDB {
         if( isBlank(options.sqlite) ){
             throw Exception("Unable to connect to user DB: no filepath specified")

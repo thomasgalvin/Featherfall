@@ -46,6 +46,34 @@ class AccountManagerQueryTest{
         }
     }
 
+    @Test fun should_list_inactive_accounts(){
+        val activeCount = 7
+        val inactiveCount = 3
+        val objects = testObjects(count = 0, activeCount = activeCount, inactiveCount = inactiveCount)
+        val users = objects.accountManager.retrieveInactiveUsers( options = objects.accountManagerOptions )
+        Assert.assertEquals("Unexpected inactive user count", inactiveCount, objects.inactiveUsers.size)
+        Assert.assertEquals("Unexpected inactive user count", inactiveCount, users.size)
+
+        for(user in users){
+            val expected = objects.inactiveUsersMap[user.uuid]
+            Assert.assertEquals("Unexpected user", expected, user)
+        }
+    }
+
+    @Test fun should_list_active_accounts(){
+        val activeCount = 7
+        val inactiveCount = 3
+        val objects = testObjects(count = 0, activeCount = activeCount, inactiveCount = inactiveCount)
+        val users = objects.accountManager.retrieveActiveUsers( options = objects.accountManagerOptions )
+        Assert.assertEquals("Unexpected inactive user count", activeCount, objects.activeUsers.size)
+        Assert.assertEquals("Unexpected inactive user count", activeCount, users.size)
+
+        for(user in users){
+            val expected = objects.activeUsersMap[user.uuid]
+            Assert.assertEquals("Unexpected user", expected, user)
+        }
+    }
+
     private fun testObjects(count: Int = 10,
                             activeCount: Int = 0, inactiveCount: Int = 0,
                             unlockedCount: Int = 0, lockedCount: Int = 0 ): AccountManagerQueryTestObjects{

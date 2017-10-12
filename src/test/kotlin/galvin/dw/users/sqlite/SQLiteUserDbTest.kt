@@ -419,6 +419,90 @@ class SQLiteUserDbTest {
         }
     }
 
+    @Test
+    fun should_retrive_users_by_active(){
+        val( userDB, _, _, roles ) = testObjects()
+        val activeCount = 10
+        val unactiveCount = 5
+
+        val activeMap = mutableMapOf<String, User>()
+        val unactiveMap = mutableMapOf<String, User>()
+
+        for( i in 1..activeCount ){
+            val user = generateUser(roles, active=true)
+            userDB.storeUser(user)
+            activeMap[user.uuid] = user
+        }
+
+        for( i in 1..unactiveCount ){
+            val user = generateUser(roles, active=false)
+            userDB.storeUser(user)
+            unactiveMap[user.uuid] = user
+        }
+
+        val loadedActive = userDB.retrieveUsersByActive(true)
+        Assert.assertEquals("Unexpected unactive user count", activeCount, loadedActive.size)
+
+        val loadedUnactive = userDB.retrieveUsersByActive(false)
+        Assert.assertEquals("Unexpected unactive user count", unactiveCount, loadedUnactive.size)
+
+        for( loaded in loadedActive ){
+            val expected = activeMap[loaded.uuid]
+            Assert.assertEquals("Unexpected user", expected, loaded)
+        }
+
+        for( loaded in loadedUnactive ){
+            val expected = unactiveMap[loaded.uuid]
+            Assert.assertEquals("Unexpected user", expected, loaded)
+        }
+    }
+
+    @Test
+    fun should_activate_and_deactivate_user_by_login(){
+        val( userDB, _, _, roles ) = testObjects()
+
+        val toBeActive = generateUser(roles, active=false)
+        val neverActive = generateUser(roles, active=false)
+
+        userDB.storeUser(toBeActive)
+        userDB.storeUser(neverActive)
+
+        userDB.storeUser(toBeActive)
+        userDB.storeUser(neverActive)
+
+        Assert.assertFalse( "Account should not have been active", toBeActive.active )
+        Assert.assertFalse( "Account should not have been active", neverActive.active )
+
+        Assert.assertFalse( "Account should not have been active", userDB.isActive( toBeActive.login) )
+        Assert.assertFalse( "Account should not have been active", userDB.isActive( neverActive.login) )
+
+        userDB.setActiveByLogin( toBeActive.login, true)
+
+        Assert.assertTrue( "Account should have been active", userDB.isActiveByLogin( toBeActive.login) )
+        Assert.assertFalse( "Account should not have been active", userDB.isActiveByLogin( neverActive.login) )
+
+        val shouldBeActive = userDB.retrieveUserByLogin(toBeActive.login)
+        if( shouldBeActive == null ){
+            throw Exception( "Loaded account was null" )
+        }
+        else {
+            Assert.assertTrue("Account should have been active", shouldBeActive.active)
+        }
+
+        userDB.setActiveByLogin( toBeActive.login, false)
+
+        Assert.assertFalse( "Account should not have been active", userDB.isActiveByLogin( toBeActive.login) )
+        Assert.assertFalse( "Account should not have been active", userDB.isActiveByLogin( neverActive.login) )
+
+        val shouldBeUnactive = userDB.retrieveUserByLogin(toBeActive.login)
+        if( shouldBeUnactive == null ){
+            throw Exception( "Loaded account was null" )
+        }
+        else {
+            Assert.assertFalse( "Account should not have been active", shouldBeUnactive.active)
+        }
+    }
+
     private fun testObjects(): SqliteUserDbTestObjects{
         val userDB = randomUserDB()
         val roles = generateRoles(userdb = userDB)

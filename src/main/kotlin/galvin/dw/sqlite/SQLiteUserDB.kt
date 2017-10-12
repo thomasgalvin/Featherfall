@@ -34,17 +34,24 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     private val sqlRetrieveUserBySerialNumber = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_serial_number.sql")
     private val sqlRetrieveUserByLogin= loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_login.sql")
     private val sqlRetrieveAllUsers = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_users.sql")
-    private val sqlRetrieveUsersByLocked = loadSql("/galvin/dw/db/sqlite/users/retrieve_users_by_locked.sql")
+
     private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
     private val sqlRetrieveRolesForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_roles_for_user.sql")
+
     private val sqlRetrieveUuidByLogin = loadSql("/galvin/dw/db/sqlite/users/retrieve_uuid_by_login.sql")
     private val sqlRetrieveUuidBySerialNumber = loadSql("/galvin/dw/db/sqlite/users/retrieve_uuid_by_serial_number.sql")
 
+    private val sqlRetrieveUsersByLocked = loadSql("/galvin/dw/db/sqlite/users/retrieve_users_by_locked.sql")
     private val sqlSetLockedByUuid = loadSql("/galvin/dw/db/sqlite/users/set_locked_by_uuid.sql")
     private val sqlSetLockedByLogin = loadSql("/galvin/dw/db/sqlite/users/set_locked_by_login.sql")
-
     private val sqlIsLockedByUuid = loadSql("/galvin/dw/db/sqlite/users/is_locked_by_uuid.sql")
     private val sqlIsLockedByLogin = loadSql("/galvin/dw/db/sqlite/users/is_locked_by_login.sql")
+
+    private val sqlRetrieveUsersByActive = loadSql("/galvin/dw/db/sqlite/users/retrieve_users_by_active.sql")
+    private val sqlSetActiveByUuid = loadSql("/galvin/dw/db/sqlite/users/set_active_by_uuid.sql")
+    private val sqlSetActiveByLogin = loadSql("/galvin/dw/db/sqlite/users/set_active_by_login.sql")
+    private val sqlIsActiveByUuid = loadSql("/galvin/dw/db/sqlite/users/is_active_by_uuid.sql")
+    private val sqlIsActiveByLogin = loadSql("/galvin/dw/db/sqlite/users/is_active_by_login.sql")
 
     private val sqlDeleteContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/delete_contact_info_for_user.sql")
     private val sqlDeleteRolesForUser = loadSql("/galvin/dw/db/sqlite/users/delete_roles_for_user.sql")
@@ -301,6 +308,11 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
         return retrieveUsersBy(sqlRetrieveUsersByLocked, flag)
     }
 
+    override fun retrieveUsersByActive( active: Boolean): List<User>{
+        val flag = if(active) 1 else 0
+        return retrieveUsersBy(sqlRetrieveUsersByActive, flag)
+    }
+
     private fun retrieveUsersBy( sql: String, intFlag: Int? = null ): List<User>{
         val conn = conn()
 
@@ -535,6 +547,64 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
                 if (results.next()) {
                     val locked = results.getInt("locked")
                     result = locked != 0
+                }
+
+                close(conn, statement)
+                return result
+            }
+            finally{
+                rollbackAndClose(conn)
+            }
+        }
+
+    }
+
+    override fun setActive( uuid: String, active: Boolean ){
+        setActiveBy(sqlSetActiveByUuid, uuid, active)
+    }
+
+    override fun setActiveByLogin( login: String, active: Boolean ){
+        setActiveBy(sqlSetActiveByLogin, login, active)
+    }
+
+    private fun setActiveBy(sql: String, key: String, active: Boolean){
+        synchronized(concurrencyLock) {
+            val conn = conn()
+
+            try {
+                val statement = conn.prepareStatement(sql)
+                val activeValue = if (active) 1 else 0
+                statement.setInt(1, activeValue)
+                statement.setString(2, key)
+                executeAndClose(statement, conn)
+            }
+            finally{
+                rollbackAndClose(conn)
+            }
+        }
+    }
+
+    override fun isActive( uuid: String ): Boolean{
+        return isActiveBy( sqlIsActiveByUuid, uuid )
+    }
+
+    override fun isActiveByLogin( login: String ): Boolean{
+        return isActiveBy( sqlIsActiveByLogin, login )
+    }
+
+    private fun isActiveBy( sql: String, key: String): Boolean{
+
+        synchronized(concurrencyLock) {
+            val conn = conn()
+
+            try {
+                var result = false
+                val statement = conn.prepareStatement(sql)
+                statement.setString(1, key)
+                val results = statement.executeQuery()
+                if (results.next()) {
+                    val active = results.getInt("active")
+                    result = active != 0
                 }
 
                 close(conn, statement)
