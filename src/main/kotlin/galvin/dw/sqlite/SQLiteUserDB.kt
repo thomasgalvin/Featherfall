@@ -5,7 +5,7 @@ import java.io.File
 import java.sql.Connection
 import java.sql.ResultSet
 
-class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
+class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
 
     private val sqlCreateTableRoles = loadSql("/galvin/dw/db/sqlite/roles/create_table_roles.sql")
@@ -300,7 +300,7 @@ class SQLiteUserDB( private val databaseFile: File) : UserDB, SQLiteDB(databaseF
             val statement = conn.prepareStatement(sqlRetrieveAllUsers)
             val resultSet = statement.executeQuery()
             if (resultSet != null) {
-                if (resultSet.next()) {
+                while (resultSet.next()) {
                     result.add(unmarshalUser(resultSet, conn))
                 }
             }

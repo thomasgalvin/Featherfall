@@ -140,6 +140,33 @@ class SQLiteUserDbTest {
     }
 
     @Test
+    fun should_store_and_retrieve_all_users(){
+        val( userDB, _, _, roles ) = testObjects()
+        val expectedCount = 10
+
+        val map = mutableMapOf<String, User>()
+        for( i in 1..expectedCount ){
+            val user = generateUser(roles)
+            userDB.storeUser(user)
+            map.put( user.uuid, user )
+        }
+
+        for( key in map.keys ){
+            val expected = map[key]
+            val loaded = userDB.retrieveUser(key)
+            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
+        }
+
+        val loadedUsers = userDB.retrieveUsers()
+        Assert.assertEquals("Unexpected user count", expectedCount, loadedUsers.size)
+
+        for( loaded in loadedUsers ){
+            val expected = map[loaded.uuid]
+            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
+        }
+    }
+
+    @Test
     fun should_store_and_retrieve_all_users_by_serial_number(){
         val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
@@ -157,12 +184,6 @@ class SQLiteUserDbTest {
         for( key in map.keys ){
             val expected = map[key]
             val loaded = userDB.retrieveUserBySerialNumber(key)
-            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
-        }
-
-        val loadedUsers = userDB.retrieveUsers()
-        for( loaded in loadedUsers ){
-            val expected = map[loaded.serialNumber]
             Assert.assertEquals("Loaded user did not match expected", expected, loaded)
         }
     }
@@ -183,37 +204,6 @@ class SQLiteUserDbTest {
         for( key in map.keys ){
             val expected = map[key]
             val loaded = userDB.retrieveUserByLogin(key)
-            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
-        }
-
-        val loadedUsers = userDB.retrieveUsers()
-        for( loaded in loadedUsers ){
-            val expected = map[loaded.login]
-            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
-        }
-    }
-
-    @Test
-    fun should_store_and_retrieve_all_users(){
-        val( userDB, _, _, roles ) = testObjects()
-        val expectedCount = 10
-
-        val map = mutableMapOf<String, User>()
-        for( i in 1..expectedCount ){
-            val user = generateUser(roles)
-            userDB.storeUser(user)
-            map.put( user.uuid, user )
-        }
-
-        for( key in map.keys ){
-            val expected = map[key]
-            val loaded = userDB.retrieveUser(key)
-            Assert.assertEquals("Loaded user did not match expected", expected, loaded)
-        }
-
-        val loadedUsers = userDB.retrieveUsers()
-        for( loaded in loadedUsers ){
-            val expected = map[loaded.uuid]
             Assert.assertEquals("Loaded user did not match expected", expected, loaded)
         }
     }

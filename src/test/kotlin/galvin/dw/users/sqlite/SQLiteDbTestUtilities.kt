@@ -38,6 +38,16 @@ fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid(), passw
     )
 }
 
+fun generateUsers( systemRoles: List<Role>, count: Int = 10 ): List<User>{
+    val result = mutableListOf<User>()
+
+    for(i in 1..count){
+        result.add( generateUser(systemRoles) )
+    }
+
+    return result
+}
+
 fun generateUser( systemRoles: List<Role>, uuid: String = uuid(), password: String = uuid() ): User {
     val contact = generateContactInfo()
 
