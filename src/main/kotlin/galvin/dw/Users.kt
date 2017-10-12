@@ -29,6 +29,7 @@ interface UserDB {
 
     fun userExists(uuid: String): Boolean
 
+    fun retrieveUsersByLocked( locked: Boolean = true): List<User>
     fun setLocked( uuid: String, locked: Boolean )
     fun setLockedByLogin( login: String, locked: Boolean )
 

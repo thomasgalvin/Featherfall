@@ -34,6 +34,7 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     private val sqlRetrieveUserBySerialNumber = loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_serial_number.sql")
     private val sqlRetrieveUserByLogin= loadSql("/galvin/dw/db/sqlite/users/retrieve_user_by_login.sql")
     private val sqlRetrieveAllUsers = loadSql("/galvin/dw/db/sqlite/users/retrieve_all_users.sql")
+    private val sqlRetrieveUsersByLocked = loadSql("/galvin/dw/db/sqlite/users/retrieve_users_by_locked.sql")
     private val sqlRetrieveContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_contact_info_for_user.sql")
     private val sqlRetrieveRolesForUser = loadSql("/galvin/dw/db/sqlite/users/retrieve_roles_for_user.sql")
     private val sqlRetrieveUuidByLogin = loadSql("/galvin/dw/db/sqlite/users/retrieve_uuid_by_login.sql")
@@ -292,12 +293,25 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     }
 
     override fun retrieveUsers(): List<User>{
+        return retrieveUsersBy(sqlRetrieveAllUsers)
+    }
+
+    override fun retrieveUsersByLocked( locked: Boolean): List<User>{
+        val flag = if(locked) 1 else 0
+        return retrieveUsersBy(sqlRetrieveUsersByLocked, flag)
+    }
+
+    private fun retrieveUsersBy( sql: String, intFlag: Int? = null ): List<User>{
         val conn = conn()
 
         try {
             val result = mutableListOf<User>()
 
-            val statement = conn.prepareStatement(sqlRetrieveAllUsers)
+            val statement = conn.prepareStatement(sql)
+            if( intFlag != null){
+                statement.setInt(1, intFlag)
+            }
+
             val resultSet = statement.executeQuery()
             if (resultSet != null) {
                 while (resultSet.next()) {

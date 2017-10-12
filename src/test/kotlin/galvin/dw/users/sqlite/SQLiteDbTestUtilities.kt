@@ -48,7 +48,9 @@ fun generateUsers( systemRoles: List<Role>, count: Int = 10 ): List<User>{
     return result
 }
 
-fun generateUser( systemRoles: List<Role>, uuid: String = uuid(), password: String = uuid() ): User {
+fun generateUser( systemRoles: List<Role>,
+                  uuid: String = uuid(), password: String = uuid(),
+                  active: Boolean = true, locked: Boolean = false ): User {
     val contact = generateContactInfo()
 
     val userRoles = mutableListOf<String>()
@@ -74,8 +76,8 @@ fun generateUser( systemRoles: List<Role>, uuid: String = uuid(), password: Stri
             "countryCode:" + uuid(),
             "citizenship:" + uuid(),
             System.currentTimeMillis(),
-            true,
-            false,
+            active,
+            locked,
             uuid,
             contact,
             userRoles

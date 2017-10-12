@@ -381,6 +381,44 @@ class SQLiteUserDbTest {
         }
     }
 
+    @Test
+    fun should_retrive_users_by_locked(){
+        val( userDB, _, _, roles ) = testObjects()
+        val lockedCount = 10
+        val unlockedCount = 5
+
+        val lockedMap = mutableMapOf<String, User>()
+        val unlockedMap = mutableMapOf<String, User>()
+
+        for( i in 1..lockedCount ){
+            val user = generateUser(roles, locked=true)
+            userDB.storeUser(user)
+            lockedMap[user.uuid] = user
+        }
+
+        for( i in 1..unlockedCount ){
+            val user = generateUser(roles, locked=false)
+            userDB.storeUser(user)
+            unlockedMap[user.uuid] = user
+        }
+
+        val loadedLocked = userDB.retrieveUsersByLocked(true)
+        Assert.assertEquals("Unexpected unlocked user count", lockedCount, loadedLocked.size)
+
+        val loadedUnlocked = userDB.retrieveUsersByLocked(false)
+        Assert.assertEquals("Unexpected unlocked user count", unlockedCount, loadedUnlocked.size)
+
+        for( loaded in loadedLocked ){
+            val expected = lockedMap[loaded.uuid]
+            Assert.assertEquals("Unexpected user", expected, loaded)
+        }
+
+        for( loaded in loadedUnlocked ){
+            val expected = unlockedMap[loaded.uuid]
+            Assert.assertEquals("Unexpected user", expected, loaded)
+        }
+    }
+
     private fun testObjects(): SqliteUserDbTestObjects{
         val userDB = randomUserDB()
         val roles = generateRoles(userdb = userDB)
