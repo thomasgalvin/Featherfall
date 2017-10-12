@@ -159,9 +159,59 @@ class AccountManagerQueryTest{
         }
     }
 
+    @Test fun should_print_short(){
+        val users = listOf(
+                printableUser(1),
+                printableUser(2, active=false),
+                printableUser(3, locked = true),
+                printableUser(4),
+                printableUser(5)
+        )
+        val accountManager = AccountManager()
+
+        val expected = loadResourceAndReadString("galvin/gw/print_short.txt")
+
+        ConsoleGrabber.grabConsole()
+        accountManager.printShort(users)
+        val result = ConsoleGrabber.releaseConsole(false)
+
+        Assert.assertEquals( "Unexpected user info", expected, result )
+    }
+
+
+
     //
     // Utilities
     //
+
+    private fun printableUser(count: Int,
+                              active: Boolean = true,
+                              locked: Boolean = false ): User{
+        val roles = listOf(
+            "Role $count:A",
+            "Role $count:B",
+            "Role $count:C"
+        )
+
+        val contact = listOf(
+                ContactInfo("Email", "Work Email", "user${count}@dev.null", true),
+                ContactInfo("Email", "Home Email", "user${count}@gmail.com", false),
+                ContactInfo("Phone", "Work Phone", "1.800.555.5555", true),
+                ContactInfo("Phone", "Home Phone", "555.5555", false)
+        )
+
+        return User(
+                login="user${count}",
+                name = "",
+                displayName = "",
+                sortName = "Sort Name $count",
+                created = System.currentTimeMillis(),
+                active = active,
+                locked = locked,
+                roles = roles,
+                contact = contact
+        )
+    }
 
     private fun testObjects(count: Int = 10,
                             activeCount: Int = 0, inactiveCount: Int = 0,

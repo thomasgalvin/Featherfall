@@ -168,28 +168,3 @@ fun parseToDateTime( string: String,
     return null
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Console Grabber
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-object ConsoleGrabber {
-    private val original = System.out
-    private val bytes = ByteArrayOutputStream()
-    private val printStream = PrintStream(bytes)
-
-    fun grabConsole() {
-        bytes.reset()
-        System.setOut(printStream)
-    }
-
-    fun releaseConsole(print: Boolean = true): String {
-        printStream.flush()
-        System.setOut(original)
-
-        val result = bytes.toString()
-        if(print){ println(result) }
-        return result
-    }
-}

@@ -4,7 +4,9 @@ import galvin.dw.*
 import galvin.dw.sqlite.SQLiteAccountRequestDB
 import galvin.dw.sqlite.SQLiteAuditDB
 import galvin.dw.sqlite.SQLiteUserDB
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.PrintStream
 import java.util.*
 
 fun randomDbFile(): File {
@@ -150,4 +152,30 @@ fun randomSystemInfo(): SystemInfo {
             ),
             "uuid:" + uuid()
     )
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Console Grabber
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+object ConsoleGrabber {
+    private val original = System.out
+    private val bytes = ByteArrayOutputStream()
+    private val printStream = PrintStream(bytes)
+
+    fun grabConsole() {
+        bytes.reset()
+        System.setOut(printStream)
+    }
+
+    fun releaseConsole(print: Boolean = true): String {
+        printStream.flush()
+        System.setOut(original)
+
+        val result = bytes.toString()
+        if(print){ println(result) }
+        return result
+    }
 }

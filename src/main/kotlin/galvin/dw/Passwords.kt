@@ -3,6 +3,11 @@ package galvin.dw
 import org.mindrot.jbcrypt.BCrypt
 import java.io.IOException
 import java.security.cert.X509Certificate
+import java.security.cert.CertificateFactory
+import java.io.FileInputStream
+import java.io.File
+
+
 
 const val SPECIAL_CHARACTER_SET = "`~!@#$%^&*()_+-={}|:\"<>?[]\\;',./"
 
@@ -220,5 +225,16 @@ fun getDistinguishedNameTokens( dn: String ): Map<String, String>{
     return result
 }
 
+fun loadCertificateFromFile(file: File): X509Certificate {
+    val stream = FileInputStream(file)
+    val certFactory = CertificateFactory.getInstance("X.509")
+
+    val cert = certFactory.generateCertificate(stream) as X509Certificate
+    stream.close()
+
+    return cert
+}
+
 data class CertificateData( val credential: String?, val serialNumber: String?, val distinguishedName: String?,
                             val countryCode: String?, val citizenship: String? )
+
