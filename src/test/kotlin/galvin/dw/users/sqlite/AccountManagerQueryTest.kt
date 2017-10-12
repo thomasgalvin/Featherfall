@@ -11,8 +11,7 @@ import org.junit.Test
 import java.io.File
 
 class AccountManagerQueryTest{
-    @Test
-    fun should_list_all_accounts(){
+    @Test fun should_list_all_accounts(){
         val objects = testObjects()
         val users = objects.accountManager.retrieveAllUsers( options = objects.accountManagerOptions )
         Assert.assertEquals("Unexpected user count", objects.allUsers.size, users.size)
@@ -46,6 +45,30 @@ class AccountManagerQueryTest{
         }
     }
 
+    @Test fun should_lock_account(){
+        val unlockedCount = 5
+        val lockedCount = 10
+        val objects = testObjects(count = 0, unlockedCount = unlockedCount, lockedCount = lockedCount)
+        for( user in objects.unlockedUsers ){
+            Assert.assertFalse("User should not have been locked", user.locked)
+            objects.accountManager.lockUser(objects.accountManagerOptions, user.login)
+            val loaded = objects.userDB.retrieveUser(user.uuid)
+            Assert.assertEquals("User should have been locked", true, loaded?.locked)
+        }
+    }
+
+    @Test fun should_unlock_account(){
+        val unlockedCount = 5
+        val lockedCount = 10
+        val objects = testObjects(count = 0, unlockedCount = unlockedCount, lockedCount = lockedCount)
+        for( user in objects.lockedUsers ){
+            Assert.assertTrue("User should have been locked", user.locked)
+            objects.accountManager.unlockUser(objects.accountManagerOptions, user.login)
+            val loaded = objects.userDB.retrieveUser(user.uuid)
+            Assert.assertEquals("User should not have been locked", false, loaded?.locked)
+        }
+    }
+
     @Test fun should_list_inactive_accounts(){
         val activeCount = 7
         val inactiveCount = 3
@@ -73,6 +96,34 @@ class AccountManagerQueryTest{
             Assert.assertEquals("Unexpected user", expected, user)
         }
     }
+
+    @Test fun should_deactivate_account(){
+        val inactiveCount = 3
+        val activeCount = 7
+        val objects = testObjects(count = 0, inactiveCount = inactiveCount, activeCount = activeCount)
+        for( user in objects.activeUsers ){
+            Assert.assertTrue("User should have been active", user.active)
+            objects.accountManager.deactivateUser(objects.accountManagerOptions, user.login)
+            val loaded = objects.userDB.retrieveUser(user.uuid)
+            Assert.assertEquals("User should not have been active", false, loaded?.active)
+        }
+    }
+
+    @Test fun should_activate_account(){
+        val inactiveCount = 3
+        val activeCount = 7
+        val objects = testObjects(count = 0, inactiveCount = inactiveCount, activeCount = activeCount)
+        for( user in objects.inactiveUsers ){
+            Assert.assertFalse("User should not have been active", user.active)
+            objects.accountManager.activateUser(objects.accountManagerOptions, user.login)
+            val loaded = objects.userDB.retrieveUser(user.uuid)
+            Assert.assertEquals("User should have been active", true, loaded?.active)
+        }
+    }
+
+    //
+    // Utilities
+    //
 
     private fun testObjects(count: Int = 10,
                             activeCount: Int = 0, inactiveCount: Int = 0,

@@ -32,6 +32,66 @@ class AccountManager{
         return userDB.retrieveUsersByActive(true)
     }
 
+    fun lockUser( options: AccountManagerOptions, login: String ){
+        val userDB = connectUserDB(options)
+        val uuid = userDB.retrieveUuidByLogin(login)
+        if( uuid != null && !isBlank(uuid) ){
+            userDB.setLocked(uuid, true)
+
+            if( options.verbose ){
+                println("User locked: $login")
+            }
+        }
+        else{
+            println("No such user: $login")
+        }
+    }
+
+    fun unlockUser( options: AccountManagerOptions, login: String ){
+        val userDB = connectUserDB(options)
+        val uuid = userDB.retrieveUuidByLogin(login)
+        if( uuid != null && !isBlank(uuid) ){
+            userDB.setLocked(uuid, false)
+
+            if( options.verbose ){
+                println("User locked: $login")
+            }
+        }
+        else{
+            println("No such user: $login")
+        }
+    }
+
+    fun deactivateUser( options: AccountManagerOptions, login: String ){
+        val userDB = connectUserDB(options)
+        val uuid = userDB.retrieveUuidByLogin(login)
+        if( uuid != null && !isBlank(uuid) ){
+            userDB.setActive(uuid, false)
+
+            if( options.verbose ){
+                println("User deactivated: $login")
+            }
+        }
+        else{
+            println("No such user: $login")
+        }
+    }
+
+    fun activateUser( options: AccountManagerOptions, login: String ){
+        val userDB = connectUserDB(options)
+        val uuid = userDB.retrieveUuidByLogin(login)
+        if( uuid != null && !isBlank(uuid) ){
+            userDB.setActive(uuid, true)
+
+            if( options.verbose ){
+                println("User deactivated: $login")
+            }
+        }
+        else{
+            println("No such user: $login")
+        }
+    }
+
     private fun connectUserDB(options: AccountManagerOptions): UserDB {
         if( isBlank(options.sqlite) ){
             throw Exception("Unable to connect to user DB: no filepath specified")
