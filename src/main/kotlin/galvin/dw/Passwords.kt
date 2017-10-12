@@ -2,6 +2,7 @@ package galvin.dw
 
 import org.mindrot.jbcrypt.BCrypt
 import java.io.IOException
+import java.security.cert.X509Certificate
 
 const val SPECIAL_CHARACTER_SET = "`~!@#$%^&*()_+-={}|:\"<>?[]\\;',./"
 
@@ -171,3 +172,53 @@ data class PasswordRequirements(val minLength: Int = 0,
     }
 }
 
+fun parsePKI( x509: X509Certificate ): CertificateData{
+    val serialNumber = if(x509.serialNumber == null) "" else "${x509.serialNumber}"
+    val tokens = getDistinguishedNameTokens(x509.subjectX500Principal.name)
+
+    return CertificateData(
+            credential = getCredentialID(x509),
+            serialNumber = serialNumber,
+            distinguishedName = x509.subjectX500Principal.name,
+            countryCode = neverNull( tokens["countryName"] ),
+            citizenship = neverNull( tokens["COUNTRY_OF_CITIZENSHIP"] )
+    )
+}
+
+fun getCredentialID( x509: X509Certificate ): String{
+    val hash = x509.getIssuerX500Principal().hashCode()
+    val serial = x509.getSerialNumber()
+    val credentialName = getCredentialName( x509 )
+    return "$hash::$serial::$credentialName"
+}
+
+fun getCredentialName( x509: X509Certificate ): String{
+    val distinguishedName = x509.subjectX500Principal.name
+
+    val  nameIndex = distinguishedName.indexOf( "CN=" )
+    if( nameIndex < 0 )  return distinguishedName
+
+    val separatorIndex = distinguishedName.indexOf(',', nameIndex)
+    return if (separatorIndex < 0) {
+        distinguishedName.substring(nameIndex + 3)
+    } else {
+        distinguishedName.substring(nameIndex + 3, separatorIndex)
+    }
+}
+
+fun getDistinguishedNameTokens( dn: String ): Map<String, String>{
+    val result = mutableMapOf<String, String>()
+    val tokens = dn.split( "," )
+    for( token in tokens ){
+        if( token.contains("=") ){
+            val nameValue = token.split(",")
+            if( nameValue.size == 2){
+                result[ nameValue[0] ] = nameValue[1]
+            }
+        }
+    }
+    return result
+}
+
+data class CertificateData( val credential: String?, val serialNumber: String?, val distinguishedName: String?,
+                            val countryCode: String?, val citizenship: String? )

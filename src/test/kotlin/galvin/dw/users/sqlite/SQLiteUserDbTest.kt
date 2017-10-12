@@ -1,9 +1,6 @@
 package galvin.dw.users.sqlite
 
-import galvin.dw.Role
-import galvin.dw.User
-import galvin.dw.UserDB
-import galvin.dw.neverNull
+import galvin.dw.*
 import org.junit.Assert
 import org.junit.Test
 
@@ -501,6 +498,54 @@ class SQLiteUserDbTest {
         else {
             Assert.assertFalse( "Account should not have been active", shouldBeUnactive.active)
         }
+    }
+
+    @Test fun should_update_password_by_login(){
+        val (userDB, user) = testObjects()
+        userDB.storeUser(user)
+
+        val newPassword = "1234567890"
+        userDB.setPasswordByLogin(user.login, newPassword)
+        Assert.assertTrue( "Password should have worked", userDB.validatePassword(user.uuid, newPassword) )
+    }
+
+    @Test fun should_update_password_by_uuid(){
+        val (userDB, user) = testObjects()
+        userDB.storeUser(user)
+
+        val newPassword = "1234567890"
+        userDB.setPasswordByUuid(user.uuid, newPassword)
+        Assert.assertTrue( "Password should have worked", userDB.validatePassword(user.uuid, newPassword) )
+    }
+
+    @Test fun should_retrieve_credentials(){
+        val (userDB, user) = testObjects()
+        userDB.storeUser(user)
+
+        val expected = user.getCredentials()
+        val loaded = userDB.retrieveCredentials(user.uuid)
+        Assert.assertEquals("Unexpected credentials", expected, loaded)
+    }
+
+    @Test fun should_update_credentials(){
+        val (userDB, user) = testObjects()
+        userDB.storeUser(user)
+
+        val expectedCredentials = CertificateData(
+                credential = uuid(),
+                serialNumber = uuid(),
+                distinguishedName = uuid(),
+                countryCode = uuid(),
+                citizenship = uuid()
+        )
+
+        userDB.updateCredentials(user.uuid, expectedCredentials)
+        val expected = user.withCredentials(expectedCredentials)
+        val loaded = userDB.retrieveUser(user.uuid)
+        Assert.assertEquals("Unexpected credentials", expected, loaded)
+
+        val loadedCredentials = userDB.retrieveCredentials(user.uuid)
+        Assert.assertEquals("Unexpected credentials", expectedCredentials, loadedCredentials)
     }
 
     private fun testObjects(): SqliteUserDbTestObjects{

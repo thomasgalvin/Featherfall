@@ -56,6 +56,13 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     private val sqlDeleteContactInfoForUser = loadSql("/galvin/dw/db/sqlite/users/delete_contact_info_for_user.sql")
     private val sqlDeleteRolesForUser = loadSql("/galvin/dw/db/sqlite/users/delete_roles_for_user.sql")
 
+    private val sqlSetPasswordByUuid = loadSql("/galvin/dw/db/sqlite/users/set_password_by_uuid.sql")
+    private val sqlSetPasswordByLogin = loadSql("/galvin/dw/db/sqlite/users/set_password_by_login.sql")
+    private val sqlRetrievePasswordHashByUuid = loadSql("/galvin/dw/db/sqlite/users/get_password_hash_by_uuid.sql")
+
+    private val sqlUpdateCredentialsByUuid = loadSql("/galvin/dw/db/sqlite/users/update_credentials_by_uuid.sql")
+    private val sqlRetrieveCredentialsByUuid = loadSql("/galvin/dw/db/sqlite/users/retrieve_credentials_by_uuid.sql")
+
     init{
         val conn = conn()
         try {
@@ -535,28 +542,24 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     }
 
     private fun isLockedBy( sql: String, key: String): Boolean{
+        val conn = conn()
 
-        synchronized(concurrencyLock) {
-            val conn = conn()
-
-            try {
-                var result = false
-                val statement = conn.prepareStatement(sql)
-                statement.setString(1, key)
-                val results = statement.executeQuery()
-                if (results.next()) {
-                    val locked = results.getInt("locked")
-                    result = locked != 0
-                }
-
-                close(conn, statement)
-                return result
+        try {
+            var result = false
+            val statement = conn.prepareStatement(sql)
+            statement.setString(1, key)
+            val results = statement.executeQuery()
+            if (results.next()) {
+                val locked = results.getInt("locked")
+                result = locked != 0
             }
-            finally{
-                rollbackAndClose(conn)
-            }
+
+            close(conn, statement)
+            return result
         }
-
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 
     override fun setActive( uuid: String, active: Boolean ){
@@ -593,27 +596,124 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     }
 
     private fun isActiveBy( sql: String, key: String): Boolean{
+        val conn = conn()
 
+        try {
+            var result = false
+            val statement = conn.prepareStatement(sql)
+            statement.setString(1, key)
+            val results = statement.executeQuery()
+            if (results.next()) {
+                val active = results.getInt("active")
+                result = active != 0
+            }
+
+            close(conn, statement)
+            return result
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
+    }
+
+    override fun setPasswordByUuid( uuid: String, plainTextPassword: String ){
+        setPasswordBy(sqlSetPasswordByUuid, uuid, plainTextPassword)
+    }
+
+    override fun setPasswordByLogin( login: String, plainTextPassword: String ){
+        setPasswordBy(sqlSetPasswordByLogin, login, plainTextPassword)
+    }
+
+    private fun setPasswordBy( sql: String, uuid: String, plainTextPassword: String ){
         synchronized(concurrencyLock) {
             val conn = conn()
+            val hash = hash(plainTextPassword)
 
             try {
-                var result = false
                 val statement = conn.prepareStatement(sql)
-                statement.setString(1, key)
-                val results = statement.executeQuery()
-                if (results.next()) {
-                    val active = results.getInt("active")
-                    result = active != 0
-                }
-
-                close(conn, statement)
-                return result
+                statement.setString(1, hash)
+                statement.setString(2, uuid)
+                executeAndClose(statement, conn)
             }
             finally{
                 rollbackAndClose(conn)
             }
         }
+    }
 
+    override fun retrievePasswordHash(uuid: String): String{
+        val conn = conn()
+
+        try {
+            var result = ""
+            val statement = conn.prepareStatement(sqlRetrievePasswordHashByUuid)
+            statement.setString(1, uuid)
+            val results = statement.executeQuery()
+            if (results.next()) {
+                result = results.getString("passwordHash")
+            }
+
+            close(conn, statement)
+            return result
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
+    }
+
+    override fun validatePassword( uuid: String, plainTextPassword: String ): Boolean{
+        val hash = retrievePasswordHash(uuid)
+        if( isBlank(hash) ) return false
+
+        return validate(plainTextPassword, hash)
+    }
+
+    override fun updateCredentials( uuid: String, credentials: CertificateData ){
+        if( !userExists(uuid) ) return
+
+        synchronized(concurrencyLock) {
+            val conn = conn()
+
+            try {
+                val statement = conn.prepareStatement(sqlUpdateCredentialsByUuid)
+                statement.setString(1, credentials.credential)
+                statement.setString(2, credentials.serialNumber)
+                statement.setString(3, credentials.distinguishedName)
+                statement.setString(4, credentials.countryCode)
+                statement.setString(5, credentials.citizenship)
+                statement.setString(6, uuid)
+                executeAndClose(statement, conn)
+            }
+            finally{
+                rollbackAndClose(conn)
+            }
+        }
+    }
+
+    override fun retrieveCredentials( uuid: String ): CertificateData?{
+        val conn = conn()
+
+        try {
+            var result: CertificateData? = null
+
+            val statement = conn.prepareStatement(sqlRetrieveCredentialsByUuid)
+            statement.setString(1, uuid)
+            val results = statement.executeQuery()
+            if (results.next()) {
+                result = CertificateData(
+                        credential = results.getString("credential"),
+                        serialNumber = results.getString("serialNumber"),
+                        distinguishedName = results.getString("distinguishedName"),
+                        countryCode = results.getString("countryCode"),
+                        citizenship = results.getString("citizenship")
+                )
+            }
+
+            close(conn, statement)
+            return result
+        }
+        finally{
+            rollbackAndClose(conn)
+        }
     }
 }

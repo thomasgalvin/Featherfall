@@ -40,6 +40,11 @@ fun createList(firstEntry: String): MutableList<String> {
     return result
 }
 
+fun elseIfNull( one: String?, two: String? ): String?{
+    if( one == null ) return two
+    return one
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Database utility code

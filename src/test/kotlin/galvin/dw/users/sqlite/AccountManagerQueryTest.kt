@@ -1,8 +1,6 @@
 package galvin.dw.users.sqlite
 
-import galvin.dw.Role
-import galvin.dw.User
-import galvin.dw.UserDB
+import galvin.dw.*
 import galvin.dw.sqlite.SQLiteUserDB
 import galvin.dw.tools.AccountManager
 import galvin.dw.tools.AccountManagerOptions
@@ -118,6 +116,46 @@ class AccountManagerQueryTest{
             objects.accountManager.activateUser(objects.accountManagerOptions, user.login)
             val loaded = objects.userDB.retrieveUser(user.uuid)
             Assert.assertEquals("User should have been active", true, loaded?.active)
+        }
+    }
+
+    @Test fun should_update_password(){
+        val count = 5
+        val objects = testObjects(count=count)
+        for( user in objects.allUsers ){
+            val newPassword = uuid()
+            objects.accountManager.updatePassword(objects.accountManagerOptions, user.login, newPassword)
+            objects.userDB.validatePassword(user.uuid, newPassword)
+        }
+    }
+
+    @Test fun should_update_credentials(){
+        val count = 5
+        val objects = testObjects(count=count)
+        for( user in objects.allUsers ){
+            val expectedCredentials = CertificateData(
+                    credential = uuid(),
+                    serialNumber = uuid(),
+                    distinguishedName = uuid(),
+                    countryCode = uuid(),
+                    citizenship = uuid()
+            )
+            objects.accountManager.updateCredentials(
+                    objects.accountManagerOptions,
+                    user.login,
+                    expectedCredentials.credential,
+                    expectedCredentials.serialNumber,
+                    expectedCredentials.distinguishedName,
+                    expectedCredentials.countryCode,
+                    expectedCredentials.citizenship
+            )
+
+            val expected = user.withCredentials(expectedCredentials)
+            val loaded = objects.userDB.retrieveUser(user.uuid)
+            Assert.assertEquals("Unexpected credentials", expected, loaded)
+
+            val loadedCredentials = objects.userDB.retrieveCredentials(user.uuid)
+            Assert.assertEquals("Unexpected credentials", expectedCredentials, loadedCredentials)
         }
     }
 

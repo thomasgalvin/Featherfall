@@ -40,6 +40,15 @@ interface UserDB {
     fun isActiveByLogin( login: String ): Boolean
     fun setActive( uuid: String, active: Boolean )
     fun setActiveByLogin( login: String, active: Boolean )
+
+    fun setPasswordByUuid( uuid: String, plainTextPassword: String )
+    fun setPasswordByLogin( login: String, plainTextPassword: String )
+
+    fun retrievePasswordHash(uuid: String): String
+    fun validatePassword( uuid: String, plainTextPassword: String ): Boolean
+
+    fun updateCredentials( uuid: String, credentials: CertificateData )
+    fun retrieveCredentials( uuid: String ): CertificateData?
 }
 
 interface AccountRequestDB {
@@ -110,7 +119,7 @@ data class User(
         )
     }
 
-    fun withPasswordHash( passwordHash: String ): User{
+    fun withCredentials(credentials: CertificateData): User{
         return User(
                 login,
                 passwordHash,
@@ -119,19 +128,29 @@ data class User(
                 sortName,
                 prependToName,
                 appendToName,
-                credential,
-                serialNumber,
-                distinguishedName,
+                credentials.credential,
+                credentials.serialNumber,
+                credentials.distinguishedName,
                 homeAgency,
                 agency,
-                countryCode,
-                citizenship,
+                credentials.countryCode,
+                credentials.citizenship,
                 created,
                 active,
                 locked,
                 uuid,
                 copyContact(),
                 copyRoles()
+        )
+    }
+
+    fun getCredentials(): CertificateData{
+        return CertificateData(
+                credential = credential,
+                serialNumber = serialNumber,
+                distinguishedName = distinguishedName,
+                countryCode = countryCode,
+                citizenship = citizenship
         )
     }
 
