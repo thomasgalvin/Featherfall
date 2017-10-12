@@ -1,0 +1,7 @@
+Login Legal Name  Active   Locked Roles                       
+--------------------------------------------------------------
+user1 Sort Name 1 Active          Role 1:A, Role 1:B, Role 1:C
+user2 Sort Name 2 Inactive        Role 2:A, Role 2:B, Role 2:C
+user3 Sort Name 3 Active   Locked Role 3:A, Role 3:B, Role 3:C
+user4 Sort Name 4 Active          Role 4:A, Role 4:B, Role 4:C
+user5 Sort Name 5 Active          Role 5:A, Role 5:B, Role 5:C
