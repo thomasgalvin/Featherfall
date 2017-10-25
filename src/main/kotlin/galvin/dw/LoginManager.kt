@@ -47,12 +47,11 @@ class LoginManager( private val userDB: UserDB,
         val user = getUser(credentials)
         if( user == null ){
             loginFailed(loginType, credentials.loginProxyUuid, credentials.ipAddress, userUuid, username)
+            throw LoginException(LOGIN_EXCEPTION_INVALID_CREDENTIALS)
         }
         else{
             return loginSucceeded(loginType, credentials.loginProxyUuid, credentials.ipAddress, user )
         }
-
-        throw LoginException(LOGIN_EXCEPTION_INVALID_CREDENTIALS)
     }
 
     private fun loginFailed( loginType: LoginType,
@@ -366,7 +365,9 @@ internal class LoginTokenManager{
             loginToken.logout()
         }
 
-        loginTokens.remove(key)
+        synchronized(concurrencyLock) {
+            loginTokens.remove(key)
+        }
     }
 
     /**
