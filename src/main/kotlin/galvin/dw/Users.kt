@@ -94,54 +94,16 @@ data class User(
         val roles: List<String> = listOf<String>()
 ){
     fun withoutPasswordHash(): User{
-        val newPasswordHash: String? = null
-
-        return User(
-                login,
-                newPasswordHash,
-                name,
-                displayName,
-                sortName,
-                prependToName,
-                appendToName,
-                credential,
-                serialNumber,
-                distinguishedName,
-                homeAgency,
-                agency,
-                countryCode,
-                citizenship,
-                created,
-                active,
-                locked,
-                uuid,
-                copyContact(),
-                copyRoles()
-        )
+        return copy( passwordHash = null )
     }
 
     fun withCredentials(credentials: CertificateData): User{
-        return User(
-                login,
-                passwordHash,
-                name,
-                displayName,
-                sortName,
-                prependToName,
-                appendToName,
-                credentials.credential,
-                credentials.serialNumber,
-                credentials.distinguishedName,
-                homeAgency,
-                agency,
-                credentials.countryCode,
-                credentials.citizenship,
-                created,
-                active,
-                locked,
-                uuid,
-                copyContact(),
-                copyRoles()
+        return copy(
+                credential = credentials.credential,
+                serialNumber = credentials.serialNumber,
+                distinguishedName = credentials.distinguishedName,
+                countryCode = credentials.countryCode,
+                citizenship = credentials.citizenship
         )
     }
 
