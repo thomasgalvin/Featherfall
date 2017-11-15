@@ -9,21 +9,24 @@ import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
-fun main(args: Array<String>) {
-    try {
-        println("Setting up server...")
-        val api = arrayListOf<Any>( HelloResource() )
-        val statics = arrayListOf<StaticResource>( StaticResource( location="/galvin/ff/demo/html/", context="/html" ) )
-        //val statics = arrayListOf<StaticResource>( StaticResource( location="/tmp/", context="/html", onClasspath=false ) )
+class HelloWorld {
+    companion object Main {
+        fun main(args: Array<String>) {
+            try {
+                println("Setting up server...")
+                val api = arrayListOf<Any>(HelloResource())
+                val statics = arrayListOf<StaticResource>(StaticResource(location = "/galvin/ff/demo/html/", context = "/html"))
+                //val statics = arrayListOf<StaticResource>( StaticResource( location="/tmp/", context="/html", onClasspath=false ) )
 
-        val server = FeatherfallServer<HelloConfig>(
-                apiResources = api,
-                staticResources = statics
-        )
-        server.start()
-    }
-    catch(t: Throwable){
-        t.printStackTrace()
+                val server = FeatherfallServer<HelloConfig>(
+                        apiResources = api,
+                        staticResources = statics
+                )
+                server.start()
+            } catch (t: Throwable) {
+                t.printStackTrace()
+            }
+        }
     }
 }
 
