@@ -40,10 +40,11 @@ fun createList(firstEntry: String): MutableList<String> {
     return result
 }
 
-fun elseIfNull( one: String?, two: String? ): String?{
-    if( one == null ) return two
+fun elseIfNull( one: String?, two: String? ): String{
+    if( one == null ) return neverNull(two)
     return one
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -167,4 +168,3 @@ fun parseToDateTime( string: String,
 
     return null
 }
-

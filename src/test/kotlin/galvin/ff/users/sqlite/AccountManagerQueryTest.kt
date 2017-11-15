@@ -178,6 +178,25 @@ class AccountManagerQueryTest{
         Assert.assertEquals( "Unexpected user info", expected, result )
     }
 
+    @Test fun should_print_long(){
+        val created = 1510759774477
+        val users = listOf(
+                printableUser(1, created=created),
+                printableUser(2, created=created, active=false),
+                printableUser(3, created=created, locked = true),
+                printableUser(4, created=created),
+                printableUser(5, created=created)
+        )
+        val accountManager = AccountManager()
+
+        val expected = loadResourceAndReadString("galvin/ff/print_long.txt")
+
+        ConsoleGrabber.grabConsole()
+        accountManager.printLong(users)
+        val result = ConsoleGrabber.releaseConsole(false)
+
+        Assert.assertEquals( "Unexpected user info", expected, result )
+    }
 
 
     //
@@ -186,7 +205,8 @@ class AccountManagerQueryTest{
 
     private fun printableUser(count: Int,
                               active: Boolean = true,
-                              locked: Boolean = false ): User{
+                              locked: Boolean = false,
+                              created: Long = System.currentTimeMillis()): User{
         val roles = listOf(
             "Role $count:A",
             "Role $count:B",
@@ -201,11 +221,20 @@ class AccountManagerQueryTest{
         )
 
         return User(
-                login="user${count}",
-                name = "",
-                displayName = "",
-                sortName = "Sort Name $count",
-                created = System.currentTimeMillis(),
+                login="user ${count}",
+                name = "name ${count}",
+                displayName = "display name ${count}",
+                sortName = "sort Name $count",
+                prependToName = "prepend ${count}",
+                appendToName = "append ${count}",
+                credential = "credential ${count}",
+                serialNumber = "serial ${count}",
+                distinguishedName = "distinguished name ${count}",
+                homeAgency = "home agency ${count}",
+                agency = "agency ${count}",
+                countryCode = "country code ${count}",
+                citizenship = "citizenship ${count}",
+                created = created,
                 active = active,
                 locked = locked,
                 roles = roles,

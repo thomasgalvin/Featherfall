@@ -3,6 +3,8 @@ package galvin.ff.tools
 import galvin.ff.*
 import galvin.ff.PadTo.paddedLayout
 import galvin.ff.sqlite.SQLiteUserDB
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 import java.io.File
 import java.io.PrintStream
 import java.util.stream.Collectors
@@ -25,6 +27,105 @@ class AccountManager{
 
         val table = paddedLayout( '-', logins, legal, active, locked, roles )
         out.println(table)
+    }
+
+    fun printLong( users: List<User>, out: PrintStream = System.out ){
+        val dateTimeFormat = DateTimeFormat.forPattern("yyyy/MM/dd kk:mm")
+        val text = StringBuilder()
+        for( (index,user) in users.withIndex() ){
+            val created = dateTimeFormat.print(user.created)
+
+            text.append( "Sort By Name:       " )
+            text.append( user.sortName )
+
+            text.append("\n")
+            text.append( "Login:              " )
+            text.append( user.login )
+
+            text.append("\n")
+            text.append( "Name:               " )
+            text.append( user.name )
+
+            text.append("\n")
+            text.append( "Display Name:       " )
+            text.append( user.displayName )
+
+            text.append("\n")
+            text.append( "Prepend to Name:    " )
+            text.append( user.prependToName )
+
+            text.append("\n")
+            text.append( "Append to Name:     " )
+            text.append( user.appendToName )
+
+            text.append("\n")
+            text.append( "Credential:         " )
+            text.append( user.credential )
+
+            text.append("\n")
+            text.append( "Serial Number:      " )
+            text.append( user.serialNumber )
+
+            text.append("\n")
+            text.append( "Distinguished Name: " )
+            text.append( user.distinguishedName )
+
+            text.append("\n")
+            text.append( "Agency:             " )
+            text.append( user.agency )
+
+            text.append("\n")
+            text.append( "Country Code:       " )
+            text.append( user.countryCode )
+
+            text.append("\n")
+            text.append( "Citizenship:        " )
+            text.append( user.citizenship )
+
+            text.append("\n")
+            text.append( "Created On:         " )
+            text.append( created )
+
+            text.append("\n")
+            text.append( "Active:             " )
+            text.append( if(user.active){ "Active" } else{ "Inactive" } )
+
+            text.append("\n")
+            text.append( "Locked:             " )
+            text.append( if(user.locked){ "Locked" } else{ "Unlocked" } )
+
+            text.append("\n")
+            text.append( "Contact Info:\n" )
+            for( contact in user.contact ){
+                text.append( "    - " )
+                text.append( contact.contact )
+
+                if( !isBlank(contact.description) ) {
+                    text.append(" (")
+                    text.append(contact.description)
+                    text.append(")")
+                }
+
+                if( contact.primary ){
+                    text.append(" * Primary")
+                }
+                text.append("\n")
+            }
+
+
+            text.append( "Roles:\n" )
+            for( roleName in user.roles){
+                text.append( "    - " )
+                text.append( roleName )
+                text.append("\n")
+            }
+
+            if( index < users.size-1) {
+                text.append("------------------------------\n")
+            }
+        }
+
+        out.println( text.toString().trim() )
     }
 
     fun retrieveAllUsers(options: AccountManagerOptions): List<User>{
@@ -128,14 +229,19 @@ class AccountManager{
         val uuid = userDB.retrieveUuidByLogin(login)
         if( uuid != null && !isBlank(uuid) ){
             val current = userDB.retrieveCredentials(uuid)
-            val updateCredentials = CertificateData(
-                    credential = elseIfNull( credential, current?.credential ),
-                    serialNumber = elseIfNull( serialNumber, current?.serialNumber ),
-                    distinguishedName = elseIfNull( distinguishedName, current?.distinguishedName),
-                    countryCode = elseIfNull( countryCode, current?.countryCode ),
-                    citizenship = elseIfNull( citizenship, current?.citizenship )
-            )
-            userDB.updateCredentials(uuid, updateCredentials)
+            if( current != null ) {
+                val updateCredentials = CertificateData(
+                        credential = elseIfNull(credential, current.credential),
+                        serialNumber = elseIfNull(serialNumber, current.serialNumber),
+                        distinguishedName = elseIfNull(distinguishedName, current.distinguishedName),
+                        countryCode = elseIfNull(countryCode, current.countryCode),
+                        citizenship = elseIfNull(citizenship, current.citizenship)
+                )
+                userDB.updateCredentials(uuid, updateCredentials)
+            }
+            else{
+                println("No such user: $login")
+            }
         }
         else{
             println("No such user: $login")
@@ -159,6 +265,37 @@ class AccountManager{
         else{
             println("No such user: $login")
         }
+    }
+
+    //
+    // roles
+    //
+
+    fun listRoles( options: AccountManagerOptions ){
+        val userDB = connectUserDB(options)
+        val roles = userDB.listRoles()
+
+        val text = StringBuilder()
+        for( role in roles ){
+            text.append( role.name )
+            text.append( " (" )
+            text.append( if(role.active){ "Active" } else{ "Inactive" } )
+            text.append( ")\n" )
+
+            for( permission in role.permissions ){
+                text.append("    - ")
+                text.append( permission )
+                text.append("\n")
+            }
+        }
+
+
+        /*
+            Role Name (active)
+                - Permission
+                - Permission
+                - Permission
+        */
     }
 
     //

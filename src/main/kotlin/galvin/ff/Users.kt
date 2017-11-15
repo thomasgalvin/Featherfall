@@ -14,7 +14,7 @@ interface UserDB {
     fun listRoles(): List<Role>
     fun retrieveRole(name: String): Role?
 
-    fun retrievePermissions( roleNames: List<String>): List<String>
+    fun retrievePermissions( roleNames: List<String> ): List<String>
 
     //users
     fun storeUser(user: User, uuid: String? = null)
@@ -72,14 +72,14 @@ data class User(
         val name: String, //full legal name, eg "John Smith"
         val displayName:  String,//on-screen nickname, eg "John" or "Tigerpunch2010"
         val sortName: String, //name in a sortable order, eg "Smith, John"
-        val prependToName: String? = "", // this is used to storeSystemInfo stuff like "Mr." or "Dr."
+        val prependToName: String = "", // this is used to storeSystemInfo stuff like "Mr." or "Dr."
         val appendToName: String? = "", // used for stuff like rank, eg "Major General of the Fell Armies of Nod"
 
         //smart card info
-        val credential: String? = "", val serialNumber: String? = "",
-        val distinguishedName: String? = "", val homeAgency: String? = "",
-        val agency: String? = "", val countryCode: String? = "",
-        val citizenship: String? = "",
+        val credential: String = "", val serialNumber: String = "",
+        val distinguishedName: String = "", val homeAgency: String = "",
+        val agency: String = "", val countryCode: String = "",
+        val citizenship: String = "",
 
         //activation
         val created: Long, val active: Boolean, val locked: Boolean = false,

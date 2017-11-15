@@ -235,6 +235,6 @@ fun loadCertificateFromFile(file: File): X509Certificate {
     return cert
 }
 
-data class CertificateData( val credential: String?, val serialNumber: String?, val distinguishedName: String?,
-                            val countryCode: String?, val citizenship: String? )
+data class CertificateData( val credential: String = "", val serialNumber: String = "", val distinguishedName: String = "",
+                            val countryCode: String = "", val citizenship: String = "" )
 
