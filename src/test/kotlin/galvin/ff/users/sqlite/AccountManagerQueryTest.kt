@@ -251,6 +251,30 @@ class AccountManagerQueryTest{
     @Test fun should_add_permissions_to_roles(){
         val objects = roleTestObjects(createRoles = false)
 
+        val names = listOf( "Role 1", "Role 2", "Role 3" )
+        val permissions = listOf( "Perm 1", "Perm 2", "Perm 3" )
+        val toAdd = listOf( "Perm 4", "Perm 5" )
+        val addedPermissions = listOf( "Perm 1", "Perm 2", "Perm 3", "Perm 4", "Perm 5" )
+
+        val expectedOne = Role( name = "Role 1", permissions = addedPermissions, active = true)
+        val expectedTwo = Role( name = "Role 2", permissions = addedPermissions, active = true)
+        val expectedThree = Role( name = "Role 3", permissions = addedPermissions, active = true)
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+        accountManager.createRoles(accountManagerOptions, names, permissions)
+        accountManager.addPermissions(accountManagerOptions, names, toAdd)
+
+        val loadedRoles = objects.userDB.listRoles()
+        Assert.assertEquals( "Unexpected role count", 3, loadedRoles.size )
+        Assert.assertEquals( "Unexpected role", expectedOne, loadedRoles[0] )
+        Assert.assertEquals( "Unexpected role", expectedTwo, loadedRoles[1] )
+        Assert.assertEquals( "Unexpected role", expectedThree, loadedRoles[2] )
+    }
+
+    @Test fun should_add_permissions_to_role(){
+        val objects = roleTestObjects(createRoles = false)
+
         val roleOne = Role( name = "Role 1", permissions = listOf( "Perm 1", "Perm 2", "Perm 3" ) )
         objects.userDB.storeRole(roleOne)
 
@@ -274,6 +298,109 @@ class AccountManagerQueryTest{
         Assert.assertEquals( "Unexpected role", roleOne, unchangedLoaded )
     }
 
+    @Test fun should_remove_permissions_from_roles(){
+        val objects = roleTestObjects(createRoles = false)
+
+        val names = listOf( "Role 1", "Role 2", "Role 3" )
+        val permissions = listOf( "Perm 1", "Perm 2", "Perm 3", "Perm 4", "Perm 5" )
+        val toRemove = listOf( "Perm 4", "Perm 5" )
+        val finalPermissions = listOf( "Perm 1", "Perm 2", "Perm 3" )
+
+        val expectedOne = Role( name = "Role 1", permissions = finalPermissions, active = true)
+        val expectedTwo = Role( name = "Role 2", permissions = finalPermissions, active = true)
+        val expectedThree = Role( name = "Role 3", permissions = finalPermissions, active = true)
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+        accountManager.createRoles(accountManagerOptions, names, permissions)
+        accountManager.removePermissions(accountManagerOptions, names, toRemove)
+
+        val loadedRoles = objects.userDB.listRoles()
+        Assert.assertEquals( "Unexpected role count", 3, loadedRoles.size )
+        Assert.assertEquals( "Unexpected role", expectedOne, loadedRoles[0] )
+        Assert.assertEquals( "Unexpected role", expectedTwo, loadedRoles[1] )
+        Assert.assertEquals( "Unexpected role", expectedThree, loadedRoles[2] )
+    }
+
+    @Test fun should_remove_permissions_from_role(){
+        val objects = roleTestObjects(createRoles = false)
+
+        val roleOne = Role( name = "Role 1", permissions = listOf( "Perm 1", "Perm 2", "Perm 3" ) )
+        objects.userDB.storeRole(roleOne)
+
+        val roleTwo = Role( name = "Role 2", permissions = listOf( "Perm 1", "Perm 2", "Perm 3" ) )
+        objects.userDB.storeRole(roleTwo)
+
+        val expectedPermissions = listOf( "Perm 1", "Perm 2" )
+        val expectedRole = roleTwo.copy( permissions = expectedPermissions )
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+        accountManager.removePermissions(accountManagerOptions, listOf( "Role 2" ), listOf( "Perm 3" ) )
+
+        val loadedRoles = objects.userDB.listRoles()
+        Assert.assertEquals( "Unexpected role count", 2, loadedRoles.size )
+
+        val loaded = objects.userDB.retrieveRole( "Role 2" )
+        Assert.assertEquals( "Unexpected role", expectedRole, loaded )
+
+        val unchangedLoaded = objects.userDB.retrieveRole( "Role 1" )
+        Assert.assertEquals( "Unexpected role", roleOne, unchangedLoaded )
+    }
+
+    @Test fun should_activate_accounts(){
+        val objects = roleTestObjects(createRoles = true)
+
+        val inactiveNames = mutableListOf<String>()
+        for( role in objects.roles ){
+            if( !role.active ){
+                inactiveNames.add(role.name)
+            }
+        }
+        Assert.assertFalse("No inactive accounts found", inactiveNames.isEmpty())
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+        accountManager.activateRoles(accountManagerOptions, inactiveNames)
+
+        val loadedRoles = objects.userDB.listRoles()
+        for( role in loadedRoles ){
+            Assert.assertTrue("Role should have been active: ${role.name}", role.active)
+        }
+
+        for( role in objects.roles ){
+            val expected = role.copy(active = true)
+            val loaded = objects.userDB.retrieveRole(expected.name)
+            Assert.assertEquals("Role was improperly modified", expected, loaded)
+        }
+    }
+
+    @Test fun should_deactivate_accounts(){
+        val objects = roleTestObjects(createRoles = true)
+
+        val activeNames = mutableListOf<String>()
+        for( role in objects.roles ){
+            if( role.active ){
+                activeNames.add(role.name)
+            }
+        }
+        Assert.assertFalse("No active accounts found", activeNames.isEmpty())
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+        accountManager.deactivateRoles(accountManagerOptions, activeNames)
+
+        val loadedRoles = objects.userDB.listRoles()
+        for( role in loadedRoles ){
+            Assert.assertFalse("Role should have been inactive: ${role.name}", role.active)
+        }
+
+        for( role in objects.roles ){
+            val expected = role.copy(active = false)
+            val loaded = objects.userDB.retrieveRole(expected.name)
+            Assert.assertEquals("Role was improperly modified", expected, loaded)
+        }
+    }
 
     //
     // Utilities
