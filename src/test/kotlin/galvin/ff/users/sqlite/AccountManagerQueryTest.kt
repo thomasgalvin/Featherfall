@@ -210,6 +210,68 @@ class AccountManagerQueryTest{
         Assert.assertEquals( "Unexpected role info", expected, result )
     }
 
+    @Test fun should_create_roles(){
+        val objects = roleTestObjects(createRoles = false)
+
+        val names = listOf( "Role 1", "Role 2", "Role 3" )
+        val permissions = listOf( "Perm 1", "Perm 2", "Perm 3" )
+
+        val expectedOne = Role( name = "Role 1", permissions = permissions, active = true)
+        val expectedTwo = Role( name = "Role 2", permissions = permissions, active = true)
+        val expectedThree = Role( name = "Role 3", permissions = permissions, active = true)
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+        accountManager.createRoles(accountManagerOptions, names, permissions)
+
+        val loadedRoles = objects.userDB.listRoles()
+        Assert.assertEquals( "Unexpected role count", 3, loadedRoles.size )
+        Assert.assertEquals( "Unexpected role", expectedOne, loadedRoles[0] )
+        Assert.assertEquals( "Unexpected role", expectedTwo, loadedRoles[1] )
+        Assert.assertEquals( "Unexpected role", expectedThree, loadedRoles[2] )
+    }
+
+    @Test fun should_not_create_duplicate_roles(){
+        val objects = roleTestObjects(createRoles = false)
+
+        val names = listOf( "Role 1", "Role 1", "Role 1" )
+        val permissions = listOf( "Perm 1", "Perm 2", "Perm 3" )
+
+        val expectedOne = Role( name = "Role 1", permissions = permissions, active = true)
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+        accountManager.createRoles(accountManagerOptions, names, permissions)
+
+        val loadedRoles = objects.userDB.listRoles()
+        Assert.assertEquals( "Unexpected role count", 1, loadedRoles.size )
+        Assert.assertEquals( "Unexpected role", expectedOne, loadedRoles[0] )
+    }
+
+    @Test fun should_add_permissions_to_roles(){
+        val objects = roleTestObjects(createRoles = false)
+
+        val names = listOf( "Role 1", "Role 2", "Role 3" )
+        val permissions = listOf( "Perm 1", "Perm 2", "Perm 3" )
+        val toAdd = listOf( "Perm 4", "Perm 5" )
+        val addedPermissions = listOf( "Perm 1", "Perm 2", "Perm 3", "Perm 4", "Perm 5" )
+
+        val expectedOne = Role( name = "Role 1", permissions = addedPermissions, active = true)
+        val expectedTwo = Role( name = "Role 2", permissions = addedPermissions, active = true)
+        val expectedThree = Role( name = "Role 3", permissions = addedPermissions, active = true)
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+        accountManager.createRoles(accountManagerOptions, names, permissions)
+        accountManager.addPermissions(accountManagerOptions, names, toAdd)
+
+        val loadedRoles = objects.userDB.listRoles()
+        Assert.assertEquals( "Unexpected role count", 3, loadedRoles.size )
+        Assert.assertEquals( "Unexpected role", expectedOne, loadedRoles[0] )
+        Assert.assertEquals( "Unexpected role", expectedTwo, loadedRoles[1] )
+        Assert.assertEquals( "Unexpected role", expectedThree, loadedRoles[2] )
+    }
+
 
     //
     // Utilities
