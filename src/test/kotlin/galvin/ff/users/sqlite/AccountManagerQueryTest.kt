@@ -251,25 +251,27 @@ class AccountManagerQueryTest{
     @Test fun should_add_permissions_to_roles(){
         val objects = roleTestObjects(createRoles = false)
 
-        val names = listOf( "Role 1", "Role 2", "Role 3" )
-        val permissions = listOf( "Perm 1", "Perm 2", "Perm 3" )
-        val toAdd = listOf( "Perm 4", "Perm 5" )
-        val addedPermissions = listOf( "Perm 1", "Perm 2", "Perm 3", "Perm 4", "Perm 5" )
+        val roleOne = Role( name = "Role 1", permissions = listOf( "Perm 1", "Perm 2", "Perm 3" ) )
+        objects.userDB.storeRole(roleOne)
 
-        val expectedOne = Role( name = "Role 1", permissions = addedPermissions, active = true)
-        val expectedTwo = Role( name = "Role 2", permissions = addedPermissions, active = true)
-        val expectedThree = Role( name = "Role 3", permissions = addedPermissions, active = true)
+        val roleTwo = Role( name = "Role 2", permissions = listOf( "Perm 1", "Perm 2", "Perm 3" ) )
+        objects.userDB.storeRole(roleTwo)
+
+        val expectedPermissions = listOf( "Perm 1", "Perm 2", "Perm 3", "Perm 4", "Perm 5" )
+        val expectedRole = roleTwo.copy( permissions = expectedPermissions )
 
         val accountManagerOptions = objects.accountManagerOptions
         val accountManager = objects.accountManager
-        accountManager.createRoles(accountManagerOptions, names, permissions)
-        accountManager.addPermissions(accountManagerOptions, names, toAdd)
+        accountManager.addPermissions(accountManagerOptions, listOf( "Role 2" ), listOf( "Perm 4", "Perm 5" ) )
 
         val loadedRoles = objects.userDB.listRoles()
-        Assert.assertEquals( "Unexpected role count", 3, loadedRoles.size )
-        Assert.assertEquals( "Unexpected role", expectedOne, loadedRoles[0] )
-        Assert.assertEquals( "Unexpected role", expectedTwo, loadedRoles[1] )
-        Assert.assertEquals( "Unexpected role", expectedThree, loadedRoles[2] )
+        Assert.assertEquals( "Unexpected role count", 2, loadedRoles.size )
+
+        val loaded = objects.userDB.retrieveRole( "Role 2" )
+        Assert.assertEquals( "Unexpected role", expectedRole, loaded )
+
+        val unchangedLoaded = objects.userDB.retrieveRole( "Role 1" )
+        Assert.assertEquals( "Unexpected role", roleOne, unchangedLoaded )
     }
 
 
