@@ -151,7 +151,7 @@ data class AccountRequest(
         val uuid: String = uuid()
 )
 
-data class Role( val name: String, val permissions: List<String>, val active: Boolean = true )
+data class Role( val name: String, val permissions: List<String> = listOf(), val active: Boolean = true )
 
 data class ContactInfo( val type: String, //eg "Phone", "Email", or "Mattermost"
                         val description: String, //eg "Work Email" or "Cell Phone"

@@ -3,7 +3,6 @@ package galvin.ff.tools
 import galvin.ff.*
 import galvin.ff.PadTo.paddedLayout
 import galvin.ff.sqlite.SQLiteUserDB
-import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import java.io.File
 import java.io.PrintStream
@@ -133,6 +132,8 @@ class AccountManager{
         return userDB.retrieveUsers()
     }
 
+    // locked / unlocked users
+
     fun retrieveLockedUsers(options: AccountManagerOptions): List<User>{
         val userDB = connectUserDB(options)
         return userDB.retrieveUsersByLocked(true)
@@ -141,16 +142,6 @@ class AccountManager{
     fun retrieveUnlockedUsers(options: AccountManagerOptions): List<User>{
         val userDB = connectUserDB(options)
         return userDB.retrieveUsersByLocked(false)
-    }
-
-    fun retrieveInactiveUsers(options: AccountManagerOptions): List<User>{
-        val userDB = connectUserDB(options)
-        return userDB.retrieveUsersByActive(false)
-    }
-
-    fun retrieveActiveUsers(options: AccountManagerOptions): List<User>{
-        val userDB = connectUserDB(options)
-        return userDB.retrieveUsersByActive(true)
     }
 
     fun lockUser( options: AccountManagerOptions, login: String ){
@@ -183,6 +174,18 @@ class AccountManager{
         }
     }
 
+    // active / inactive users
+
+    fun retrieveInactiveUsers(options: AccountManagerOptions): List<User>{
+        val userDB = connectUserDB(options)
+        return userDB.retrieveUsersByActive(false)
+    }
+
+    fun retrieveActiveUsers(options: AccountManagerOptions): List<User>{
+        val userDB = connectUserDB(options)
+        return userDB.retrieveUsersByActive(true)
+    }
+
     fun deactivateUser( options: AccountManagerOptions, login: String ){
         val userDB = connectUserDB(options)
         val uuid = userDB.retrieveUuidByLogin(login)
@@ -212,6 +215,8 @@ class AccountManager{
             println("No such user: $login")
         }
     }
+
+    // passwords and credentials
 
     fun updatePassword( options: AccountManagerOptions, login: String, plainTextPassword: String ){
         val userDB = connectUserDB(options)
@@ -267,11 +272,9 @@ class AccountManager{
         }
     }
 
-    //
     // roles
-    //
 
-    fun listRoles( options: AccountManagerOptions ){
+    fun printRoles( options: AccountManagerOptions, out: PrintStream = System.out ){
         val userDB = connectUserDB(options)
         val roles = userDB.listRoles()
 
@@ -289,13 +292,64 @@ class AccountManager{
             }
         }
 
+        out.println( text.toString().trim() )
+    }
 
-        /*
-            Role Name (active)
-                - Permission
-                - Permission
-                - Permission
-        */
+    fun createRoles( options: AccountManagerOptions, roleNames: List<String>, permissions: List<String>  ){
+        val userDB = connectUserDB(options)
+        for( roleName in roleNames ) {
+            val role = userDB.retrieveRole(roleName)
+            if( role == null ){
+                userDB.storeRole( Role( name = roleName, permissions = permissions ) )
+            }
+        }
+    }
+
+    fun addPermissions(options: AccountManagerOptions, roleNames: List<String>, addedPermissions: List<String> ){
+        val userDB = connectUserDB(options)
+        for( roleName in roleNames ) {
+            val role = userDB.retrieveRole(roleName)
+            if( role != null ){
+                val newPermissions = mutableListOf<String>()
+                newPermissions.addAll( role.permissions )
+                for( permission in addedPermissions){
+                    if( !newPermissions.contains(permission) ){
+                        newPermissions.add(permission)
+                    }
+                }
+                userDB.storeRole( role.copy(permissions = newPermissions) )
+            }
+        }
+    }
+
+    fun removePermissions(options: AccountManagerOptions, roleNames: List<String>, deletedPermissions: List<String> ){
+        val userDB = connectUserDB(options)
+        for( roleName in roleNames ) {
+            val role = userDB.retrieveRole(roleName)
+            if( role != null ){
+                val newPermissions = mutableListOf<String>()
+                for( permission in role.permissions ){
+                    if( !deletedPermissions.contains(permission) ){
+                        newPermissions.add(permission)
+                    }
+                }
+                userDB.storeRole( role.copy(permissions = newPermissions) )
+            }
+        }
+    }
+
+    fun activateRoles(options: AccountManagerOptions, roleNames: List<String> ){
+        val userDB = connectUserDB(options)
+        for( roleName in roleNames ) {
+            userDB.activate(roleName)
+        }
+    }
+
+    fun deactivateRoles(options: AccountManagerOptions, roleNames: List<String> ){
+        val userDB = connectUserDB(options)
+        for( roleName in roleNames ) {
+            userDB.deactivate(roleName)
+        }
     }
 
     //

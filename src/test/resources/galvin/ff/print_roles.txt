@@ -1,0 +1,40 @@
+Name 1 (Inactive)
+    - Permission 1 A
+    - Permission 1 B
+    - Permission 1 C
+Name 2 (Active)
+    - Permission 2 A
+    - Permission 2 B
+    - Permission 2 C
+Name 3 (Inactive)
+    - Permission 3 A
+    - Permission 3 B
+    - Permission 3 C
+Name 4 (Active)
+    - Permission 4 A
+    - Permission 4 B
+    - Permission 4 C
+Name 5 (Inactive)
+    - Permission 5 A
+    - Permission 5 B
+    - Permission 5 C
+Name 6 (Active)
+    - Permission 6 A
+    - Permission 6 B
+    - Permission 6 C
+Name 7 (Inactive)
+    - Permission 7 A
+    - Permission 7 B
+    - Permission 7 C
+Name 8 (Active)
+    - Permission 8 A
+    - Permission 8 B
+    - Permission 8 C
+Name 9 (Inactive)
+    - Permission 9 A
+    - Permission 9 B
+    - Permission 9 C
+Name 10 (Active)
+    - Permission 10 A
+    - Permission 10 B
+    - Permission 10 C

@@ -169,12 +169,11 @@ class AccountManagerQueryTest{
         )
         val accountManager = AccountManager()
 
-        val expected = loadResourceAndReadString("galvin/ff/print_short.txt")
-
         ConsoleGrabber.grabConsole()
         accountManager.printShort(users)
         val result = ConsoleGrabber.releaseConsole(false)
 
+        val expected = loadResourceAndReadString("galvin/ff/print_short.txt")
         Assert.assertEquals( "Unexpected user info", expected, result )
     }
 
@@ -189,13 +188,26 @@ class AccountManagerQueryTest{
         )
         val accountManager = AccountManager()
 
-        val expected = loadResourceAndReadString("galvin/ff/print_long.txt")
-
         ConsoleGrabber.grabConsole()
         accountManager.printLong(users)
         val result = ConsoleGrabber.releaseConsole(false)
 
+        val expected = loadResourceAndReadString("galvin/ff/print_long.txt")
         Assert.assertEquals( "Unexpected user info", expected, result )
+    }
+
+    @Test fun should_print_roles(){
+        val objects = roleTestObjects(createRoles = true)
+
+        val accountManagerOptions = objects.accountManagerOptions
+        val accountManager = objects.accountManager
+
+        ConsoleGrabber.grabConsole()
+        accountManager.printRoles(accountManagerOptions)
+        val result = ConsoleGrabber.releaseConsole(false)
+
+        val expected = loadResourceAndReadString("galvin/ff/print_roles.txt")
+        Assert.assertEquals( "Unexpected role info", expected, result )
     }
 
 
@@ -320,6 +332,26 @@ class AccountManagerQueryTest{
                 lockedUsersMap = lockedUsersMap
         )
     }
+
+    private fun roleTestObjects( createRoles: Boolean = false ): AccountManagerQueryTestObjects{
+        val userDbFile: File = randomDbFile()
+        val userDB: UserDB = SQLiteUserDB(userDbFile)
+
+        var roles: MutableList<Role> = mutableListOf()
+
+        if( createRoles ){
+            for( i in 1..10 ){
+                val name = "Name $i"
+                val active = i % 2 == 0
+                val permissions = listOf( "Permission $i A", "Permission $i B", "Permission $i C" )
+                val role = Role( name = name, permissions = permissions, active = active )
+                userDB.storeRole(role)
+                roles.add(role)
+            }
+        }
+
+        return AccountManagerQueryTestObjects( userDbFile = userDbFile, userDB = userDB, roles = roles )
+    }
 }
 
 
@@ -328,16 +360,16 @@ data class AccountManagerQueryTestObjects(
         val userDbFile: File,
         val userDB: UserDB,
         val roles: List<Role>,
-        val allUsers: List<User>,
-        val activeUsers: List<User>,
-        val inactiveUsers: List<User>,
-        val unlockedUsers: List<User>,
-        val lockedUsers: List<User>,
-        val allUsersMap: Map<String, User>,
-        val activeUsersMap: Map<String, User>,
-        val inactiveUsersMap: Map<String, User>,
-        val unlockedUsersMap: Map<String, User>,
-        val lockedUsersMap: Map<String, User>,
+        val allUsers: List<User> = listOf(),
+        val activeUsers: List<User> = listOf(),
+        val inactiveUsers: List<User> = listOf(),
+        val unlockedUsers: List<User> = listOf(),
+        val lockedUsers: List<User> = listOf(),
+        val allUsersMap: Map<String, User> = mapOf(),
+        val activeUsersMap: Map<String, User> = mapOf(),
+        val inactiveUsersMap: Map<String, User> = mapOf(),
+        val unlockedUsersMap: Map<String, User> = mapOf(),
+        val lockedUsersMap: Map<String, User> = mapOf(),
         val accountManager: AccountManager = AccountManager(),
         val accountManagerOptions: AccountManagerOptions = AccountManagerOptions( sqlite = userDbFile.absolutePath )
 )
