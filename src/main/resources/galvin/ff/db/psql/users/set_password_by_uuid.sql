@@ -1,0 +1,1 @@
+update Users set passwordHash = ? where uuid = ?

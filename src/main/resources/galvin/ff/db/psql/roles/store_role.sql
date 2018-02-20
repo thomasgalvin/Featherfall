@@ -1,0 +1,1 @@
+insert into Roles (name, active) values (?,?)

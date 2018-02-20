@@ -1,0 +1,1 @@
+delete from RolePermissions where roleName =?

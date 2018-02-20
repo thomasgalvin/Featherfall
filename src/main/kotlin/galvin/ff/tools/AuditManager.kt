@@ -2,7 +2,6 @@ package galvin.ff.tools
 
 import galvin.ff.*
 import galvin.ff.PadTo.paddedLayout
-import galvin.ff.sqlite.SQLiteAuditDB
 import galvin.ff.sqlite.SQLiteUserDB
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
@@ -263,7 +262,7 @@ class AuditManager{
             throw Exception( "Unable to connect to audit DB: ${file.absolutePath} cannot be read" )
         }
 
-        return SQLiteAuditDB(file)
+        return AuditDB.SQLite(maxConnections = options.maxConnections, databaseFile = file, console = true)
     }
 
     private fun connectUserDB(options: AuditManagerOptions): UserDB{
@@ -346,7 +345,8 @@ data class AuditManagerOptions( val verbose: Boolean = false,
                                 val showDeltas: Boolean = false,
                                 val showSystemInfo: Boolean = false,
                                 val sqlite: String = "",
-                                val sqliteUserdb: String = ""){
+                                val sqliteUserdb: String = "",
+                                val maxConnections: Int = 10){
     fun shouldQuery(): Boolean{
         return start != null ||
                 end != null ||

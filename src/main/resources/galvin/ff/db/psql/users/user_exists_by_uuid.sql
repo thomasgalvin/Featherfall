@@ -1,0 +1,1 @@
+select 1 from Users where uuid = ?

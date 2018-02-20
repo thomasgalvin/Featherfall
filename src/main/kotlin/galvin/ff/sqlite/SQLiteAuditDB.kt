@@ -6,6 +6,7 @@ import java.sql.Connection
 import java.sql.ResultSet
 import java.util.stream.Collectors
 
+/*
 class SQLiteAuditDB( databaseFile: File,
                      private val console: Boolean = false) : AuditDB, SQLiteDB(databaseFile) {
     private val concurrencyLock = Object()
@@ -412,3 +413,4 @@ class SQLiteAuditDB( databaseFile: File,
         return result
     }
 }
+*/

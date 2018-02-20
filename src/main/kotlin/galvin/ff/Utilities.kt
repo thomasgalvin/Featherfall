@@ -1,5 +1,6 @@
 package galvin.ff
 
+import galvin.ff.db.ConnectionManager
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormatter
 import java.io.*
@@ -91,10 +92,14 @@ fun close( conn: Connection, statement: PreparedStatement){
  * If the connection is not null and is still open,
  * calls rollback() and then close()
  */
-fun rollbackAndClose( conn: Connection? ){
+fun rollbackAndClose( conn: Connection?, connectionManager: ConnectionManager? = null ){
     if( conn != null && !conn.isClosed ){
         conn.rollback()
         conn.close()
+    }
+
+    if( connectionManager != null ){
+        connectionManager.release(conn)
     }
 }
 

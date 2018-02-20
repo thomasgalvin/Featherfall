@@ -1,7 +1,6 @@
 package galvin.ff.users.sqlite
 
 import galvin.ff.*
-import galvin.ff.sqlite.SQLiteAuditDB
 import galvin.ff.sqlite.SQLiteUserDB
 import galvin.ff.tools.AuditManager
 import org.joda.time.DateTime
@@ -277,8 +276,9 @@ class AuditManagerQueryTest{
 }
 
 data class AuditManagerQueryTestObjects(
+        val maxConnections: Int = 1,
         val auditFile: File = randomDbFile(),
-        val auditDB: AuditDB = SQLiteAuditDB( auditFile ),
+        val auditDB: AuditDB = AuditDB.SQLite( maxConnections, auditFile ),
         val userFile: File = randomDbFile(),
         private val userDB: UserDB = SQLiteUserDB( userFile ),
         val systemInfo: SystemInfo = randomSystemInfo(),

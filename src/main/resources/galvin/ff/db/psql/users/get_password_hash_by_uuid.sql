@@ -1,0 +1,1 @@
+select passwordHash from Users where uuid = ?

@@ -2,7 +2,6 @@ package galvin.ff.users.sqlite
 
 import galvin.ff.*
 import galvin.ff.sqlite.SQLiteAccountRequestDB
-import galvin.ff.sqlite.SQLiteAuditDB
 import galvin.ff.sqlite.SQLiteUserDB
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -22,7 +21,7 @@ fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
 }
 
 fun randomAuditDB() : AuditDB {
-    return SQLiteAuditDB( randomDbFile() )
+    return AuditDB.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
 }
 
 fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid(), password: String = uuid(), confirmPassword: String = password ) : AccountRequest {

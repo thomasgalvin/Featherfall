@@ -1,0 +1,1 @@
+select type, description, contact, isPrimary from ContactInfo where userUuid = ? order by ordinal

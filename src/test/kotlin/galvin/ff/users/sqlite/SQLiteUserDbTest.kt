@@ -167,9 +167,7 @@ class SQLiteUserDbTest {
             val user = generateUser(roles)
             userDB.storeUser(user)
             val serial = user.serialNumber
-            if( serial != null ){
-                map[serial] = user
-            }
+            map[serial] = user
         }
 
         for( key in map.keys ){

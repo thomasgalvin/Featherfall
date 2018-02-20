@@ -22,9 +22,10 @@ import javax.servlet.DispatcherType
  * Usage will look something like this:
  *
  * val config = File( "path/to/config )
- * val resources = listOf( UserResource(), SomeOtherResource() )
+ * val resources = listOf( SomeApiResource(), SomeOtherApiResource() ) //eg something that exposes a REST API
+ * val statics = listOf( SomeStaticResource() ) //eg HTML served from disk
  *
- * val server = FeatherfallServer( configFile=config, apiResources=resources  )
+ * val server = FeatherfallServer( configFile=config, apiResources=resources, staticResources=statics  )
  * server.start()
  */
 class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
@@ -38,7 +39,7 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
                                           private val healthChecks: List<HealthCheckContext> = listOf(),
                                           private val staticResources: List<StaticResource> = listOf() ) :Application<T>() {
     init {
-        if ( !isBlank(serverRootPath) ) System.setProperty("ff.server.rootPath", serverRootPath)
+        if ( !isBlank(serverRootPath) ) System.setProperty("dw.server.rootPath", serverRootPath)
 
         if (keystore != null) {
             System.setProperty("javax.net.ssl.trustStore", keystore.location.absolutePath)
