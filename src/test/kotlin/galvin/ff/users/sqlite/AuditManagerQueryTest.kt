@@ -282,9 +282,9 @@ data class AuditManagerQueryTestObjects(
         val auditFile: File = randomDbFile(),
         val auditDB: AuditDB = SQLiteAuditDB( auditFile ),
         val userFile: File = randomDbFile(),
-        val userDB: UserDB = SQLiteUserDB( userFile ),
+        private val userDB: UserDB = SQLiteUserDB( userFile ),
         val systemInfo: SystemInfo = randomSystemInfo(),
-        val roles: List<Role> = generateRoles(5),
+        private val roles: List<Role> = generateRoles(5),
         val user: User = generateUser(roles)
 ){
     init{

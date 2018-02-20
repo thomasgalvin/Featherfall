@@ -5,7 +5,7 @@ import java.io.File
 import java.sql.ResultSet
 import java.util.*
 
-class SQLiteAccountRequestDB( private val databaseFile: File, private val userDB: UserDB ) : AccountRequestDB, SQLiteDB(databaseFile){
+class SQLiteAccountRequestDB( databaseFile: File, private val userDB: UserDB ) : AccountRequestDB, SQLiteDB(databaseFile){
     private val concurrencyLock = Object()
     private val accountRequestUserInfoDB = SQLiteUserDB(databaseFile)
 

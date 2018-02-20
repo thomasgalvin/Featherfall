@@ -7,10 +7,6 @@ import java.security.cert.CertificateFactory
 import java.io.FileInputStream
 import java.io.File
 
-
-
-const val SPECIAL_CHARACTER_SET = "`~!@#$%^&*()_+-={}|:\"<>?[]\\;',./"
-
 fun validate( password: String?, hash: String? ): Boolean{
     if( password == null || isBlank(password) ){
         return false
@@ -53,10 +49,10 @@ data class PasswordRequirements(val minLength: Int = 0,
                                 val minLowerCase: Int = 0,
                                 val minUpperCase: Int = 0,
                                 val minDigits: Int = 0,
-                                val minSepcialCharacters: Int = 0,
+                                val minSpecialCharacters: Int = 0,
                                 val repeatedCharactersAllowed: Boolean = true,
                                 val validatedAgainstBlacklist: Boolean = true ){
-    private val BAD_PASSWORD_FILE = "galvin/ff/bad-passwords.txt"
+    private val badPasswordFile = "galvin/ff/bad-passwords.txt"
     private val badPasswords = mutableMapOf<String, Boolean>()
 
     fun validate( password: String ): PasswordValidation {
@@ -124,7 +120,7 @@ data class PasswordRequirements(val minLength: Int = 0,
             }
         }
 
-        return count < minSepcialCharacters
+        return count < minSpecialCharacters
     }
 
     private fun repeatedCharacters(chars: CharArray): Boolean {
@@ -166,7 +162,7 @@ data class PasswordRequirements(val minLength: Int = 0,
     }
 
     fun loadBlacklist(): List<String> {
-        val list = loadResourceAndReadLines(BAD_PASSWORD_FILE)
+        val list = loadResourceAndReadLines(badPasswordFile)
         val badPasswords = mutableListOf<String>()
         for( line in list ){
             if( !isBlank(line) && !line.startsWith("#") ){
@@ -191,8 +187,8 @@ fun parsePKI( x509: X509Certificate ): CertificateData{
 }
 
 fun getCredentialID( x509: X509Certificate ): String{
-    val hash = x509.getIssuerX500Principal().hashCode()
-    val serial = x509.getSerialNumber()
+    val hash = x509.issuerX500Principal.hashCode()
+    val serial = x509.serialNumber
     val credentialName = getCredentialName( x509 )
     return "$hash::$serial::$credentialName"
 }

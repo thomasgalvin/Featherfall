@@ -5,7 +5,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 
 
-open class SQLiteDB( private val databaseFile: File){
+open class SQLiteDB( databaseFile: File){
     private val connectionUrl: String = "jdbc:sqlite:" + databaseFile.absolutePath
 
     init{

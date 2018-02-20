@@ -45,7 +45,7 @@ class PadToTest{
     @Throws(Exception::class)
     fun testPaddedTable() {
 
-        val PADDED_TABLE =
+        val paddedTable =
                 "asdas         adasdkasdjkasjdkasdas asdasd          adsadsda      adasdadsasd dasdasdasd \n" +
                 "asdas         adsasdadas            adasdasdasdadas adsdasd       asdasdads   adsadasd   \n" +
                 "adsdasasdad   asdasdadas            asdadasdasd     adsdasdasdasd asdadasdads adsasdadads\n" +
@@ -62,7 +62,7 @@ class PadToTest{
 
         val lists = mutableListOf<MutableList<String>>()
         for (i in 0..7) {
-            lists.add( mutableListOf<String>() )
+            lists.add( mutableListOf() )
         }
 
         lists[0].add("asdas")
@@ -150,13 +150,13 @@ class PadToTest{
         lists[5].add("f")
 
         val padded = paddedLayout( lists[0], lists[1], lists[2], lists[3], lists[4], lists[5] )
-        Assert.assertEquals("Padded table layout failed", PADDED_TABLE, padded)
+        Assert.assertEquals("Padded table layout failed", paddedTable, padded)
     }
 
     @Test
     @Throws(Exception::class)
     fun testPaddedTableTwo() {
-        val PADDED_TABLE =
+        val paddedTable =
                 "asdas         adasdkasdjkasjdkasdas asdasd          adsadsda      adasdadsasd dasdasdasd \n" +
                 "asdas         adsasdadas            adasdasdasdadas adsdasd       asdasdads   adsadasd   \n" +
                 "adsdasasdad   asdasdadas            asdadasdasd     adsdasdasdasd asdadasdads adsasdadads\n" +
@@ -175,7 +175,7 @@ class PadToTest{
 
         val lists = mutableListOf<MutableList<String>>()
         for (i in 0..6) {
-            lists.add( mutableListOf<String>() )
+            lists.add( mutableListOf() )
         }
 
         lists[0].add("asdas")
@@ -267,14 +267,14 @@ class PadToTest{
         lists[5].add("xxxxxxxxxx")
 
         val padded = paddedLayout( lists[0], lists[1], lists[2], lists[3], lists[4], lists[5] )
-        Assert.assertEquals("Padded table layout failed", PADDED_TABLE, padded)
+        Assert.assertEquals("Padded table layout failed", paddedTable, padded)
     }
 
 
     @Test
     @Throws(Exception::class)
     fun testPaddedTableHeader() {
-        val PADDED_TABLE =
+        val paddedTable =
                 "asdas         adasdkasdjkasjdkasdas asdasd          adsadsda      adasdadsasd dasdasdasd \n" +
                 "-----------------------------------------------------------------------------------------\n" +
                 "asdas         adsasdadas            adasdasdasdadas adsdasd       asdasdads   adsadasd   \n" +
@@ -292,7 +292,7 @@ class PadToTest{
 
         val lists = mutableListOf<MutableList<String>>()
         for (i in 0..6) {
-            lists.add( mutableListOf<String>() )
+            lists.add( mutableListOf() )
         }
 
         lists[0].add("asdas")
@@ -380,13 +380,13 @@ class PadToTest{
         lists[5].add("f")
 
         val padded = paddedLayout( '-', lists[0], lists[1], lists[2], lists[3], lists[4], lists[5] )
-        Assert.assertEquals("Padded table layout failed", PADDED_TABLE, padded)
+        Assert.assertEquals("Padded table layout failed", paddedTable, padded)
     }
 
     @Test
     @Throws(Exception::class)
     fun testPaddedTableHeaderTwo() {
-        val PADDED_TABLE =
+        val paddedTable =
                 "asdas         adasdkasdjkasjdkasdas asdasd          adsadsda      adasdadsasd dasdasdasd \n" +
                 "=========================================================================================\n" +
                 "asdas         adsasdadas            adasdasdasdadas adsdasd       asdasdads   adsadasd   \n" +
@@ -406,7 +406,7 @@ class PadToTest{
 
         val lists = mutableListOf<MutableList<String>>()
         for (i in 0..6) {
-            lists.add( mutableListOf<String>() )
+            lists.add( mutableListOf() )
         }
 
         lists[0].add("asdas")
@@ -498,6 +498,6 @@ class PadToTest{
         lists[5].add("xxxxxxxxxx")
 
         val padded = paddedLayout( '=', lists[0], lists[1], lists[2], lists[3], lists[4], lists[5] )
-        Assert.assertEquals("Padded table layout failed", PADDED_TABLE, padded)
+        Assert.assertEquals("Padded table layout failed", paddedTable, padded)
     }
 }

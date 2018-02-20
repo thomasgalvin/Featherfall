@@ -37,7 +37,7 @@ val userdb = Opt( short = "userdb",  desc = "Connect to an SQLite user database"
 
 
 
-class AuditManager(){
+class AuditManager{
     private val options = Options()
     private var isVerbose: Boolean = false
     private val dateTimeFormats: List<DateTimeFormatter>
@@ -285,7 +285,7 @@ class AuditManager(){
 
     private fun help(){
         val formatter = HelpFormatter()
-        formatter.printHelp( programName, options );
+        formatter.printHelp( programName, options )
     }
 
     private fun manual(){
@@ -314,7 +314,7 @@ class AuditManager(){
                 "Networks"
         )
 
-        val networkList = info.networks.stream().collect( Collectors.joining( ", " ) );
+        val networkList = info.networks.stream().collect( Collectors.joining( ", " ) )
         val values = listOf(
                 info.serialNumber,
                 info.name,
@@ -324,7 +324,7 @@ class AuditManager(){
                 networkList
         )
 
-        val table = paddedLayout( fields, values );
+        val table = paddedLayout( fields, values )
         println(table)
     }
 

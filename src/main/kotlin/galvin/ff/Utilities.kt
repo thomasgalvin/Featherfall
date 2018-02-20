@@ -52,8 +52,6 @@ fun elseIfNull( one: String?, two: String? ): String{
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-data class ConnectionStatement(val connection: Connection, val statement: PreparedStatement)
-
 fun loadSql( classpathEntry: String ): String{
     val resource = Utilities::class.java.getResource(classpathEntry)
     if(resource == null) throw IOException( "Unable to load SQL: $classpathEntry" )
@@ -110,12 +108,12 @@ fun rollbackAndClose( conn: Connection? ){
 
 fun loadResourceAndReadLines( resource: String ): List<String>{
     val input = Utilities::class.java.classLoader.getResourceAsStream(resource)
-    val lines = readlines(input)
+    val lines = readLines(input)
     closeQuietly(input)
     return lines
 }
 
-fun readlines( stream: InputStream, charset: Charset = Charset.defaultCharset() ): List<String>{
+fun readLines(stream: InputStream, charset: Charset = Charset.defaultCharset() ): List<String>{
     val r = InputStreamReader( stream, charset )
     val reader = BufferedReader(r)
     val list = mutableListOf<String>()

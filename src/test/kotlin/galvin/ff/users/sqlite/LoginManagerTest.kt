@@ -42,10 +42,10 @@ class LoginManagerTest{
         for( (i, event) in auditEvents.listIterator().withIndex() ){
             val index = if(i <= 10) i else i - 11
             val user = users[index]
-            Assert.assertEquals("Unexpected user at index ${index}", user.uuid, event.userUuid )
-            Assert.assertEquals("Unexpected user at index ${index}", user.uuid, event.resourceUuid )
-            Assert.assertEquals("Unexpected user at index ${index}", user.login, event.resourceName )
-            Assert.assertTrue("Unexpected access granted ${index}", event.permissionGranted )
+            Assert.assertEquals("Unexpected user at index $index", user.uuid, event.userUuid )
+            Assert.assertEquals("Unexpected user at index $index", user.uuid, event.resourceUuid )
+            Assert.assertEquals("Unexpected user at index $index", user.login, event.resourceName )
+            Assert.assertTrue("Unexpected access granted $index", event.permissionGranted )
         }
     }
 
@@ -267,9 +267,9 @@ class LoginManagerTest{
         for( (i, event) in auditEvents.listIterator().withIndex() ){
             val index = if(i <= 10) i else i - 11
             val user = users[index]
-            Assert.assertEquals("Unexpected user at index ${index}", user.uuid, event.resourceUuid )
-            Assert.assertEquals("Unexpected user at index ${index}", user.login, event.resourceName )
-            Assert.assertFalse("Unexpected access granted ${index}", event.permissionGranted )
+            Assert.assertEquals("Unexpected user at index $index", user.uuid, event.resourceUuid )
+            Assert.assertEquals("Unexpected user at index $index", user.login, event.resourceName )
+            Assert.assertFalse("Unexpected access granted $index", event.permissionGranted )
         }
     }
 
@@ -309,11 +309,11 @@ class LoginManagerTest{
     /// utilities
     ///
 
-    class LoginManagerTestObjects(val auditDB: AuditDB,
-                                  val userDB: UserDB,
-                                  val loginManager: LoginManager,
-                                  val roles: List<Role>,
-                                  val count: Int = 10 ){
+    class LoginManagerTestObjects(private val auditDB: AuditDB,
+                                  private val userDB: UserDB,
+                                  private val loginManager: LoginManager,
+                                  private val roles: List<Role>,
+                                  private val count: Int = 10 ){
         operator fun component1(): AuditDB{ return auditDB }
         operator fun component2(): UserDB{ return userDB }
         operator fun component3(): LoginManager{ return loginManager }

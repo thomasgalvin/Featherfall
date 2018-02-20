@@ -88,10 +88,10 @@ data class User(
         val uuid: String = uuid(),
 
         //contact info
-        val contact: List<ContactInfo> = listOf<ContactInfo>(),
+        val contact: List<ContactInfo> = listOf(),
 
         //roles
-        val roles: List<String> = listOf<String>()
+        val roles: List<String> = listOf()
 ){
     fun withoutPasswordHash(): User{
         return copy( passwordHash = null )
@@ -115,18 +115,6 @@ data class User(
                 countryCode = countryCode,
                 citizenship = citizenship
         )
-    }
-
-    private fun copyContact(): List<ContactInfo>{
-        val newContact = mutableListOf<ContactInfo>()
-        newContact.addAll(contact)
-        return newContact
-    }
-
-    private fun copyRoles(): List<String>{
-        val newRoles = mutableListOf<String>()
-        newRoles.addAll(roles)
-        return newRoles
     }
 }
 

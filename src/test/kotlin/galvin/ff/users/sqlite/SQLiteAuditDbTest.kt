@@ -68,7 +68,7 @@ class SQLiteAuditDbTest {
         Assert.assertEquals("Loaded current system info did not match expected", system, loaded)
 
         val uuid = audit.retrieveCurrentSystemInfoUuid()
-        Assert.assertEquals("Loaded current system info uuiddid not match expected", system.uuid, uuid)
+        Assert.assertEquals("Loaded current system info uuid not match expected", system.uuid, uuid)
     }
 
     @Test
@@ -290,7 +290,7 @@ class SQLiteAuditDbTest {
             if( expectedEntries != null ) {
                 Assert.assertEquals("Unexpected system info count", expectedEntries.size.toLong(), loadedEntries.size.toLong())
                 for (i in expectedEntries.indices) {
-                    val expected = expectedEntries.get(i)
+                    val expected = expectedEntries[i]
                     val loaded = loadedEntries[i]
                     Assert.assertEquals("Loaded access info did not match expected", expected, loaded)
                 }

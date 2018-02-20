@@ -9,7 +9,7 @@ import org.junit.Assert
 import org.junit.Test
 
 class AuditManagerTest{
-    val UNEXPECTED_OPTIONS = "Unexpected options"
+    val unexpectedOptions = "Unexpected options"
 
     @Test
     fun parse_args_should_show_verbose(){
@@ -74,7 +74,7 @@ class AuditManagerTest{
         val filepath = "target/" + uuid()
         val expected = AuditManagerOptions(sqlite = filepath)
         val audit = AuditManager()
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-sqlite", filepath ) ) )
+        Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "-sqlite", filepath ) ) )
     }
 
     @Test
@@ -82,7 +82,7 @@ class AuditManagerTest{
         val filepath = "target/" + uuid()
         val expected = AuditManagerOptions(sqliteUserdb = filepath)
         val audit = AuditManager()
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-userdb", filepath ) ) )
+        Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "-userdb", filepath ) ) )
     }
 
     @Test
@@ -100,9 +100,9 @@ class AuditManagerTest{
                                    short: String,
                                    long: String? = null ){
         val audit = AuditManager()
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( short ) ) )
+        Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( short ) ) )
         if( long != null ){
-            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( long ) ) )
+            Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( long ) ) )
         }
     }
 
@@ -110,8 +110,8 @@ class AuditManagerTest{
         val expected = AuditManagerOptions(start=date)
         val audit = AuditManager()
         for( arg in args ){
-            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-s", arg ) ) )
-            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--start", arg ) ) )
+            Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "-s", arg ) ) )
+            Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "--start", arg ) ) )
         }
     }
 
@@ -119,23 +119,23 @@ class AuditManagerTest{
         val expected = AuditManagerOptions(end=date)
         val audit = AuditManager()
         for( arg in args ){
-            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-e", arg ) ) )
-            Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--end", arg ) ) )
+            Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "-e", arg ) ) )
+            Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "--end", arg ) ) )
         }
     }
 
     private fun testUsername(username: String){
         val expected = AuditManagerOptions(username = username)
         val audit = AuditManager()
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-u", username ) ) )
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--user", username ) ) )
+        Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "-u", username ) ) )
+        Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "--user", username ) ) )
     }
 
     private fun testAccessType( type: AccessType ){
         val name = type.name
         val expected = AuditManagerOptions(accessType = name)
         val audit = AuditManager()
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "-a", name ) ) )
-        Assert.assertEquals( UNEXPECTED_OPTIONS, expected, audit.parse( arrayOf( "--access", name ) ) )
+        Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "-a", name ) ) )
+        Assert.assertEquals(unexpectedOptions, expected, audit.parse( arrayOf( "--access", name ) ) )
     }
 }

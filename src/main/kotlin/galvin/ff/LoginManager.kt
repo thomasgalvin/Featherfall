@@ -2,7 +2,7 @@ package galvin.ff
 
 import java.security.cert.X509Certificate
 
-const val TOKEN_LIFESPAN: Long = 1000 * 60 * 60 * 24 * 5 //five days in miliseconds
+const val TOKEN_LIFESPAN: Long = 1000 * 60 * 60 * 24 * 5 //five days in milliseconds
 const val ATTEMPTS_EXPIRE_AFTER: Long = 1000 * 60 * 60 //one hour in ms
 
 const val MAX_UNHINDERED_LOGIN_ATTEMPTS_PER_USER = 0

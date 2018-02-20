@@ -106,14 +106,14 @@ class PaswordComplexityTest{
     fun testSpecialCharacters() {
         val password = "12345ABCDE~!@#$"
         for (i in 0..4) {
-            val requirements = PasswordRequirements(validatedAgainstBlacklist = false, minSepcialCharacters = i)
+            val requirements = PasswordRequirements(validatedAgainstBlacklist = false, minSpecialCharacters = i)
             val shouldBeValid = requirements.validate(password)
             if (shouldBeValid.invalidPassword()) {
                 throw Exception("Password requirements failed; password contained enough special characters")
             }
         }
 
-        val requirements = PasswordRequirements(validatedAgainstBlacklist = false, minSepcialCharacters = 6)
+        val requirements = PasswordRequirements(validatedAgainstBlacklist = false, minSpecialCharacters = 6)
         val shouldBeInvalid = requirements.validate(password)
 
         if (!shouldBeInvalid.invalidPassword() || !shouldBeInvalid.tooFewSpecialCharacters) {
@@ -125,7 +125,7 @@ class PaswordComplexityTest{
     @Throws(Exception::class)
     fun testSpecialCharacterSet() {
         val password = "`~!@#$%^&*()_+-={}|:\"<>?[]\\;',./"
-        val requirements = PasswordRequirements(validatedAgainstBlacklist = false, minSepcialCharacters = password.length)
+        val requirements = PasswordRequirements(validatedAgainstBlacklist = false, minSpecialCharacters = password.length)
         val shouldBeValid = requirements.validate(password)
         if (shouldBeValid.invalidPassword()) {
             throw Exception("Password requirements failed; password contained enough special characters")

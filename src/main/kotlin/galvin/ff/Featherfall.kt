@@ -34,9 +34,9 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
                                           private val jsonPrettyPrint: Boolean = true,
                                           private val disableSameSiteOriginPolicy: Boolean = false,
                                           private val displayWADL: Boolean = true,
-                                          private val apiResources: List<Any> = listOf<Any>(),
-                                          private val healthChecks: List<HealthCheckContext> = listOf<HealthCheckContext>(),
-                                          private val staticResources: List<StaticResource> = listOf<StaticResource>() ) :Application<T>() {
+                                          private val apiResources: List<Any> = listOf(),
+                                          private val healthChecks: List<HealthCheckContext> = listOf(),
+                                          private val staticResources: List<StaticResource> = listOf() ) :Application<T>() {
     init {
         if ( !isBlank(serverRootPath) ) System.setProperty("ff.server.rootPath", serverRootPath)
 
@@ -46,7 +46,7 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
         }
 
         if (disableSslValidation) {
-            val trustManagers = arrayOf<BlindTrustManager>(BlindTrustManager())
+            val trustManagers = arrayOf(BlindTrustManager())
             val sc = SSLContext.getInstance("SSL")
             sc.init(null, trustManagers, java.security.SecureRandom())
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.socketFactory)

@@ -253,7 +253,7 @@ class SqliteAccountRequestDBTest {
     }
 
     @Test
-    fun should_throw_when_user_alrady_exists() {
+    fun should_throw_when_user_already_exists() {
         val( userDB, accountRequestDB, roles, _ ) = testObjects()
 
         val user = generateUser(roles)
@@ -337,10 +337,10 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    class SqliteAccountRequestDBTestObjects(val userDB: UserDB,
-                                            val accountRequestDB: AccountRequestDB,
-                                            val roles: List<Role>,
-                                            val count: Int = 10) {
+    class SqliteAccountRequestDBTestObjects(private val userDB: UserDB,
+                                            private val accountRequestDB: AccountRequestDB,
+                                            private val roles: List<Role>,
+                                            private val count: Int = 10) {
         operator fun component1(): UserDB{ return userDB }
         operator fun component2(): AccountRequestDB{ return accountRequestDB }
         operator fun component3(): List<Role>{ return roles }

@@ -15,8 +15,8 @@ class HelloWorld {
             try {
                 println("Setting up server...")
                 val api = arrayListOf<Any>(HelloResource())
-                val statics = arrayListOf<StaticResource>(StaticResource(location = "/galvin/ff/demo/html/", context = "/html"))
-                //val statics = arrayListOf<StaticResource>( StaticResource( location="/tmp/", context="/html", onClasspath=false ) )
+                val statics = arrayListOf(StaticResource(location = "/galvin/ff/demo/html/", context = "/html"))
+                //val statics = arrayListOf( StaticResource( location="/tmp/", context="/html", onClasspath=false ) )
 
                 val server = FeatherfallServer<HelloConfig>(
                         apiResources = api,

@@ -417,26 +417,26 @@ class AccountManagerQueryTest{
         )
 
         val contact = listOf(
-                ContactInfo("Email", "Work Email", "user${count}@dev.null", true),
-                ContactInfo("Email", "Home Email", "user${count}@gmail.com", false),
+                ContactInfo("Email", "Work Email", "user$count@dev.null", true),
+                ContactInfo("Email", "Home Email", "user$count@gmail.com", false),
                 ContactInfo("Phone", "Work Phone", "1.800.555.5555", true),
                 ContactInfo("Phone", "Home Phone", "555.5555", false)
         )
 
         return User(
-                login="user ${count}",
-                name = "name ${count}",
-                displayName = "display name ${count}",
+                login="user $count",
+                name = "name $count",
+                displayName = "display name $count",
                 sortName = "sort Name $count",
-                prependToName = "prepend ${count}",
-                appendToName = "append ${count}",
-                credential = "credential ${count}",
-                serialNumber = "serial ${count}",
-                distinguishedName = "distinguished name ${count}",
-                homeAgency = "home agency ${count}",
-                agency = "agency ${count}",
-                countryCode = "country code ${count}",
-                citizenship = "citizenship ${count}",
+                prependToName = "prepend $count",
+                appendToName = "append $count",
+                credential = "credential $count",
+                serialNumber = "serial $count",
+                distinguishedName = "distinguished name $count",
+                homeAgency = "home agency $count",
+                agency = "agency $count",
+                countryCode = "country code $count",
+                citizenship = "citizenship $count",
                 created = created,
                 active = active,
                 locked = locked,

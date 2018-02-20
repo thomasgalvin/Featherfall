@@ -395,8 +395,8 @@ class SQLiteUserDB( databaseFile: File) : UserDB, SQLiteDB(databaseFile) {
     private fun unmarshalUser(hit: ResultSet, conn: Connection): User {
         val uuid = hit.getString("uuid")
 
-        val contact: MutableList<ContactInfo> = mutableListOf<ContactInfo>()
-        val roles: MutableList<String> = mutableListOf<String>()
+        val contact: MutableList<ContactInfo> = mutableListOf()
+        val roles: MutableList<String> = mutableListOf()
         val active = hit.getInt("active") != 0
         val locked = hit.getInt("locked") != 0
 
