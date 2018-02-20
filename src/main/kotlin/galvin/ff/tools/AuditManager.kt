@@ -230,11 +230,10 @@ class AuditManager{
     }
 
     private fun getMods( mods: List<Modification>, options: AuditManagerOptions ): String{
-        if( options.showDeltas ){
-            return mods.stream().map({ d -> d.toString() }).collect(Collectors.joining(", "))
-        }
-        else{
-            return if( mods.isEmpty() ) "No modifications" else "Modifications made"
+        return when {
+            options.showDeltas -> mods.stream().map({ d -> d.toString() }).collect(Collectors.joining(", "))
+            mods.isEmpty() -> "No modifications"
+            else -> "Modifications made"
         }
     }
 

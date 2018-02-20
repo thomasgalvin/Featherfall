@@ -102,9 +102,9 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
     }
 
     private fun buildRuntimeArgs(): Array<String> {
-        when( configFile ){
-            null -> return arrayOf("server")
-            else -> return arrayOf("server", configFile.absolutePath)
+        return when( configFile ){
+            null -> arrayOf("server")
+            else -> arrayOf("server", configFile.absolutePath)
         }
     }
 }

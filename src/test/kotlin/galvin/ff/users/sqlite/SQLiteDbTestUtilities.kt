@@ -109,7 +109,7 @@ fun generateRoles( count: Int = 10, userdb: UserDB? = null ): List<Role>  {
 
 fun generateRole( permissionCount: Int = 10, active: Boolean? = null, name: String = "name:" + uuid() ): Role {
     val random = Random()
-    val isActive = if(active == null) random.nextBoolean() else active
+    val isActive = active ?: random.nextBoolean()
 
     val permissions = mutableListOf<String>()
 

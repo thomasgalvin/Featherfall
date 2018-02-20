@@ -31,7 +31,7 @@ class SQLiteUserDbTest {
         val roles = generateRoles(expectedCount)
         for( role in roles ){
             userdb.storeRole(role)
-            map.put(role.name, role)
+            map[role.name] = role
         }
 
         for( expected in roles ){
@@ -59,11 +59,8 @@ class SQLiteUserDbTest {
         userdb.storeRole(alwaysInactive)
         userdb.activate(inactiveToActive.name)
 
-        val shouldBeActive = userdb.retrieveRole(inactiveToActive.name)
-        if( shouldBeActive == null ) throw Exception("Failed to load role from database")
-
-        val shouldBeInactive = userdb.retrieveRole(alwaysInactive.name)
-        if( shouldBeInactive == null ) throw Exception("Failed to load role from database")
+        val shouldBeActive = userdb.retrieveRole(inactiveToActive.name) ?: throw Exception("Failed to load role from database")
+        val shouldBeInactive = userdb.retrieveRole(alwaysInactive.name) ?: throw Exception("Failed to load role from database")
 
         Assert.assertEquals("Role should have been activated", true, shouldBeActive.active)
         Assert.assertEquals("Role was unintentionally activated", false, shouldBeInactive.active)
@@ -80,11 +77,8 @@ class SQLiteUserDbTest {
         userdb.storeRole(alwaysActive)
         userdb.deactivate(activeToInactive.name)
 
-        val shouldBeInactive = userdb.retrieveRole(activeToInactive.name)
-        if( shouldBeInactive == null ) throw Exception("Failed to load role from database")
-
-        val shouldBeActive = userdb.retrieveRole(alwaysActive.name)
-        if( shouldBeActive == null ) throw Exception("Failed to load role from database")
+        val shouldBeInactive = userdb.retrieveRole(activeToInactive.name) ?: throw Exception("Failed to load role from database")
+        val shouldBeActive = userdb.retrieveRole(alwaysActive.name) ?: throw Exception("Failed to load role from database")
 
         Assert.assertEquals("Role should have been deactivated", false, shouldBeInactive.active)
         Assert.assertEquals("Role was unintentionally deactivated", true, shouldBeActive.active)
@@ -100,7 +94,7 @@ class SQLiteUserDbTest {
         val roles = generateRoles(expectedCount)
         for( role in roles ){
             userdb.storeRole(role)
-            map.put(role.name, role)
+            map[role.name] = role
         }
 
         val toBeUpdated = generateRole()
@@ -145,7 +139,7 @@ class SQLiteUserDbTest {
         for( i in 1..expectedCount ){
             val user = generateUser(roles)
             userDB.storeUser(user)
-            map.put( user.uuid, user )
+            map[user.uuid] = user
         }
 
         for( key in map.keys ){
@@ -174,7 +168,7 @@ class SQLiteUserDbTest {
             userDB.storeUser(user)
             val serial = user.serialNumber
             if( serial != null ){
-                map.put(serial, user)
+                map[serial] = user
             }
         }
 
@@ -195,7 +189,7 @@ class SQLiteUserDbTest {
             val user = generateUser(roles)
             userDB.storeUser(user)
             val login = user.login
-            map.put(login, user)
+            map[login] = user
         }
 
         for( key in map.keys ){

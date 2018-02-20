@@ -527,8 +527,7 @@ class AccountManagerQueryTest{
     private fun roleTestObjects( createRoles: Boolean = false ): AccountManagerQueryTestObjects{
         val userDbFile: File = randomDbFile()
         val userDB: UserDB = SQLiteUserDB(userDbFile)
-
-        var roles: MutableList<Role> = mutableListOf()
+        val roles: MutableList<Role> = mutableListOf()
 
         if( createRoles ){
             for( i in 1..10 ){

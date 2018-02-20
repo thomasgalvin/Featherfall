@@ -24,7 +24,7 @@ class SQLiteAuditDbTest {
 
         for (i in 0 until expectedCount) {
             val system = randomSystemInfo()
-            map.put(system.uuid, system)
+            map[system.uuid] = system
             audit.storeSystemInfo(system)
         }
 
@@ -46,7 +46,7 @@ class SQLiteAuditDbTest {
 
         for (i in 0 until expectedCount) {
             val system = randomSystemInfo()
-            map.put(system.uuid, system)
+            map[system.uuid] = system
             audit.storeSystemInfo(system)
         }
 
@@ -79,13 +79,13 @@ class SQLiteAuditDbTest {
         val expectedCount = 11
 
         val current = randomSystemInfo()
-        map.put(current.uuid, current)
+        map[current.uuid] = current
         audit.storeSystemInfo(current)
         audit.storeCurrentSystemInfo(current.uuid)
 
         for (i in 1..10) {
             val system = randomSystemInfo()
-            map.put(system.uuid, system)
+            map[system.uuid] = system
             audit.storeSystemInfo(system)
         }
 
@@ -138,7 +138,7 @@ class SQLiteAuditDbTest {
 
             )
             audit.log(info)
-            map.put( type, info )
+            map[type] = info
         }
 
         for( type in AccessType.values() ){
@@ -168,7 +168,7 @@ class SQLiteAuditDbTest {
 
             )
             audit.log(info)
-            map2.put( type, info )
+            map2[type] = info
         }
 
         for( type in AccessType.values() ){
@@ -276,7 +276,7 @@ class SQLiteAuditDbTest {
             systems.add(system)
 
             val expectedEntries = generateAccessInfo(system, expectedCount, audit)
-            map.put(system.uuid, expectedEntries)
+            map[system.uuid] = expectedEntries
         }
 
         for (system in systems) {
@@ -393,7 +393,7 @@ class SQLiteAuditDbTest {
         val loginType = loginTypes[random.nextInt(loginTypes.size)]
         val accessType = accessTypes[random.nextInt(accessTypes.size)]
 
-        val permission = if(permissionGranted!=null) permissionGranted else random.nextBoolean()
+        val permission = permissionGranted ?: random.nextBoolean()
 
         return AccessInfo(
                 userUuid,

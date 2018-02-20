@@ -36,7 +36,7 @@ class SqliteAccountRequestDBTest {
         for( i in 1..count ){
             val request = generateAccountRequest(roles)
             accountRequestDB.storeAccountRequest(request)
-            map.put( request.uuid, request )
+            map[request.uuid] = request
         }
 
         for( key in map.keys ){

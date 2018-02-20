@@ -76,50 +76,22 @@ data class PasswordRequirements(val minLength: Int = 0,
     }
 
     private fun tooFewLowerCase(chars: CharArray): Boolean {
-        var count = 0
-
-        for (c in chars) {
-            if (Character.isLowerCase(c)) {
-                count++
-            }
-        }
-
+        val count = chars.count { Character.isLowerCase(it) }
         return count < minLowerCase
     }
 
     private fun tooFewUpperCase(chars: CharArray): Boolean {
-        var count = 0
-
-        for (c in chars) {
-            if (Character.isUpperCase(c)) {
-                count++
-            }
-        }
-
+        val count = chars.count { Character.isUpperCase(it) }
         return count < minUpperCase
     }
 
     private fun tooFewDigits(chars: CharArray): Boolean {
-        var count = 0
-
-        for (c in chars) {
-            if (Character.isDigit(c)) {
-                count++
-            }
-        }
-
+        val count = chars.count { Character.isDigit(it) }
         return count < minDigits
     }
 
     private fun tooFewSpecialCharacters(chars: CharArray): Boolean {
-        var count = 0
-
-        for (c in chars) {
-            if (!Character.isAlphabetic(c.toInt()) && !Character.isDigit(c)) {
-                count++
-            }
-        }
-
+        val count = chars.count { !Character.isAlphabetic(it.toInt()) && !Character.isDigit(it) }
         return count < minSpecialCharacters
     }
 
@@ -150,7 +122,7 @@ data class PasswordRequirements(val minLength: Int = 0,
                 try {
                     val lines = loadBlacklist()
                     for (line in lines) {
-                        badPasswords.put(line, java.lang.Boolean.TRUE)
+                        badPasswords[line] = java.lang.Boolean.TRUE
                     }
                 } catch (ioe: IOException) {
                     ioe.printStackTrace()
@@ -163,12 +135,7 @@ data class PasswordRequirements(val minLength: Int = 0,
 
     fun loadBlacklist(): List<String> {
         val list = loadResourceAndReadLines(badPasswordFile)
-        val badPasswords = mutableListOf<String>()
-        for( line in list ){
-            if( !isBlank(line) && !line.startsWith("#") ){
-                badPasswords.add(line)
-            }
-        }
+        val badPasswords = list.filter { !isBlank(it) && !it.startsWith("#") }
         return badPasswords
     }
 }

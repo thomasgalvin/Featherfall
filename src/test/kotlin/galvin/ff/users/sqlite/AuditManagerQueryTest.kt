@@ -114,7 +114,7 @@ class AuditManagerQueryTest{
         val expectedMap = mutableMapOf<AccessType, MutableList<AccessInfo>>()
         for( type in AccessType.values() ){
             val list = mutableListOf<AccessInfo>()
-            expectedMap.put( type, list )
+            expectedMap[type] = list
 
             for( i in 1..10 ){
                 val info = accessInfo(accessType = type)
@@ -127,9 +127,7 @@ class AuditManagerQueryTest{
 
         val manager = AuditManager()
         for( type in AccessType.values() ) {
-            val expected = expectedMap[type]
-            if( expected == null ) throw Exception("No test data generated for type: ${type.name}")
-
+            val expected = expectedMap[type] ?: throw Exception("No test data generated for type: ${type.name}")
             val options = manager.parse(args(setup, "-a", type.name))
             val results = manager.executeQuery(options)
             for ((index, result) in results.withIndex()) {

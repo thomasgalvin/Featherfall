@@ -312,12 +312,12 @@ internal class Cooldown( val maxUnhinderedAttempts: Int,
             return 0
         }
 
-        when(badAttemptCount){
-            1 -> return 1_000
-            2 -> return 2_000
-            3 -> return 5_000
-            4 -> return 10_000
-            else -> return 15_000
+        return when(badAttemptCount){
+            1 -> 1_000
+            2 -> 2_000
+            3 -> 5_000
+            4 -> 10_000
+            else -> 15_000
         }
     }
 }
@@ -361,9 +361,7 @@ internal class LoginTokenManager{
     fun remove( key: String ){
         //in case someone has cached this for some (bad) reason
         val loginToken = get(key)
-        if( loginToken != null ){
-            loginToken.logout()
-        }
+        loginToken?.logout()
 
         synchronized(concurrencyLock) {
             loginTokens.remove(key)

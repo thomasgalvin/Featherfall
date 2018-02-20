@@ -26,11 +26,10 @@ fun uuid(): String {
 }
 
 fun neverNull( string: String? ): String{
-    if( string == null ){
-        return ""
-    }
-    else{
-        return string
+    return if( string == null ){
+        ""
+    } else{
+        string
     }
 }
 
@@ -53,8 +52,7 @@ fun elseIfNull( one: String?, two: String? ): String{
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 fun loadSql( classpathEntry: String ): String{
-    val resource = Utilities::class.java.getResource(classpathEntry)
-    if(resource == null) throw IOException( "Unable to load SQL: $classpathEntry" )
+    val resource = Utilities::class.java.getResource(classpathEntry) ?: throw IOException( "Unable to load SQL: $classpathEntry" )
 
     val sql = resource.readText()
     if( isBlank(sql) ) throw IOException( "Loaded empty SQL: $classpathEntry" )

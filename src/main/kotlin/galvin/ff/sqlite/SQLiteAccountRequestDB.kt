@@ -136,11 +136,7 @@ class SQLiteAccountRequestDB( databaseFile: File, private val userDB: UserDB ) :
     override fun approve( uuid: String, approvedByUuid: String, timestamp: Long ){
         verifyNoUserExists(uuid)
 
-        val accountRequest = retrieveAccountRequest(uuid)
-        if( accountRequest == null ){
-            throw Exception( ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID )
-        }
-
+        val accountRequest = retrieveAccountRequest(uuid) ?: throw Exception( ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID )
         if( accountRequest.approved ){
             return
         }
@@ -165,10 +161,7 @@ class SQLiteAccountRequestDB( databaseFile: File, private val userDB: UserDB ) :
     }
 
     override fun reject( uuid: String, rejectedByUuid: String, reason: String, timestamp: Long ){
-        val accountRequest = retrieveAccountRequest(uuid)
-        if( accountRequest == null ){
-            throw Exception( ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID )
-        }
+        val accountRequest = retrieveAccountRequest(uuid) ?: throw Exception( ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID )
 
         if( accountRequest.rejected ){
             return
@@ -207,10 +200,7 @@ class SQLiteAccountRequestDB( databaseFile: File, private val userDB: UserDB ) :
         val approved = hit.getInt("approved") == 1
         val rejected = hit.getInt("rejected") == 1
 
-        val user = accountRequestUserInfoDB.retrieveUser(uuid)
-        if( user == null ){
-            throw Exception( ERROR_NO_USER_WITH_THIS_UUID_EXISTS )
-        }
+        val user = accountRequestUserInfoDB.retrieveUser(uuid) ?: throw Exception( ERROR_NO_USER_WITH_THIS_UUID_EXISTS )
 
         return AccountRequest(
                 user = user,
