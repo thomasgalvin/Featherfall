@@ -318,22 +318,6 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                 executeAndClose(storeStatement)
 
                 commitAndClose(conn)
-
-
-                ///
-//                connectionManager.release(conn)
-//                val conn2 = conn()
-//                val statement = conn2.prepareStatement(sqlRetrieveCurrentSystemInfo)
-//                val resultSet = statement.executeQuery()
-//                if (resultSet != null && resultSet.next()) {
-//                    val result = resultSet.getString("uuid")
-//                    println("Just stored system info uuid: $result")
-//                }
-//                else{
-//                    println("This didn't work")
-//                }
-//                connectionManager.release(conn2)
-                ///
             }
             finally{
                 rollbackAndClose(conn, connectionManager)
@@ -357,6 +341,9 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                 val result = resultSet.getString("uuid")
                 close(conn, statement)
                 return result
+            }
+            else{
+                close(conn, statement)
             }
         }
         finally{
