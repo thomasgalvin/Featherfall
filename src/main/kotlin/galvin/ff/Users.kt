@@ -146,3 +146,70 @@ data class ContactInfo( val type: String, //eg "Phone", "Email", or "Mattermost"
                         val contact: String, //eg spam@devnull.com or 555.555.5555
                         val primary: Boolean //flags this as the best way to contact the user for the given type
 )
+
+///
+/// No-Op implementation
+///
+
+class NoOpUserDB: UserDB {
+    //roles
+    override fun storeRole(role: Role){}
+    override fun deactivate( roleName: String ){}
+    override fun activate( roleName: String ){}
+    override fun listRoles(): List<Role> {return listOf()}
+    override fun retrieveRole(name: String): Role? {return null}
+
+    override fun retrievePermissions( roleNames: List<String> ): List<String> {return listOf()}
+
+    //users
+    override fun storeUser(user: User, uuid: String?){}
+    override fun retrieveUsers(): List<User> {return listOf() }
+    override fun retrieveUser(uuid: String): User? {return null}
+    override fun retrieveUserBySerialNumber(serialNumber: String): User? {return null}
+    override fun retrieveUserByLogin(login: String): User? {return null}
+    override fun retrieveUserByLoginAndPassword(login: String, password: String): User? {return null}
+    override fun retrieveUuidByLogin(login: String): String? {return null}
+    override fun retrieveUuidBySerialNumber(serial: String): String? {return null}
+    override fun retrieveUuid(key: String): String? {return null}
+
+    override fun userExists(uuid: String): Boolean {return false}
+
+    override fun retrieveUsersByLocked( locked: Boolean): List<User> {return listOf() }
+    override fun isLocked( uuid: String ): Boolean {return false}
+    override fun isLockedByLogin( login: String ): Boolean {return false}
+    override fun setLocked( uuid: String, locked: Boolean ){}
+    override fun setLockedByLogin( login: String, locked: Boolean ){}
+
+    override fun retrieveUsersByActive( active: Boolean ): List<User> {return listOf() }
+    override fun isActive( uuid: String ): Boolean {return false}
+    override fun isActiveByLogin( login: String ): Boolean {return false}
+    override fun setActive( uuid: String, active: Boolean ){}
+    override fun setActiveByLogin( login: String, active: Boolean ){}
+
+    override fun setPasswordByUuid( uuid: String, plainTextPassword: String ){}
+    override fun setPasswordByLogin( login: String, plainTextPassword: String ){}
+
+    override fun retrievePasswordHash(uuid: String): String {return ""}
+    override fun validatePassword( uuid: String, plainTextPassword: String ): Boolean {return false}
+
+    override fun updateCredentials( uuid: String, credentials: CertificateData ){}
+    override fun retrieveCredentials( uuid: String ): CertificateData? {return null}
+}
+
+class NoOpAccountRequestDB: AccountRequestDB {
+    override fun storeAccountRequest( request: AccountRequest ){}
+    override fun retrieveAccountRequest( uuid: String ) : AccountRequest? {return null}
+    override fun retrieveAccountRequests() : List<AccountRequest> {return listOf() }
+
+    override fun retrievePendingAccountRequests() : List<AccountRequest> {return listOf() }
+    override fun retrieveApprovedAccountRequests() : List<AccountRequest> {return listOf() }
+    override fun retrieveRejectedAccountRequests() : List<AccountRequest> {return listOf() }
+
+    override fun approve( uuid: String, approvedByUuid: String, timestamp: Long ){}
+    override fun reject( uuid: String, rejectedByUuid: String, reason: String, timestamp: Long ){}
+}
+
+///
+/// Working implementation
+///
+
