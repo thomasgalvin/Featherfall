@@ -2,7 +2,6 @@ package galvin.ff.tools
 
 import galvin.ff.*
 import galvin.ff.PadTo.paddedLayout
-import galvin.ff.sqlite.SQLiteUserDB
 import org.joda.time.format.DateTimeFormat
 import java.io.File
 import java.io.PrintStream
@@ -362,14 +361,14 @@ class AccountManager{
         }
 
         val file = File(options.sqlite)
-        if( !file.exists() ){
-            throw Exception( "Unable to connect to user DB: ${file.absolutePath} does not exist" )
-        }
-        else if( !file.canRead() ){
-            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be read" )
-        }
+//        if( !file.canWrite() ){
+//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be written to" )
+//        }
+//        else if( !file.canRead() ){
+//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be read" )
+//        }
 
-        return SQLiteUserDB(file)
+        return UserDB.SQLite( options.maxConnections, file, options.timeout )
     }
 }
 
@@ -377,5 +376,7 @@ data class AccountManagerOptions(
         val verbose: Boolean = false,
         val showHelp: Boolean = false,
         val showManual: Boolean = false,
-        val sqlite: String = ""
+        val maxConnections: Int = 10,
+        val timeout: Long = 60_000,
+        val sqlite: String = "" //path to the sqlite db file
 )

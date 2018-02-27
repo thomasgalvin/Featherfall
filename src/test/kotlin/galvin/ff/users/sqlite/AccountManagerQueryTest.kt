@@ -1,7 +1,6 @@
 package galvin.ff.users.sqlite
 
 import galvin.ff.*
-import galvin.ff.sqlite.SQLiteUserDB
 import galvin.ff.tools.AccountManager
 import galvin.ff.tools.AccountManagerOptions
 import org.junit.Assert
@@ -449,7 +448,7 @@ class AccountManagerQueryTest{
                             activeCount: Int = 0, inactiveCount: Int = 0,
                             unlockedCount: Int = 0, lockedCount: Int = 0 ): AccountManagerQueryTestObjects{
         val userDbFile: File = randomDbFile()
-        val userDB: UserDB = SQLiteUserDB(userDbFile)
+        val userDB: UserDB = UserDB.SQLite(1, userDbFile)
         val roles: List<Role> = generateRoles(5)
 
         val allUsers = mutableListOf<User>()
@@ -526,7 +525,7 @@ class AccountManagerQueryTest{
 
     private fun roleTestObjects( createRoles: Boolean = false ): AccountManagerQueryTestObjects{
         val userDbFile: File = randomDbFile()
-        val userDB: UserDB = SQLiteUserDB(userDbFile)
+        val userDB: UserDB = UserDB.SQLite(1, userDbFile)
         val roles: MutableList<Role> = mutableListOf()
 
         if( createRoles ){

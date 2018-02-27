@@ -1,8 +1,6 @@
 package galvin.ff.users.sqlite
 
 import galvin.ff.*
-import galvin.ff.sqlite.SQLiteAccountRequestDB
-import galvin.ff.sqlite.SQLiteUserDB
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
@@ -13,11 +11,12 @@ fun randomDbFile(): File {
 }
 
 fun randomUserDB(): UserDB{
-    return SQLiteUserDB( randomDbFile() )
+    return UserDB.SQLite( 1, randomDbFile() )
 }
 
 fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
-    return SQLiteAccountRequestDB( randomDbFile(), userDB )
+    val userDB = randomUserDB()
+    return AccountRequestDB.SQLite( userDB, 1, randomDbFile(), randomDbFile() )
 }
 
 fun randomAuditDB() : AuditDB {

@@ -3,6 +3,7 @@ package galvin.ff.users.sqlite
 import galvin.ff.*
 import org.junit.Assert
 import org.junit.Test
+import java.io.File
 
 
 class SqliteAccountRequestDBTest {
@@ -348,8 +349,9 @@ class SqliteAccountRequestDBTest {
     }
 
     private fun testObjects(): SqliteAccountRequestDBTestObjects{
-        val userDB = randomUserDB()
-        val accountRequestDB = randomAccountRequestDB(userDB)
+        val userDbFile: File = randomDbFile()
+        val userDB: UserDB = UserDB.SQLite(1, userDbFile)
+        val accountRequestDB = AccountRequestDB.SQLite( userDB, 1, randomDbFile(), randomDbFile() )
         val roles = generateRoles(userdb = userDB)
         val count = 10
 

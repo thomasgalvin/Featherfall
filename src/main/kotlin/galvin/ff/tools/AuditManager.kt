@@ -2,7 +2,6 @@ package galvin.ff.tools
 
 import galvin.ff.*
 import galvin.ff.PadTo.paddedLayout
-import galvin.ff.sqlite.SQLiteUserDB
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Options
@@ -255,30 +254,30 @@ class AuditManager{
         }
 
         val file = File(options.sqlite)
-        if( !file.exists() ){
-            throw Exception( "Unable to connect to audit DB: ${file.absolutePath} does not exist" )
-        }
-        else if( !file.canRead() ){
-            throw Exception( "Unable to connect to audit DB: ${file.absolutePath} cannot be read" )
-        }
+//        if( !file.canWrite() ){
+//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be written to" )
+//        }
+//        else if( !file.canRead() ){
+//            throw Exception( "Unable to connect to audit DB: ${file.absolutePath} cannot be read" )
+//        }
 
         return AuditDB.SQLite(maxConnections = options.maxConnections, databaseFile = file, console = true)
     }
 
     private fun connectUserDB(options: AuditManagerOptions): UserDB{
-        if( isBlank(options.sqliteUserdb) ){
+        if( isBlank(options.sqlite) ){
             throw Exception("Unable to connect to user DB: no filepath specified")
         }
 
         val file = File(options.sqliteUserdb)
-        if( !file.exists() ){
-            throw Exception( "Unable to connect to user DB: ${file.absolutePath} does not exist" )
-        }
-        else if( !file.canRead() ){
-            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be read" )
-        }
+//        if( !file.canWrite() ){
+//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be written to" )
+//        }
+//        else if( !file.canRead() ){
+//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be read" )
+//        }
 
-        return SQLiteUserDB(file)
+        return UserDB.SQLite( options.maxConnections, file, options.timeout )
     }
 
     private fun help(){
@@ -344,9 +343,10 @@ data class AuditManagerOptions( val verbose: Boolean = false,
                                 val accessType: String = "",
                                 val showDeltas: Boolean = false,
                                 val showSystemInfo: Boolean = false,
+                                val maxConnections: Int = 10,
+                                val timeout: Long = 60_000,
                                 val sqlite: String = "",
-                                val sqliteUserdb: String = "",
-                                val maxConnections: Int = 10){
+                                val sqliteUserdb: String = ""){
     fun shouldQuery(): Boolean{
         return start != null ||
                 end != null ||

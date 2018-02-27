@@ -34,13 +34,13 @@ interface AuditDB{
     companion object {
         fun SQLite(maxConnections: Int, databaseFile: File, console: Boolean = false, timeout: Long = 60_000 ): AuditDB{
             val connectionManager = ConnectionManager.SQLite(maxConnections, databaseFile, timeout)
-            val classpath = "/galvin/ff/db/sqlite/audit"
+            val classpath = "/galvin/ff/db/sqlite/"
             return AuditDBImpl( connectionManager, classpath, console)
         }
 
         fun PostgreSQL( maxConnections: Int, connectionURL: String, console: Boolean = false, timeout: Long = 60_000 ): AuditDB{
             val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout)
-            val classpath = "/galvin/ff/db/psql/audit"
+            val classpath = "/galvin/ff/db/psql/"
             return AuditDBImpl( connectionManager, classpath, console)
         }
     }
@@ -180,27 +180,29 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                    private val console: Boolean = false ): AuditDB {
     private val concurrencyLock = Object()
 
-    private val sqlCreateTableSystemInfo = loadSql("$sqlClasspath/create_table_system_info.sql")
-    private val sqlCreateTableSystemInfoNetworks = loadSql("$sqlClasspath/create_table_system_info_networks.sql")
-    private val sqlStoreSystemInfo = loadSql("$sqlClasspath/store_system_info.sql")
-    private val sqlStoreSystemInfoNetwork = loadSql("$sqlClasspath/store_system_info_network.sql")
-    private val sqlRetrieveAllSystemInfo = loadSql("$sqlClasspath/retrieve_all_system_info.sql")
-    private val sqlRetrieveSystemInfoByUuid = loadSql("$sqlClasspath/retrieve_system_info_by_uuid.sql")
-    private val sqlRetrieveSystemInfoNetworks = loadSql("$sqlClasspath/retrieve_system_info_networks.sql")
+    private val sqlCreateTableSystemInfo = loadSql("$sqlClasspath/audit/create_table_system_info.sql")
+    private val sqlCreateTableSystemInfoNetworks = loadSql("$sqlClasspath/audit/create_table_system_info_networks.sql")
+    private val sqlStoreSystemInfo = loadSql("$sqlClasspath/audit/store_system_info.sql")
+    private val sqlStoreSystemInfoNetwork = loadSql("$sqlClasspath/audit/store_system_info_network.sql")
+    private val sqlRetrieveAllSystemInfo = loadSql("$sqlClasspath/audit/retrieve_all_system_info.sql")
+    private val sqlRetrieveSystemInfoByUuid = loadSql("$sqlClasspath/audit/retrieve_system_info_by_uuid.sql")
+    private val sqlRetrieveSystemInfoNetworks = loadSql("$sqlClasspath/audit/retrieve_system_info_networks.sql")
 
-    private val sqlCreateTableAccessInfo = loadSql("$sqlClasspath/create_table_access_info.sql")
-    private val sqlCreateTableAccessInfoMods = loadSql("$sqlClasspath/create_table_access_info_mods.sql")
+    private val sqlCreateTableAccessInfo = loadSql("$sqlClasspath/audit/create_table_access_info.sql")
+    private val sqlCreateTableAccessInfoMods = loadSql("$sqlClasspath/audit/create_table_access_info_mods.sql")
 
-    private val sqlStoreAccessInfo = loadSql("$sqlClasspath/store_access_info.sql")
-    private val sqlStoreAccessInfoMod = loadSql("$sqlClasspath/store_access_info_mod.sql")
+    private val sqlStoreAccessInfo = loadSql("$sqlClasspath/audit/store_access_info.sql")
+    private val sqlStoreAccessInfoMod = loadSql("$sqlClasspath/audit/store_access_info_mod.sql")
 
-    private val sqlRetrieveAccessInfoMods = loadSql("$sqlClasspath/retrieve_access_info_mods.sql")
+    private val sqlRetrieveAccessInfoMods = loadSql("$sqlClasspath/audit/retrieve_access_info_mods.sql")
 
-    private val sqlCreateTableCurrentSystemInfo = loadSql("$sqlClasspath/create_table_current_system_info.sql")
-    private val sqlDeleteCurrentSystemInfo = loadSql("$sqlClasspath/delete_current_system_info.sql")
-    private val sqlSetCurrentSystemInfo = loadSql("$sqlClasspath/store_current_system_info.sql")
-    private val sqlRetrieveCurrentSystemInfo = loadSql("$sqlClasspath/retrieve_current_system_info.sql")
-    private val sqlCurrentSystemInfoExistsByUuid = loadSql("$sqlClasspath/current_system_info_exists_by_uuid.sql")
+    private val sqlCreateTableCurrentSystemInfo = loadSql("$sqlClasspath/audit/create_table_current_system_info.sql")
+    private val sqlDeleteCurrentSystemInfo = loadSql("$sqlClasspath/audit/delete_current_system_info.sql")
+    private val sqlSetCurrentSystemInfo = loadSql("$sqlClasspath/audit/store_current_system_info.sql")
+    private val sqlRetrieveCurrentSystemInfo = loadSql("$sqlClasspath/audit/retrieve_current_system_info.sql")
+    private val sqlCurrentSystemInfoExistsByUuid = loadSql("$sqlClasspath/audit/current_system_info_exists_by_uuid.sql")
+
+    fun conn(): Connection = connectionManager.connect()
 
     init{
         val conn = conn()
@@ -582,6 +584,4 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
 
         return result
     }
-
-    fun conn(): Connection = connectionManager.connect()
 }
