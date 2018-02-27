@@ -1,10 +1,10 @@
-package galvin.ff.users.sqlite
+package galvin.ff.users.psql
 
 import galvin.ff.*
 import org.junit.Assert
 import org.junit.Test
 
-class SQLiteUserDbTest {
+class PsqlUserDbTest {
 
     @Test
     fun should_not_create_tables_twice(){

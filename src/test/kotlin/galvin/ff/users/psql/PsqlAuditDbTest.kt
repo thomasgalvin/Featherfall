@@ -1,11 +1,11 @@
-package galvin.ff.users.sqlite
+package galvin.ff.users.psql
 
 import galvin.ff.*
 import org.junit.Assert
 import org.junit.Test
 import java.util.*
 
-class SQLiteAuditDbTest {
+class PsqlAuditDbTest {
     @Test
     fun should_not_create_tables_twice() {
         val audit = randomAuditDB()

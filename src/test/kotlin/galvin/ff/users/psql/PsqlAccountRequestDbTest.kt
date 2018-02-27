@@ -1,4 +1,4 @@
-package galvin.ff.users.sqlite
+package galvin.ff.users.psql
 
 import galvin.ff.*
 import org.junit.Assert
@@ -6,7 +6,7 @@ import org.junit.Test
 import java.io.File
 
 
-class SqliteAccountRequestDBTest {
+class PsqlAccountRequestDBTest {
     @Test
     fun should_not_create_tables_twice(){
         val userDB = randomUserDB()

@@ -1,4 +1,4 @@
-package galvin.ff.users.sqlite
+package galvin.ff.users.psql
 
 import galvin.ff.*
 import java.io.ByteArrayOutputStream
