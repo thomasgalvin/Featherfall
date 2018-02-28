@@ -51,7 +51,6 @@ object PSQL{
     }
 
     fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
-        val userDB = randomUserDB()
         val dbName = createRandom()
         val connectionURL = "jdbc:postgresql://localhost:5432/" + dbName
         return AccountRequestDB.PostgreSQL( userDB = userDB, maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password )

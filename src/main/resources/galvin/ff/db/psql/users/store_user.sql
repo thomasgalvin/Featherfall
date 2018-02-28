@@ -1,4 +1,4 @@
-insert or replace into Users(
+insert into Users(
     login,
     passwordHash,
 
@@ -22,4 +22,27 @@ insert or replace into Users(
 
     uuid
 )
-values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+on conflict(uuid) do update set
+login = excluded.login,
+passwordHash = excluded.passwordHash,
+
+name = excluded.name,
+displayName = excluded.displayName,
+sortName = excluded.sortName,
+prependToName = excluded.prependToName,
+appendToName = excluded.appendToName,
+
+credential = excluded.credential,
+serialNumber = excluded.serialNumber,
+distinguishedName= excluded.distinguishedName,
+homeAgency = excluded.homeAgency,
+agency = excluded.agency,
+countryCode = excluded.countryCode,
+citizenship = excluded.citizenship,
+
+created = excluded.created,
+active = excluded.active,
+locked = excluded.locked,
+
+uuid = excluded.uuid;

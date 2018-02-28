@@ -1,1 +1,1 @@
-select * from AccountRequests where approved != 1 and rejected == 1
+select * from AccountRequests where approved != 1 and rejected = 1
