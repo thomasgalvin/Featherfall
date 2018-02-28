@@ -63,8 +63,8 @@ interface UserDB {
             return UserDBImpl(connectionManager, classpath)
         }
 
-        fun PostgreSQL( maxConnections: Int, connectionURL: String, timeout: Long = 60_000 ): UserDB{
-            val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout)
+        fun PostgreSQL( maxConnections: Int, connectionURL: String, timeout: Long = 60_000, username: String? = null, password: String? = null ): UserDB{
+            val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout, username, password)
             val classpath = "/galvin/ff/db/psql/"
             return UserDBImpl(connectionManager, classpath)
         }
@@ -91,9 +91,9 @@ interface AccountRequestDB {
             return AccountRequestDBImpl(connectionManager, userDB, accountRequestUserInfoDB, classpath)
         }
 
-        fun PostgreSQL( userDB: UserDB, maxConnections: Int, connectionURL: String, timeout: Long = 60_000 ): AccountRequestDB{
-            val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout)
-            val accountRequestUserInfoDB = UserDB.PostgreSQL(maxConnections, connectionURL, timeout)
+        fun PostgreSQL( userDB: UserDB, maxConnections: Int, connectionURL: String, timeout: Long = 60_000, username: String? = null, password: String? = null ): AccountRequestDB{
+            val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout, username, password)
+            val accountRequestUserInfoDB = UserDB.PostgreSQL(maxConnections, connectionURL, timeout, username, password)
             val classpath = "/galvin/ff/db/psql/"
             return AccountRequestDBImpl(connectionManager, userDB, accountRequestUserInfoDB, classpath)
         }

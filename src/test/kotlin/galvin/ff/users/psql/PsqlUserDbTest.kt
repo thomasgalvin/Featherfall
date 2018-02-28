@@ -5,25 +5,15 @@ import org.junit.Assert
 import org.junit.Test
 
 class PsqlUserDbTest {
-
-    @Test
-    fun should_not_create_tables_twice(){
-        val userdb = randomUserDB()
-        val userdb2 = randomUserDB()
-
-        Assert.assertNotNull(userdb)
-        Assert.assertNotNull(userdb2)
-    }
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Roles tests
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    @Test
-    fun should_store_and_retrieve_roles(){
-        val userdb = randomUserDB()
+    @Test fun should_store_and_retrieve_roles(){
+        if( !PSQL.canConnect() ) return
+        val userdb = PSQL.randomUserDB()
 
         val expectedCount = 10
         val map = mutableMapOf<String, Role>()
@@ -48,9 +38,9 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_activate_role(){
-        val userdb = randomUserDB()
+    @Test fun should_activate_role(){
+        if( !PSQL.canConnect() ) return
+        val userdb = PSQL.randomUserDB()
 
         val inactiveToActive = generateRole( active=false )
         val alwaysInactive = generateRole( active=false )
@@ -66,9 +56,9 @@ class PsqlUserDbTest {
         Assert.assertEquals("Role was unintentionally activated", false, shouldBeInactive.active)
     }
 
-    @Test
-    fun should_deactivate_role(){
-        val userdb = randomUserDB()
+    @Test fun should_deactivate_role(){
+        if( !PSQL.canConnect() ) return
+        val userdb = PSQL.randomUserDB()
 
         val activeToInactive = generateRole( active=true )
         val alwaysActive = generateRole( active=true )
@@ -84,9 +74,9 @@ class PsqlUserDbTest {
         Assert.assertEquals("Role was unintentionally deactivated", true, shouldBeActive.active)
     }
 
-    @Test
-    fun should_update_role(){
-        val userdb = randomUserDB()
+    @Test fun should_update_role(){
+        if( !PSQL.canConnect() ) return
+        val userdb = PSQL.randomUserDB()
 
         val expectedCount = 10
         val map = mutableMapOf<String, Role>()
@@ -121,8 +111,8 @@ class PsqlUserDbTest {
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    @Test
-    fun should_store_and_retrieve_user(){
+    @Test fun should_store_and_retrieve_user(){
+        if( !PSQL.canConnect() ) return
         val( userDB, user ) = testObjects()
         userDB.storeUser(user)
 
@@ -130,8 +120,8 @@ class PsqlUserDbTest {
         Assert.assertEquals("Loaded user did not match expected", user, loaded)
     }
 
-    @Test
-    fun should_store_and_retrieve_all_users(){
+    @Test fun should_store_and_retrieve_all_users(){
+        if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
@@ -157,8 +147,8 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_store_and_retrieve_all_users_by_serial_number(){
+    @Test fun should_store_and_retrieve_all_users_by_serial_number(){
+        if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
@@ -177,8 +167,8 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_store_and_retrieve_all_users_by_login(){
+    @Test fun should_store_and_retrieve_all_users_by_login(){
+        if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
@@ -197,8 +187,8 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_update_user(){
+    @Test fun should_update_user(){
+        if( !PSQL.canConnect() ) return
         val( userDB, user ) = testObjects()
         userDB.storeUser(user)
 
@@ -210,8 +200,8 @@ class PsqlUserDbTest {
         Assert.assertEquals("Loaded user did not match expected", updated, loaded)
     }
 
-    @Test
-    fun should_update_multiple_users(){
+    @Test fun should_update_multiple_users(){
+        if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
 
         val users = mutableListOf<User>()
@@ -247,8 +237,8 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_retrieve_uuid_by_login(){
+    @Test fun should_retrieve_uuid_by_login(){
+        if( !PSQL.canConnect() ) return
         val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
         userDB.storeUser(user2)
@@ -260,8 +250,8 @@ class PsqlUserDbTest {
         Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2)
     }
 
-    @Test
-    fun should_retrieve_uuid_by_serial_number(){
+    @Test fun should_retrieve_uuid_by_serial_number(){
+        if( !PSQL.canConnect() ) return
         val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
         userDB.storeUser(user2)
@@ -273,8 +263,8 @@ class PsqlUserDbTest {
         Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2)
     }
 
-    @Test
-    fun should_retrieve_uuid_by_login_or_serial_number(){
+    @Test fun should_retrieve_uuid_by_login_or_serial_number(){
+        if( !PSQL.canConnect() ) return
         val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
         userDB.storeUser(user2)
@@ -290,8 +280,8 @@ class PsqlUserDbTest {
         Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2B)
     }
 
-    @Test
-    fun should_lock_and_unlock_user_by_uuid(){
+    @Test fun should_lock_and_unlock_user_by_uuid(){
+        if( !PSQL.canConnect() ) return
         val( userDB, toBeLocked, neverLocked ) = testObjects()
 
         userDB.storeUser(toBeLocked)
@@ -330,8 +320,8 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_lock_and_unlock_user_by_login(){
+    @Test fun should_lock_and_unlock_user_by_login(){
+        if( !PSQL.canConnect() ) return
         val( userDB, toBeLocked, neverLocked ) = testObjects()
 
         userDB.storeUser(toBeLocked)
@@ -370,8 +360,8 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_retrive_users_by_locked(){
+    @Test fun should_retrive_users_by_locked(){
+        if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
         val lockedCount = 10
         val unlockedCount = 5
@@ -408,8 +398,8 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_retrive_users_by_active(){
+    @Test fun should_retrive_users_by_active(){
+        if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
         val activeCount = 10
         val inactiveCount = 5
@@ -446,8 +436,8 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test
-    fun should_activate_and_deactivate_user_by_login(){
+    @Test fun should_activate_and_deactivate_user_by_login(){
+        if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
 
         val toBeActive = generateUser(roles, active=false)
@@ -493,6 +483,7 @@ class PsqlUserDbTest {
     }
 
     @Test fun should_update_password_by_login(){
+        if( !PSQL.canConnect() ) return
         val (userDB, user) = testObjects()
         userDB.storeUser(user)
 
@@ -502,6 +493,7 @@ class PsqlUserDbTest {
     }
 
     @Test fun should_update_password_by_uuid(){
+        if( !PSQL.canConnect() ) return
         val (userDB, user) = testObjects()
         userDB.storeUser(user)
 
@@ -511,6 +503,7 @@ class PsqlUserDbTest {
     }
 
     @Test fun should_retrieve_credentials(){
+        if( !PSQL.canConnect() ) return
         val (userDB, user) = testObjects()
         userDB.storeUser(user)
 
@@ -520,6 +513,7 @@ class PsqlUserDbTest {
     }
 
     @Test fun should_update_credentials(){
+        if( !PSQL.canConnect() ) return
         val (userDB, user) = testObjects()
         userDB.storeUser(user)
 
@@ -541,12 +535,12 @@ class PsqlUserDbTest {
     }
 
     private fun testObjects(): SqliteUserDbTestObjects{
-        val userDB = randomUserDB()
-        val roles = generateRoles(userdb = userDB)
+        val userdb = PSQL.randomUserDB()
+        val roles = generateRoles(userdb = userdb)
         val user1 = generateUser(roles)
         val user2 = generateUser(roles)
 
-        return SqliteUserDbTestObjects(userDB, user1, user2, roles )
+        return SqliteUserDbTestObjects(userdb, user1, user2, roles )
     }
 
     class SqliteUserDbTestObjects(private val userDB: UserDB, private val user1: User, private val user2: User, private val roles: List<Role> ){

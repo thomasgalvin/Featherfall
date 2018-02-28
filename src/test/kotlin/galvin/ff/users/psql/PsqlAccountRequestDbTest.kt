@@ -3,23 +3,11 @@ package galvin.ff.users.psql
 import galvin.ff.*
 import org.junit.Assert
 import org.junit.Test
-import java.io.File
 
 
 class PsqlAccountRequestDBTest {
-    @Test
-    fun should_not_create_tables_twice(){
-        val userDB = randomUserDB()
-
-        val accountRequestDB = randomAccountRequestDB(userDB)
-        val accountRequestDB2 = randomAccountRequestDB(userDB)
-
-        Assert.assertNotNull(accountRequestDB)
-        Assert.assertNotNull(accountRequestDB2)
-    }
-
-    @Test
-    fun should_store_and_retrieve_account_request(){
+    @Test fun should_store_and_retrieve_account_request(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -29,8 +17,8 @@ class PsqlAccountRequestDBTest {
         Assert.assertEquals("Loaded account request did not match expected", request, loaded)
     }
 
-    @Test
-    fun should_store_and_retrieve_all_account_requests(){
+    @Test fun should_store_and_retrieve_all_account_requests(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, count ) = testObjects()
 
         val map = mutableMapOf<String, AccountRequest>()
@@ -53,8 +41,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_update_and_retrieve_account_request(){
+    @Test fun should_update_and_retrieve_account_request(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -69,8 +57,8 @@ class PsqlAccountRequestDBTest {
         Assert.assertEquals("Loaded account request did not match expected", updatedAccountRequest, loadedUpdate)
     }
 
-    @Test
-    fun should_update_multiple_account_requests(){
+    @Test fun should_update_multiple_account_requests(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
@@ -106,8 +94,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_approve_account_requests(){
+    @Test fun should_approve_account_requests(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -124,8 +112,8 @@ class PsqlAccountRequestDBTest {
         Assert.assertEquals( "Unexpected value for approved user", request.user, loaded.user )
     }
 
-    @Test
-    fun should_approve_multiple_account_requests(){
+    @Test fun should_approve_multiple_account_requests(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
@@ -159,8 +147,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_reject_account_requests(){
+    @Test fun should_reject_account_requests(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -179,8 +167,8 @@ class PsqlAccountRequestDBTest {
         Assert.assertEquals( "Unexpected value for rejected user", request.user, loaded.user )
     }
 
-    @Test
-    fun should_reject_multiple_account_requests(){
+    @Test fun should_reject_multiple_account_requests(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
@@ -214,8 +202,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_passwords_mismatch() {
+    @Test fun should_throw_when_passwords_mismatch() {
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         try{
@@ -227,8 +215,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_no_account_request_exists_to_approve() {
+    @Test fun should_throw_when_no_account_request_exists_to_approve() {
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, _, _ ) = testObjects()
 
         try {
@@ -240,8 +228,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_no_account_request_exists_to_reject() {
+    @Test fun should_throw_when_no_account_request_exists_to_reject() {
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, _, _ ) = testObjects()
 
         try {
@@ -253,8 +241,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_user_already_exists() {
+    @Test fun should_throw_when_user_already_exists() {
+        if( !PSQL.canConnect() ) return
         val( userDB, accountRequestDB, roles, _ ) = testObjects()
 
         val user = generateUser(roles)
@@ -271,8 +259,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_rejecting_an_approved_account(){
+    @Test fun should_throw_when_rejecting_an_approved_account(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -288,8 +276,8 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_retrieve_by_status(){
+    @Test fun should_retrieve_by_status(){
+        if( !PSQL.canConnect() ) return
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val pending = mutableMapOf<String, AccountRequest>()
@@ -338,24 +326,23 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    class SqliteAccountRequestDBTestObjects(private val userDB: UserDB,
-                                            private val accountRequestDB: AccountRequestDB,
-                                            private val roles: List<Role>,
-                                            private val count: Int = 10) {
+    class PSQLAccountRequestDBTestObjects(private val userDB: UserDB,
+                                          private val accountRequestDB: AccountRequestDB,
+                                          private val roles: List<Role>,
+                                          private val count: Int = 10) {
         operator fun component1(): UserDB{ return userDB }
         operator fun component2(): AccountRequestDB{ return accountRequestDB }
         operator fun component3(): List<Role>{ return roles }
         operator fun component4(): Int{ return count }
     }
 
-    private fun testObjects(): SqliteAccountRequestDBTestObjects{
-        val userDbFile: File = randomDbFile()
-        val userDB: UserDB = UserDB.SQLite(1, userDbFile)
-        val accountRequestDB = AccountRequestDB.SQLite( userDB, 1, randomDbFile(), randomDbFile() )
+    private fun testObjects(): PSQLAccountRequestDBTestObjects {
+        val userDB = PSQL.randomUserDB()
+        val accountRequestDB = PSQL.randomAccountRequestDB(userDB)
         val roles = generateRoles(userdb = userDB)
         val count = 10
 
-        return SqliteAccountRequestDBTestObjects(userDB, accountRequestDB, roles, count)
+        return PSQLAccountRequestDBTestObjects(userDB, accountRequestDB, roles, count)
     }
 }
 

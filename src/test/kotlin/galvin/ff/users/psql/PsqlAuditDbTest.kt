@@ -7,12 +7,13 @@ import java.util.*
 
 class PsqlAuditDbTest {
     @Test fun should_create_postgres_database(){
-        PSQL.canConnect()
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
         PSQL.cleanup()
     }
 
     @Test fun should_retrieve_system_info_list() {
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
 
         val expectedCount = 10
@@ -36,6 +37,7 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_retrieve_system_info_by_uuid() {
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
 
         val expectedCount = 10
@@ -57,7 +59,9 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_retrieve_current_system_info() {
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
+
         val system = randomSystemInfo()
         audit.storeSystemInfo(system)
         audit.storeCurrentSystemInfo(system.uuid)
@@ -72,6 +76,7 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_store_system_info_list_and_retrieve_current() {
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
 
         val map = HashMap<String, SystemInfo>()
@@ -103,7 +108,9 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_throw_when_current_system_info_uuid_not_present(){
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
+
         try{
             audit.storeCurrentSystemInfo( uuid() )
             throw Exception( "Audit DB should have thrown" )
@@ -115,6 +122,7 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_retrieve_access_info_by_type(){
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
 
         val map = mutableMapOf<AccessType, AccessInfo>()
@@ -183,6 +191,8 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_retrieve_access_info_by_dates() {
+        if( !PSQL.canConnect() ) return
+
         val now = System.currentTimeMillis()
         val then = now - 10000
         val later = now + 10000
@@ -208,6 +218,7 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_retrieve_access_info_by_user_uuid(){
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
         val system = randomSystemInfo()
 
@@ -225,6 +236,7 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_retrieve_access_info_by_user_uuid_and_permission_granted(){
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
         val system = randomSystemInfo()
 
@@ -247,6 +259,7 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_retrieve_access_info_by_permission_granted(){
+        if( !PSQL.canConnect() ) return
         val audit = PSQL.randomAuditDB()
         val system = randomSystemInfo()
 
@@ -264,12 +277,13 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_retrieve_access_info_by_dates_and_system_info_uuid() {
+        if( !PSQL.canConnect() ) return
+        val audit = PSQL.randomAuditDB()
+
         val now = System.currentTimeMillis()
         val then = now - 10000
         val later = now + 10000
         val expectedCount = 10
-
-        val audit = PSQL.randomAuditDB()
 
         val systems = ArrayList<SystemInfo>()
         val map = HashMap<String, List<AccessInfo>>()
@@ -305,12 +319,13 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_not_retrieve_access_info_by_dates_before() {
+        if( !PSQL.canConnect() ) return
+        val audit = PSQL.randomAuditDB()
+
         val now = System.currentTimeMillis()
         val muchEarlier = now - 15000
         val earlier = now - 10000
         val expectedCount = 10
-
-        val audit = PSQL.randomAuditDB()
 
         val system = randomSystemInfo()
         audit.storeSystemInfo(system)
@@ -324,12 +339,13 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_not_retrieve_access_info_by_dates_after() {
+        if( !PSQL.canConnect() ) return
+        val audit = PSQL.randomAuditDB()
+
         val now = System.currentTimeMillis()
         val later = now + 10000
         val muchLater = now + 20000
         val expectedCount = 10
-
-        val audit = PSQL.randomAuditDB()
 
         val system = randomSystemInfo()
         audit.storeSystemInfo(system)
@@ -343,12 +359,13 @@ class PsqlAuditDbTest {
     }
 
     @Test fun should_not_retrieve_access_info_by_uuid() {
+        if( !PSQL.canConnect() ) return
+        val audit = PSQL.randomAuditDB()
+
         val now = System.currentTimeMillis()
         val then = now - 10000
         val later = now + 10000
         val expectedCount = 10
-
-        val audit = PSQL.randomAuditDB()
 
         val system = randomSystemInfo()
         generateAccessInfo(system, expectedCount, audit)

@@ -44,6 +44,19 @@ object PSQL{
         return AuditDB.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
     }
 
+    fun randomUserDB(): UserDB{
+        val dbName = createRandom()
+        val connectionURL = "jdbc:postgresql://localhost:5432/" + dbName
+        return UserDB.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
+    }
+
+    fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
+        val userDB = randomUserDB()
+        val dbName = createRandom()
+        val connectionURL = "jdbc:postgresql://localhost:5432/" + dbName
+        return AccountRequestDB.PostgreSQL( userDB = userDB, maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password )
+    }
+
     fun cleanup(){
         val connectionURL = "jdbc:postgresql://localhost:5432/"
         val connectionManager = ConnectionManager.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
@@ -94,18 +107,16 @@ object PSQL{
     }
 }
 
-fun randomDbFile(): File {
-    return File( "target/" + uuid() + ".dat" )
-}
 
-fun randomUserDB(): UserDB{
-    return UserDB.SQLite( 1, randomDbFile() )
-}
 
-fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
-    val userDB = randomUserDB()
-    return AccountRequestDB.SQLite( userDB, 1, randomDbFile(), randomDbFile() )
-}
+//fun randomUserDB(): UserDB{
+//    return UserDB.SQLite( 1, randomDbFile() )
+//}
+
+//fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
+//    val userDB = randomUserDB()
+//    return AccountRequestDB.SQLite( userDB, 1, randomDbFile(), randomDbFile() )
+//}
 
 //fun randomAuditDB() : AuditDB {
 //    return AuditDB.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
@@ -228,30 +239,4 @@ fun randomSystemInfo(): SystemInfo {
             ),
             "uuid:" + uuid()
     )
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Console Grabber
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-object ConsoleGrabber {
-    private val original = System.out
-    private val bytes = ByteArrayOutputStream()
-    private val printStream = PrintStream(bytes)
-
-    fun grabConsole() {
-        bytes.reset()
-        System.setOut(printStream)
-    }
-
-    fun releaseConsole(print: Boolean = true): String {
-        printStream.flush()
-        System.setOut(original)
-
-        val result = bytes.toString()
-        if(print){ println(result) }
-        return result
-    }
 }
