@@ -23,7 +23,8 @@ fun isBlank( string: String? ) :Boolean {
 }
 
 fun uuid(): String {
-    return UUID.randomUUID().toString()
+    val uuid = UUID.randomUUID().toString()
+    return uuid.replace("-", "_")
 }
 
 fun neverNull( string: String? ): String{

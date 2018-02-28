@@ -9,7 +9,9 @@ import java.sql.DriverManager
 class ConnectionManager(val maxConnections: Int,
                         val connectionURL: String,
                         driverName: String,
-                        val timeout: Long = 60_000 ) {
+                        val timeout: Long = 60_000,
+                        val user: String? = null,
+                        val password: String? = null ) {
     private val logger = LoggerFactory.getLogger(ConnectionManager::class.java)
     private val lock = Object()
     private var connectionCount = 0
@@ -30,7 +32,21 @@ class ConnectionManager(val maxConnections: Int,
             return ConnectionManager(maxConnections, connectionURL, "org.sqlite.JDBC", timeout)
         }
 
-        fun PostgreSQL( maxConnections: Int, connectionURL: String, timeout: Long = 60_000 ) = ConnectionManager(maxConnections, connectionURL, "org.postgresql.Driver", timeout)
+        fun PostgreSQL( maxConnections: Int, connectionURL: String, timeout: Long = 60_000, username: String? = null, password: String? = null ) = ConnectionManager(maxConnections, connectionURL, "org.postgresql.Driver", timeout, username, password)
+    }
+
+    fun execute( sql: String ){
+        val conn = connect()
+        conn.autoCommit = true
+        try {
+            val statement = conn.prepareStatement(sql)
+            statement.executeUpdate()
+            statement.close()
+            conn.close()
+        }
+        finally{
+            release(conn)
+        }
     }
 
     fun connect(): Connection {
@@ -38,7 +54,7 @@ class ConnectionManager(val maxConnections: Int,
             incrementCount()
             waitForAvailableConnection()
 
-            val result = DriverManager.getConnection(connectionURL)
+            val result = DriverManager.getConnection(connectionURL, user, password)
             result.autoCommit = false
             return result
         } catch (t: Throwable) {
@@ -98,7 +114,5 @@ class ConnectionManager(val maxConnections: Int,
 
         }
     }
-
-
 
 }

@@ -6,18 +6,14 @@ import org.junit.Test
 import java.util.*
 
 class PsqlAuditDbTest {
-    @Test
-    fun should_not_create_tables_twice() {
-        val audit = randomAuditDB()
-        val audit2 = randomAuditDB()
-
-        Assert.assertNotNull( "Audit database was null", audit )
-        Assert.assertNotNull( "Audit database was null", audit2 )
+    @Test fun should_create_postgres_database(){
+        PSQL.canConnect()
+        val audit = PSQL.randomAuditDB()
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_system_info_list() {
-        val audit = randomAuditDB()
+    @Test fun should_retrieve_system_info_list() {
+        val audit = PSQL.randomAuditDB()
 
         val expectedCount = 10
         val map = HashMap<String, SystemInfo>()
@@ -35,11 +31,12 @@ class PsqlAuditDbTest {
             val expected = map[loaded.uuid]
             Assert.assertEquals("Loaded system info did not match expected", expected, loaded)
         }
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_system_info_by_uuid() {
-        val audit = randomAuditDB()
+    @Test fun should_retrieve_system_info_by_uuid() {
+        val audit = PSQL.randomAuditDB()
 
         val expectedCount = 10
         val map = HashMap<String, SystemInfo>()
@@ -55,11 +52,12 @@ class PsqlAuditDbTest {
             val loaded = audit.retrieveSystemInfo(key)
             Assert.assertEquals("Loaded system info did not match expected", expected, loaded)
         }
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_current_system_info() {
-        val audit = randomAuditDB()
+    @Test fun should_retrieve_current_system_info() {
+        val audit = PSQL.randomAuditDB()
         val system = randomSystemInfo()
         audit.storeSystemInfo(system)
         audit.storeCurrentSystemInfo(system.uuid)
@@ -69,11 +67,12 @@ class PsqlAuditDbTest {
 
         val uuid = audit.retrieveCurrentSystemInfoUuid()
         Assert.assertEquals("Loaded current system info uuid not match expected", system.uuid, uuid)
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_store_system_info_list_and_retrieve_current() {
-        val audit = randomAuditDB()
+    @Test fun should_store_system_info_list_and_retrieve_current() {
+        val audit = PSQL.randomAuditDB()
 
         val map = HashMap<String, SystemInfo>()
         val expectedCount = 11
@@ -100,11 +99,11 @@ class PsqlAuditDbTest {
         val loadedCurrent = audit.retrieveCurrentSystemInfo()
         Assert.assertEquals("Loaded current system info did not match expected", current, loadedCurrent)
 
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_throw_when_current_system_info_uuid_not_present(){
-        val audit = randomAuditDB()
+    @Test fun should_throw_when_current_system_info_uuid_not_present(){
+        val audit = PSQL.randomAuditDB()
         try{
             audit.storeCurrentSystemInfo( uuid() )
             throw Exception( "Audit DB should have thrown" )
@@ -112,11 +111,11 @@ class PsqlAuditDbTest {
         catch( ex: Exception ){
             Assert.assertEquals( "Unexpected error", ex.message, ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT )
         }
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_access_info_by_type(){
-        val audit = randomAuditDB()
+    @Test fun should_retrieve_access_info_by_type(){
+        val audit = PSQL.randomAuditDB()
 
         val map = mutableMapOf<AccessType, AccessInfo>()
         for( type in AccessType.values() ){
@@ -179,16 +178,17 @@ class PsqlAuditDbTest {
             Assert.assertEquals("Query by access type failed", expected1, hits[0])
             Assert.assertEquals("Query by access type failed", expected2, hits[1])
         }
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_access_info_by_dates() {
+    @Test fun should_retrieve_access_info_by_dates() {
         val now = System.currentTimeMillis()
         val then = now - 10000
         val later = now + 10000
         val expectedCount = 10
 
-        val audit = randomAuditDB()
+        val audit = PSQL.randomAuditDB()
 
         val system = randomSystemInfo()
         audit.storeSystemInfo(system)
@@ -203,11 +203,12 @@ class PsqlAuditDbTest {
             val loaded = loadedEntries[i]
             Assert.assertEquals("Loaded access info did not match expected", expected, loaded)
         }
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_access_info_by_user_uuid(){
-        val audit = randomAuditDB()
+    @Test fun should_retrieve_access_info_by_user_uuid(){
+        val audit = PSQL.randomAuditDB()
         val system = randomSystemInfo()
 
         val count = 10
@@ -219,11 +220,12 @@ class PsqlAuditDbTest {
 
         val loadedMine = audit.retrieveAccessInfo(userUuid = myUserUuid)
         Assert.assertEquals("Loaded access info did not match expected", mine, loadedMine)
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_access_info_by_user_uuid_and_permission_granted(){
-        val audit = randomAuditDB()
+    @Test fun should_retrieve_access_info_by_user_uuid_and_permission_granted(){
+        val audit = PSQL.randomAuditDB()
         val system = randomSystemInfo()
 
         val count = 10
@@ -240,11 +242,12 @@ class PsqlAuditDbTest {
 
         val loadedMineFail = audit.retrieveAccessInfo(userUuid = myUserUuid, permissionGranted = false)
         Assert.assertEquals("Loaded access info did not match expected", mineFail, loadedMineFail)
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_access_info_by_permission_granted(){
-        val audit = randomAuditDB()
+    @Test fun should_retrieve_access_info_by_permission_granted(){
+        val audit = PSQL.randomAuditDB()
         val system = randomSystemInfo()
 
         val count = 10
@@ -256,16 +259,17 @@ class PsqlAuditDbTest {
 
         val loadedFail = audit.retrieveAccessInfo(permissionGranted = false)
         Assert.assertEquals("Loaded access info did not match expected", fail, loadedFail)
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_retrieve_access_info_by_dates_and_system_info_uuid() {
+    @Test fun should_retrieve_access_info_by_dates_and_system_info_uuid() {
         val now = System.currentTimeMillis()
         val then = now - 10000
         val later = now + 10000
         val expectedCount = 10
 
-        val audit = randomAuditDB()
+        val audit = PSQL.randomAuditDB()
 
         val systems = ArrayList<SystemInfo>()
         val map = HashMap<String, List<AccessInfo>>()
@@ -296,16 +300,17 @@ class PsqlAuditDbTest {
                 }
             }
         }
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_not_retrieve_access_info_by_dates_before() {
+    @Test fun should_not_retrieve_access_info_by_dates_before() {
         val now = System.currentTimeMillis()
         val muchEarlier = now - 15000
         val earlier = now - 10000
         val expectedCount = 10
 
-        val audit = randomAuditDB()
+        val audit = PSQL.randomAuditDB()
 
         val system = randomSystemInfo()
         audit.storeSystemInfo(system)
@@ -314,16 +319,17 @@ class PsqlAuditDbTest {
         val loadedEntries = audit.retrieveAccessInfo( startTimestamp = muchEarlier, endTimestamp = earlier)
 
         Assert.assertEquals("Unexpected system info count", 0, loadedEntries.size.toLong())
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_not_retrieve_access_info_by_dates_after() {
+    @Test fun should_not_retrieve_access_info_by_dates_after() {
         val now = System.currentTimeMillis()
         val later = now + 10000
         val muchLater = now + 20000
         val expectedCount = 10
 
-        val audit = randomAuditDB()
+        val audit = PSQL.randomAuditDB()
 
         val system = randomSystemInfo()
         audit.storeSystemInfo(system)
@@ -332,16 +338,17 @@ class PsqlAuditDbTest {
         val loadedEntries = audit.retrieveAccessInfo(startTimestamp = later, endTimestamp = muchLater)
 
         Assert.assertEquals("Unexpected system info count", 0, loadedEntries.size.toLong())
+
+        PSQL.cleanup()
     }
 
-    @Test
-    fun should_not_retrieve_access_info_by_uuid() {
+    @Test fun should_not_retrieve_access_info_by_uuid() {
         val now = System.currentTimeMillis()
         val then = now - 10000
         val later = now + 10000
         val expectedCount = 10
 
-        val audit = randomAuditDB()
+        val audit = PSQL.randomAuditDB()
 
         val system = randomSystemInfo()
         generateAccessInfo(system, expectedCount, audit)
@@ -352,6 +359,8 @@ class PsqlAuditDbTest {
         val randomSystemUuid = uuid()
         val nonExistentSystemEntries = audit.retrieveAccessInfo(systemInfoUuid = randomSystemUuid, startTimestamp = then, endTimestamp = later)
         Assert.assertEquals("Unexpected system info count", 0, nonExistentSystemEntries.size.toLong())
+
+        PSQL.cleanup()
     }
 
     ///

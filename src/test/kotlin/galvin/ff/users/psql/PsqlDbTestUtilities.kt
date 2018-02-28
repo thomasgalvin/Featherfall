@@ -1,10 +1,98 @@
 package galvin.ff.users.psql
 
 import galvin.ff.*
+import galvin.ff.db.ConnectionManager
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.util.*
+
+object PSQL{
+    private val databaseNames = mutableListOf<String>()
+    private var connectionAttempted = false
+    private var canConnect = false
+    private val maxConnections = 1
+    private val username = System.getProperty("user.name")
+    private val password: String? = null
+
+
+    fun canConnect(): Boolean{
+        if( connectionAttempted ) return canConnect
+        connectionAttempted = true
+
+        try{
+            val db = createRandom()
+            canConnect = true
+        }
+        catch(t: Throwable){
+            println("***********************************************************************");
+            println("***                                                                 ***");
+            println("*** Unable to connect to PostgreSQL: will not run psql test harness ***");
+            println("***                                                                 ***");
+            println("***********************************************************************");
+            //t.printStackTrace()
+            canConnect = false
+        }
+
+
+        return canConnect
+    }
+
+    fun randomAuditDB() : AuditDB {
+        val dbName = createRandom()
+        val connectionURL = "jdbc:postgresql://localhost:5432/" + dbName
+        return AuditDB.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
+    }
+
+    fun cleanup(){
+        val connectionURL = "jdbc:postgresql://localhost:5432/"
+        val connectionManager = ConnectionManager.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
+        val conn = connectionManager.connect()
+        conn.autoCommit = true
+
+        try {
+            for (db in databaseNames) {
+                val sql = "DROP DATABASE $db;"
+                val statement = conn.prepareStatement(sql)
+                statement.executeUpdate()
+                statement.close()
+            }
+        }
+        finally {
+            connectionManager.release(conn)
+            databaseNames.clear()
+        }
+    }
+
+    private fun createRandom(): String{
+        val result = "unit_test_" + uuid()
+        val connectionURL = "jdbc:postgresql://localhost:5432/"
+        val createSQL = "CREATE DATABASE $result;"
+        val grantSQL = "GRANT ALL PRIVILEGES ON DATABASE $result to $username;"
+        databaseNames.add(result)
+
+        val connectionManager = ConnectionManager.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
+        val conn = connectionManager.connect()
+        conn.autoCommit = true
+        try {
+            val createStatement = conn.prepareStatement(createSQL)
+            createStatement.executeUpdate()
+            createStatement.close()
+
+            val grantStatement = conn.prepareStatement(grantSQL)
+            grantStatement.executeUpdate()
+            grantStatement.close()
+
+            conn.close()
+        }
+        finally{
+            connectionManager.release(conn)
+        }
+
+
+        return result
+    }
+}
 
 fun randomDbFile(): File {
     return File( "target/" + uuid() + ".dat" )
@@ -19,9 +107,9 @@ fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
     return AccountRequestDB.SQLite( userDB, 1, randomDbFile(), randomDbFile() )
 }
 
-fun randomAuditDB() : AuditDB {
-    return AuditDB.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
-}
+//fun randomAuditDB() : AuditDB {
+//    return AuditDB.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
+//}
 
 fun generateAccountRequest(systemRoles: List<Role>, uuid: String = uuid(), password: String = uuid(), confirmPassword: String = password ) : AccountRequest {
     return AccountRequest(

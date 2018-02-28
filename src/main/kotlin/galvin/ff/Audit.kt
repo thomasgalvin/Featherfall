@@ -38,8 +38,8 @@ interface AuditDB{
             return AuditDBImpl( connectionManager, classpath, console)
         }
 
-        fun PostgreSQL( maxConnections: Int, connectionURL: String, console: Boolean = false, timeout: Long = 60_000 ): AuditDB{
-            val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout)
+        fun PostgreSQL( maxConnections: Int, connectionURL: String, console: Boolean = false, timeout: Long = 60_000, username: String? = null, password: String? = null ): AuditDB{
+            val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout, username, password)
             val classpath = "/galvin/ff/db/psql/"
             return AuditDBImpl( connectionManager, classpath, console)
         }
