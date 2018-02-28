@@ -8,7 +8,7 @@ import java.io.PrintStream
 import java.util.*
 
 object PSQL{
-    private val databaseNames = mutableListOf<String>()
+    private val prefix = "featherfall_unit_test_"
     private var connectionAttempted = false
     private var canConnect = false
     private val maxConnections = 1
@@ -57,17 +57,38 @@ object PSQL{
     }
 
     fun cleanup(){
+        val databaseNames = mutableListOf<String>()
+
         val connectionURL = "jdbc:postgresql://localhost:5432/"
         val connectionManager = ConnectionManager.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
         val conn = connectionManager.connect()
         conn.autoCommit = true
 
         try {
+            val sql = "SELECT datname FROM pg_database WHERE datistemplate = false;"
+            val statement = conn.prepareStatement(sql)
+            val resultSet = statement.executeQuery()
+            if( resultSet != null ){
+                while (resultSet.next()) {
+                    val db = resultSet.getString(1)
+                    if( db.startsWith(prefix) ) {
+                        databaseNames.add(db)
+                    }
+                }
+            }
+            resultSet.close()
+            statement.close()
+
             for (db in databaseNames) {
-                val sql = "DROP DATABASE $db;"
-                val statement = conn.prepareStatement(sql)
-                statement.executeUpdate()
-                statement.close()
+                try{
+                    val dropSQL = "DROP DATABASE $db;"
+                    val dropStatement = conn.prepareStatement(dropSQL)
+                    dropStatement.executeUpdate()
+                    dropStatement.close()
+                }
+                catch(t:Throwable){
+                    t.printStackTrace()
+                }
             }
         }
         finally {
@@ -77,11 +98,10 @@ object PSQL{
     }
 
     private fun createRandom(): String{
-        val result = "unit_test_" + uuid()
+        val result = prefix + uuid()
         val connectionURL = "jdbc:postgresql://localhost:5432/"
         val createSQL = "CREATE DATABASE $result;"
         val grantSQL = "GRANT ALL PRIVILEGES ON DATABASE $result to $username;"
-        databaseNames.add(result)
 
         val connectionManager = ConnectionManager.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
         val conn = connectionManager.connect()

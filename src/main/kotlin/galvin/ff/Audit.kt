@@ -300,7 +300,6 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
     }
 
     override fun storeCurrentSystemInfo(uuid: String) {
-        println("Storing current system info: $uuid")
         synchronized(concurrencyLock) {
             val conn = conn()
 
