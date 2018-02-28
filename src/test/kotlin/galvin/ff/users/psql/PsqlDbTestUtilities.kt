@@ -21,7 +21,7 @@ object PSQL{
         connectionAttempted = true
 
         try{
-            val db = createRandom()
+            createRandom()
             canConnect = true
         }
         catch(t: Throwable){
@@ -57,6 +57,8 @@ object PSQL{
     }
 
     fun cleanup(){
+    	if( !canConnect() ) return
+    	
         val databaseNames = mutableListOf<String>()
 
         val connectionURL = "jdbc:postgresql://localhost:5432/"

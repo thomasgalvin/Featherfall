@@ -102,9 +102,6 @@ class ConnectionManager(val maxConnections: Int,
                     logger.trace("Waiting for available connection: max: $maxConnections current: $connectionCount")
                 }
 
-                Exception("Waiting for available connection: max: $maxConnections current: $connectionCount").printStackTrace()
-
-
                 Thread.sleep(sleepFor)
                 waitTime += sleepFor
                 if( waitTime > timeout ) throw DatabaseError("Timeout waiting for database connection: $connectionURL")
