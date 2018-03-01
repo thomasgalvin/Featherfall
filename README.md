@@ -15,31 +15,21 @@ fun main(args: Array<String>) {
 	val userDB = createUserDB()
 	val accountRequestDB = createAccountRequestDB(userDB)
 	val auditDB = createAuditDB()
-	val loginManager = LoginManager( userDB , auditDB, DefaultTimeProvider() )
-	
-	val api = arrayListOf(
-		LoginResource(loginManager),
-		LogoutResource(loginManager),
-		HelloWorldResource() 
-	)
-	
-	val healthChecks = arrayListOf(
-		HealthCheckContext( "/api/json/username", HelloHealthCheck() )
-	)
-	
-	val statics = arrayListOf(
-		//this creates a web page available at http://localhost:8080/html
-		StaticResource(location = "/path/to/my/webapp/", context = "/html")
-	)
-	val tasks = arrayListOf( ShutdownTask() )
+	val loginManager = LoginManager( userDB , auditDB, DefaultTimeProvider() ) 
 	
 	val server = FeatherfallServer<HelloConfig>(
-		serverRootPath = "/api", //sets the root path to the JSON API
-		apiResources = api,
-		healthChecks = healthChecks,
-		staticResources = statics,
-		tasks = tasks
+		apiResources = arrayListOf(
+			LoginResource(loginManager),
+			LogoutResource(loginManager),
+			HelloWorldResource() 
+		),
+		
+		staticResources = arrayListOf(
+			StaticResource(location = "/path/to/my/webapp/", context = "/html")
+		)
 	)
 	server.start()
 }
 ```
+
+These 19 lines stand up a REST API with login/logout and user management, and expose a web application at <http://localhost:8080/html/>.
