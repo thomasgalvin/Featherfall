@@ -5,8 +5,7 @@ import org.junit.Assert
 import org.junit.Test
 
 class LoginManagerTest{
-    @Test
-    fun should_login_successfully_by_password(){
+    @Test fun should_login_successfully_by_password(){
         val (auditDB, userDB, loginManager, roles, count) = testObjects()
 
         val passwords = mutableListOf<String>()
@@ -49,8 +48,7 @@ class LoginManagerTest{
         }
     }
 
-    @Test
-    fun should_login_successfully_by_serial_number(){
+    @Test fun should_login_successfully_by_serial_number(){
         val (_, userDB, loginManager, roles, count) = testObjects()
 
         val passwords = mutableListOf<String>()
@@ -73,8 +71,7 @@ class LoginManagerTest{
         }
     }
 
-    @Test
-    fun should_login_successfully_by_login_token(){
+    @Test fun should_login_successfully_by_login_token(){
         val (_, userDB, loginManager, roles, count) = testObjects()
 
         val passwords = mutableListOf<String>()

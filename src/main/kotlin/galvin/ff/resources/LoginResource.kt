@@ -10,6 +10,7 @@ import javax.ws.rs.core.MediaType
 @Produces( MediaType.APPLICATION_JSON )
 @Consumes( MediaType.APPLICATION_JSON )
 class LoginResource(private val loginManager: LoginManager ){
+    
     @POST fun loginPost( @Context httpRequest: HttpServletRequest, credentials: Credentials ): LoginToken{
         return login(httpRequest, credentials)
     }

@@ -108,25 +108,6 @@ class LoginManager( private val userDB: UserDB,
         return loginToken
     }
 
-    fun validate( loginTokenUuid: String, ipAddress: String = "" ): LoginToken{
-        val currentToken = loginTokens[loginTokenUuid]
-        if( currentToken == null || currentToken.hasExpired( timeProvider.now() ) ){
-            var accessInfo = accessInfo(LoginType.LOGIN_TOKEN, "", ipAddress, "", "", false )
-            auditDB.log(accessInfo)
-            throw LoginError.invalidToken()
-        }
-
-        val timestamp = timeProvider.now()
-        val expires = timestamp + currentToken.tokenLifespan
-        val newToken = currentToken.copy( timestamp = timestamp, expires = expires)
-        loginTokens[loginTokenUuid] = newToken
-
-        var accessInfo = accessInfo(LoginType.LOGIN_TOKEN, newToken.loginProxyUuid, newToken.ipAddress, newToken.user.uuid, newToken.username, true )
-        auditDB.log(accessInfo)
-
-        return newToken
-    }
-
     fun logout( loginTokenUuid: String ){
         val token = loginTokens[loginTokenUuid]
         if( token != null ){
@@ -145,6 +126,7 @@ class LoginManager( private val userDB: UserDB,
 
     private fun getUser( credentials: Credentials ): User?{
         val serialNumber = credentials.x509SerialNumber
+        val now = timeProvider.now()
 
         if( !isBlank(serialNumber) ){
             return userDB.retrieveUserBySerialNumber(serialNumber)
@@ -154,7 +136,7 @@ class LoginManager( private val userDB: UserDB,
         }
         else if( !isBlank(credentials.tokenUuid) ){
             val loginToken = loginTokens[credentials.tokenUuid]
-            if( loginToken != null ){
+            if( loginToken != null && !loginToken.hasExpired( now ) ){
                 return userDB.retrieveUser(loginToken.user.uuid)
             }
         }
