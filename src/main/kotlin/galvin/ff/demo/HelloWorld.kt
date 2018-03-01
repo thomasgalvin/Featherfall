@@ -61,7 +61,7 @@ class HelloWorld {
                         //this creates a web page available at http://localhost:8080/html
                         StaticResource(location = "/galvin/ff/demo/html/", context = "/html")
                 )
-                //val statics = arrayListOf( StaticResource( location="/tmp/", context="/html", onClasspath=false ) )
+                //val statics = arrayListOf( StaticResource( location="/tmp/dev-html/", context="/dev-html", onClasspath=false ) )
 
                 // Tasks are invoked via a POST to /tasks/{task-name} on the admin port
                 // eg curl -X POST http://localhost:8081/tasks/shutdown
@@ -81,8 +81,6 @@ class HelloWorld {
                 t.printStackTrace()
             }
         }
-
-
     }
 }
 
