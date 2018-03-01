@@ -15,7 +15,6 @@ fun randomUserDB(): UserDB{
 }
 
 fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
-    val userDB = randomUserDB()
     return AccountRequestDB.SQLite( userDB, 1, randomDbFile(), randomDbFile() )
 }
 

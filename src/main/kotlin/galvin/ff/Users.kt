@@ -162,9 +162,9 @@ data class AccountRequest(
 
         //confirmation some accounts will only be approved for people with need-to-know or
         // some other compelling reason to have access to the system.
-        val reasonForAccount: String?, //an explanation for why this account is being requested
-        val vouchName: String?, //the name of someone who can vouch for you
-        val vouchContactInfo: String?, //how to get ahold of the person who can vouch for you
+        val reasonForAccount: String? = null, //an explanation for why this account is being requested
+        val vouchName: String? = null, //the name of someone who can vouch for you
+        val vouchContactInfo: String? = null, //how to get ahold of the person who can vouch for you
 
         //approved / rejected
         val approved: Boolean = false, val approvedByUuid: String = "", val approvedTimestamp: Long = -1,

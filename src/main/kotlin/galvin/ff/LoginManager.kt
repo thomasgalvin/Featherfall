@@ -216,11 +216,15 @@ data class Credentials(val ipAddress: String = "",
             val ipAddress = getIpAddress(httpRequest)
             result = result.copy(ipAddress = ipAddress)
 
-            val certificates = httpRequest.getAttribute("javax.servlet.request.X509Certificate") as Array<X509Certificate>
-            if( certificates != null && !certificates.isEmpty() ){
-                val x509 = certificates[0]
-                val serial = getSerialNumber(x509)
-                result = result.copy( x509 = x509, x509SerialNumber = serial )
+            val certificates = httpRequest.getAttribute("javax.servlet.request.X509Certificate")
+            if( certificates is Array<*> ) {
+                if (!certificates.isEmpty()) {
+                    val x509 = certificates[0]
+                    if( x509 is X509Certificate) {
+                        val serial = getSerialNumber(x509)
+                        result = result.copy(x509 = x509, x509SerialNumber = serial)
+                    }
+                }
             }
 
             return result
