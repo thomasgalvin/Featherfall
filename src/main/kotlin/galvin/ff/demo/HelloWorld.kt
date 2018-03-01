@@ -1,10 +1,12 @@
 package galvin.ff.demo
 
+import com.codahale.metrics.health.HealthCheck
 import galvin.ff.*
 import galvin.ff.resources.LoginResource
 import galvin.ff.resources.LogoutResource
 import io.dropwizard.Configuration
 import java.io.File
+import java.net.URL
 import javax.ws.rs.GET
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
@@ -38,11 +40,15 @@ class HelloWorld {
                         // or
                         //     http://localhost:8080/api/json/Thomas
                         //         (returns a JSON formatted greeting to Thomas)
-                        HelloResource().hello(),
+                        HelloResource(),
 
                         // this creates a way to shut down the server via an API call; eg visiting
                         // http://localhost:8080/api/shutdown in a browser
                         ShutdownResource()
+                )
+
+                val healthChecks = arrayListOf(
+                        HealthCheckContext( "/api/json/Arwen", HelloHealthCheck() )
                 )
 
 
@@ -55,6 +61,7 @@ class HelloWorld {
                 val server = FeatherfallServer<HelloConfig>(
                         serverRootPath = "/api", //sets the root path to the JSON API
                         apiResources = api,
+                        healthChecks = healthChecks,
                         staticResources = statics
                 )
                 server.start()
@@ -105,5 +112,29 @@ class ShutdownThread: Thread(){
             System.exit(0)
         }
         catch(t: Throwable){}
+    }
+}
+
+class HelloHealthCheck: HealthCheck(){
+    override fun check(): HealthCheck.Result {
+        try {
+            val url = URL("http://localhost:8080/api/json/Arwen")
+            val result = url.readText()
+
+            val expected =
+                    "{\n" +
+                            "  \"name\" : \"Arwen\",\n" +
+                            "  \"message\" : \"Hello, Arwen!\"\n" +
+                            "}"
+
+            if (expected == result) {
+                return HealthCheck.Result.healthy()
+            }
+        }
+        catch( t: Throwable){
+            t.printStackTrace()
+        }
+
+        return HealthCheck.Result.unhealthy("Error in hello health check")
     }
 }
