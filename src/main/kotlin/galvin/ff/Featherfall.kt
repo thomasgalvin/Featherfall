@@ -8,6 +8,7 @@ import io.dropwizard.Configuration
 import io.dropwizard.assets.AssetsBundle
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
+import io.dropwizard.servlets.tasks.Task
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.glassfish.jersey.server.ServerProperties
 import java.io.File
@@ -37,7 +38,8 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
                                           private val displayWADL: Boolean = true,
                                           private val apiResources: List<Any> = listOf(),
                                           private val healthChecks: List<HealthCheckContext> = listOf(),
-                                          private val staticResources: List<StaticResource> = listOf() ) :Application<T>() {
+                                          private val staticResources: List<StaticResource> = listOf(),
+                                          private val tasks: List<Task> = listOf() ) :Application<T>() {
     init {
         if ( !isBlank(serverRootPath) ) System.setProperty("dw.server.rootPath", serverRootPath)
 
@@ -99,6 +101,10 @@ class FeatherfallServer<T: Configuration>(private val configFile: File? = null,
 
         for ( (context, healthCheck) in healthChecks ) {
             env.healthChecks().register(context, healthCheck)
+        }
+
+        for( task in tasks ){
+            env.admin().addTask( task )
         }
     }
 

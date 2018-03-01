@@ -1,11 +1,14 @@
 package galvin.ff.demo
 
 import com.codahale.metrics.health.HealthCheck
+import com.google.common.collect.ImmutableMultimap
 import galvin.ff.*
 import galvin.ff.resources.LoginResource
 import galvin.ff.resources.LogoutResource
 import io.dropwizard.Configuration
+import io.dropwizard.servlets.tasks.Task
 import java.io.File
+import java.io.PrintWriter
 import java.net.URL
 import javax.ws.rs.GET
 import javax.ws.rs.Path
@@ -47,6 +50,8 @@ class HelloWorld {
                         ShutdownResource()
                 )
 
+                // You can see the status of these health checks by calling
+                // http://localhost:8081/healthcheck
                 val healthChecks = arrayListOf(
                         HealthCheckContext( "/api/json/Arwen", HelloHealthCheck() )
                 )
@@ -58,11 +63,18 @@ class HelloWorld {
                 )
                 //val statics = arrayListOf( StaticResource( location="/tmp/", context="/html", onClasspath=false ) )
 
+                // Tasks are invoked via a POST to /tasks/{task-name} on the admin port
+                // eg curl -X POST http://localhost:8081/tasks/shutdown
+                val tasks = arrayListOf(
+                        ShutdownTask()
+                )
+
                 val server = FeatherfallServer<HelloConfig>(
                         serverRootPath = "/api", //sets the root path to the JSON API
                         apiResources = api,
                         healthChecks = healthChecks,
-                        staticResources = statics
+                        staticResources = statics,
+                        tasks = tasks
                 )
                 server.start()
             } catch (t: Throwable) {
@@ -136,5 +148,12 @@ class HelloHealthCheck: HealthCheck(){
         }
 
         return HealthCheck.Result.unhealthy("Error in hello health check")
+    }
+}
+
+class ShutdownTask: Task("shutdown") {
+    override fun execute(p0: ImmutableMultimap<String, String>?, p1: PrintWriter?) {
+        println("Shutdown task activated")
+        System.exit(0)
     }
 }
