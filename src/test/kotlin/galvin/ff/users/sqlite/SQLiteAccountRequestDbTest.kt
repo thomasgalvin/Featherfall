@@ -200,7 +200,7 @@ class SqliteAccountRequestDBTest {
         }
 
         for( key in map.keys ){
-            accountRequestDB.reject(key, uuid(), uuid() )
+            accountRequestDB.reject(key, uuid(), uuid(), System.currentTimeMillis() )
         }
 
         for( key in map.keys ){
@@ -232,7 +232,7 @@ class SqliteAccountRequestDBTest {
         val( _, accountRequestDB, _, _ ) = testObjects()
 
         try {
-            accountRequestDB.approve(uuid(), uuid())
+            accountRequestDB.approve(uuid(), uuid(), System.currentTimeMillis())
             throw Exception("Error: Account Request database should have thrown an exception")
         }
         catch (e: Exception) {
@@ -245,7 +245,7 @@ class SqliteAccountRequestDBTest {
         val( _, accountRequestDB, _, _ ) = testObjects()
 
         try {
-            accountRequestDB.reject(uuid(), uuid())
+            accountRequestDB.reject(uuid(), uuid(), uuid(), System.currentTimeMillis())
             throw Exception("Error: Account Request database should have thrown an exception")
         }
         catch (e: Exception) {
@@ -277,10 +277,10 @@ class SqliteAccountRequestDBTest {
 
         val request = generateAccountRequest(roles)
         accountRequestDB.storeAccountRequest(request)
-        accountRequestDB.approve( request.uuid, uuid() )
+        accountRequestDB.approve( request.uuid, uuid(), System.currentTimeMillis() )
 
         try {
-            accountRequestDB.reject( request.uuid, uuid(), uuid() )
+            accountRequestDB.reject( request.uuid, uuid(), uuid(), System.currentTimeMillis() )
             throw Exception("Error: Account Request database should have thrown an exception")
         }
         catch (e: Exception) {
@@ -301,11 +301,11 @@ class SqliteAccountRequestDBTest {
         populate(rejected, roles, accountRequestDB)
 
         for( uuid in approved.keys){
-            accountRequestDB.approve( uuid, uuid() )
+            accountRequestDB.approve( uuid, uuid(), System.currentTimeMillis() )
         }
 
         for( uuid in rejected.keys){
-            accountRequestDB.reject( uuid, uuid() )
+            accountRequestDB.reject( uuid, uuid(), uuid(), System.currentTimeMillis() )
         }
 
         val loadedPending = accountRequestDB.retrievePendingAccountRequests()

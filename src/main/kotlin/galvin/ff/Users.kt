@@ -80,8 +80,8 @@ interface AccountRequestDB {
     fun retrieveApprovedAccountRequests() : List<AccountRequest>
     fun retrieveRejectedAccountRequests() : List<AccountRequest>
 
-    fun approve( uuid: String, approvedByUuid: String, timestamp: Long = System.currentTimeMillis() )
-    fun reject( uuid: String, rejectedByUuid: String, reason: String = "", timestamp: Long = System.currentTimeMillis() )
+    fun approve( uuid: String, approvedByUuid: String, timestamp: Long )
+    fun reject( uuid: String, rejectedByUuid: String, reason: String = "", timestamp: Long )
 
     companion object {
         fun SQLite( userDB: UserDB, maxConnections: Int, databaseFile: File, userDatabaseFile: File, timeout: Long = 60_000 ): AccountRequestDB{
