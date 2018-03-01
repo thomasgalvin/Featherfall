@@ -25,11 +25,11 @@ fun main(args: Array<String>) {
 		),
 		
 		staticResources = arrayListOf(
-			StaticResource(location = "/path/to/my/webapp/", context = "/html")
+			StaticResource(location = "/path/to/my/webapp/", context = "/webapp")
 		)
 	)
 	server.start()
 }
 ```
 
-These 19 lines stand up a REST API with login/logout and user management, and expose a web application at <http://localhost:8080/html/>.
+These 19 lines stand up a REST API with login/logout and user management, and expose a web application at <http://localhost:8080/webapp/>.
