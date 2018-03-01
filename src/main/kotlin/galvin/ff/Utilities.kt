@@ -5,9 +5,11 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormatter
 import java.io.*
 import java.nio.charset.Charset
+import java.security.cert.X509Certificate
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.*
+import javax.servlet.http.HttpServletRequest
 
 
 class Utilities
@@ -169,4 +171,34 @@ fun parseToDateTime( string: String,
     }
 
     return null
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// HTTP / HTTPS utilities
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const val loginTokenParamName: String = "X-Auth-Token"
+
+fun getIpAddress(httpRequest: HttpServletRequest): String {
+    var ipAddress = httpRequest.getHeader( "X-FORWARDED-FOR" )
+    if( ipAddress == null || isBlank(ipAddress) ) {
+        ipAddress = httpRequest.getRemoteAddr()
+    }
+    else if( ipAddress.contains( "," ) ) {
+        ipAddress = ipAddress.split( "," )[0];
+    }
+    return ipAddress
+}
+
+fun getSerialNumber(x509: X509Certificate?): String {
+    if (x509 != null) {
+        val result = x509.serialNumber.toString(16)
+        if( !isBlank(result) ){
+            return result
+        }
+    }
+
+    return ""
 }

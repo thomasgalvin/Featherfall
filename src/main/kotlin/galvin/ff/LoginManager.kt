@@ -1,6 +1,7 @@
 package galvin.ff
 
 import java.security.cert.X509Certificate
+import javax.servlet.http.HttpServletRequest
 
 const val TOKEN_LIFESPAN: Long = 1000 * 60 * 60 * 24 * 5 //five days in milliseconds
 const val ATTEMPTS_EXPIRE_AFTER: Long = 1000 * 60 * 60 //one hour in ms
@@ -11,24 +12,24 @@ const val MAX_FAILED_LOGIN_ATTEMPTS_PER_USER = 5
 const val MAX_UNHINDERED_LOGIN_ATTEMPTS_IP_ADDRESS = 0
 const val MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS = 15
 
-const val LOGIN_EXCEPTION_INVALID_CREDENTIALS = "Login Exception: the provided credentials were invalid"
-const val LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED = "Login Exception: maximum login attempts exceeded"
-
 class LoginManager( private val userDB: UserDB,
                     private val auditDB: AuditDB = NoOpAuditDB(),
+                    private val timeProvider: TimeProvider = DefaultTimeProvider(),
                     private val config: LoginManagerConfig = LoginManagerConfig() ){
-    private val loginTokens = LoginTokenManager()
+    private val loginTokens = LoginTokenManager(timeProvider)
     private val usernameCooldown = Cooldown(
             config.loginMaxUnhindered,
             config.loginMaxFailed,
             config.attemptsExpireAfter,
-            config.sleepBetweenAttempts
+            config.sleepBetweenAttempts,
+            timeProvider
     )
     private val addressCooldown = Cooldown(
             config.addressMaxUnhindered,
             config.addressMaxFailed,
             config.attemptsExpireAfter,
-            config.sleepBetweenAttempts
+            config.sleepBetweenAttempts,
+            timeProvider
     )
 
     fun authenticate( credentials: Credentials ): LoginToken{
@@ -41,13 +42,13 @@ class LoginManager( private val userDB: UserDB,
         if( usernameCooldown.maxFailedLoginsExceeded(username) ||
             addressCooldown.maxFailedLoginsExceeded(credentials.ipAddress) ) {
             loginFailed(loginType, credentials.loginProxyUuid, credentials.ipAddress, userUuid, username)
-            throw LoginException(LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED)
+            throw LoginError.maxAttemptsExpired()
         }
 
         val user = getUser(credentials)
         if( user == null ){
             loginFailed(loginType, credentials.loginProxyUuid, credentials.ipAddress, userUuid, username)
-            throw LoginException(LOGIN_EXCEPTION_INVALID_CREDENTIALS)
+            throw LoginError.invalidCredentials()
         }
         else{
             return loginSucceeded(loginType, credentials.loginProxyUuid, credentials.ipAddress, user )
@@ -95,7 +96,8 @@ class LoginManager( private val userDB: UserDB,
                 user = sanitizedUser,
                 permissions = permissions,
                 loginType = loginType,
-                loginProxyUuid = loginProxyUuid
+                loginProxyUuid = loginProxyUuid,
+                timestamp = timeProvider.now()
         )
         loginTokens[loginToken.uuid] = loginToken
 
@@ -106,7 +108,34 @@ class LoginManager( private val userDB: UserDB,
         return loginToken
     }
 
+    fun validate( loginTokenUuid: String, ipAddress: String = "" ): LoginToken{
+        val currentToken = loginTokens[loginTokenUuid]
+        if( currentToken == null || currentToken.hasExpired( timeProvider.now() ) ){
+            var accessInfo = accessInfo(LoginType.LOGIN_TOKEN, "", ipAddress, "", "", false )
+            auditDB.log(accessInfo)
+            throw LoginError.invalidToken()
+        }
+
+        val timestamp = timeProvider.now()
+        val expires = timestamp + currentToken.tokenLifespan
+        val newToken = currentToken.copy( timestamp = timestamp, expires = expires)
+        loginTokens[loginTokenUuid] = newToken
+
+        var accessInfo = accessInfo(LoginType.LOGIN_TOKEN, newToken.loginProxyUuid, newToken.ipAddress, newToken.user.uuid, newToken.username, true )
+        auditDB.log(accessInfo)
+
+        return newToken
+    }
+
     fun logout( loginTokenUuid: String ){
+        val token = loginTokens[loginTokenUuid]
+        if( token != null ){
+            token.logout()
+
+            var accessInfo = accessInfo(LoginType.LOGIN_TOKEN, token.loginProxyUuid, token.ipAddress, token.user.uuid, token.username, successful = true, accessType = AccessType.LOGOUT )
+            auditDB.log(accessInfo)
+        }
+
         loginTokens.remove(loginTokenUuid)
     }
 
@@ -115,7 +144,7 @@ class LoginManager( private val userDB: UserDB,
     ///
 
     private fun getUser( credentials: Credentials ): User?{
-        val serialNumber = credentials.getSerialNumber()
+        val serialNumber = credentials.x509SerialNumber
 
         if( !isBlank(serialNumber) ){
             return userDB.retrieveUserBySerialNumber(serialNumber)
@@ -141,7 +170,7 @@ class LoginManager( private val userDB: UserDB,
             return credentials.x509SerialNumber
         }
         else if( credentials.x509 != null ){
-            return credentials.getSerialNumber()
+            return credentials.x509SerialNumber
         }
 
         return ""
@@ -168,7 +197,7 @@ class LoginManager( private val userDB: UserDB,
                 loginType = loginType,
                 loginProxyUuid = loginProxyUuid,
                 ipAddress = ipAddress,
-                timestamp = System.currentTimeMillis(),
+                timestamp = timeProvider.now(),
                 resourceUuid = userUuid,
                 resourceName = username,
                 resourceType = RESOURCE_TYPE_USER_ACCOUNT,
@@ -182,37 +211,45 @@ class LoginManager( private val userDB: UserDB,
 
 data class Credentials(val ipAddress: String = "",
                        val x509: X509Certificate? = null,
-                       val x509SerialNumber: String = "",
+                       val x509SerialNumber: String = getSerialNumber(x509),
                        val username: String = "",
                        val password: String = "",
                        val tokenUuid: String = "",
                        val loginProxyUuid: String = "") {
     fun getLoginType(): LoginType {
-        if ( !isBlank( getSerialNumber() ) ) {
+        if ( !isBlank( x509SerialNumber ) ) {
             return LoginType.PKI
-        } else if (!isBlank(tokenUuid)) {
+        }
+        else if (!isBlank(tokenUuid)) {
             return LoginType.LOGIN_TOKEN
         }
 
         return LoginType.USERNAME_PASSWORD
     }
 
-    fun getSerialNumber(): String {
-        if (x509 != null) {
-            val result = x509.serialNumber.toString(16)
-            if( !isBlank(result) ){
-                return result
-            }
-        }
+    companion object {
+        fun copy(httpRequest: HttpServletRequest, credentials: Credentials? = null ): Credentials{
+            var result = if(credentials==null) Credentials() else credentials
 
-        return x509SerialNumber
+            val ipAddress = getIpAddress(httpRequest)
+            result = result.copy(ipAddress = ipAddress)
+
+            val certificates = httpRequest.getAttribute("javax.servlet.request.X509Certificate") as Array<X509Certificate>
+            if( certificates != null && !certificates.isEmpty() ){
+                val x509 = certificates[0]
+                val serial = getSerialNumber(x509)
+                result = result.copy( x509 = x509, x509SerialNumber = serial )
+            }
+
+            return result
+        }
     }
 }
 
 data class LoginToken(val uuid: String = uuid(),
                       val ipAddress: String = "",
                       val tokenLifespan: Long = TOKEN_LIFESPAN,
-                      val timestamp: Long = System.currentTimeMillis(),
+                      val timestamp: Long,
                       val expires: Long = timestamp + tokenLifespan,
                       val user: User,
                       val username: String = user.login,
@@ -222,11 +259,7 @@ data class LoginToken(val uuid: String = uuid(),
     private var loggedOut = false
 
     fun hasExpired(currentTime: Long): Boolean {
-        return expires <= currentTime
-    }
-
-    fun hasExpired(): Boolean {
-        return loggedOut || hasExpired(System.currentTimeMillis())
+        return loggedOut || expires <= currentTime
     }
 
     fun logout(){
@@ -244,9 +277,6 @@ data class LoginManagerConfig(val tokenLifespan: Long = TOKEN_LIFESPAN,
                               val allowConcurrentLogins: Boolean = true
 )
 
-class LoginException( message: String = "Login Exception",
-                      cause: Throwable? = null   ): Exception(message, cause)
-
 /**
  * Tracks login attempts by a key, eg username or IP address.
  *
@@ -257,13 +287,14 @@ class LoginException( message: String = "Login Exception",
 internal class Cooldown( val maxUnhinderedAttempts: Int,
                          val maxFailedLoginAttempts: Int,
                          val attemptsExpireAfter: Long,
-                         val sleepBetweenAttempts: Boolean){
+                         val sleepBetweenAttempts: Boolean,
+                         val timeProvider: TimeProvider){
     private val attempts = mutableMapOf<String, LoginAttempt>()
 
     fun loginFailed( key: String? ){
         if( key != null ){
             val attempt = getAttempts(key)
-            attempts[key] = attempt.increment()
+            attempts[key] = attempt.increment( timeProvider.now() )
         }
     }
 
@@ -296,7 +327,7 @@ internal class Cooldown( val maxUnhinderedAttempts: Int,
     private fun getAttempts( key: String ): LoginAttempt{
         val result = attempts[key]
         if( result != null ){
-            if( result.hasExpired(attemptsExpireAfter) ){
+            if( result.hasExpired( timeProvider.now(), attemptsExpireAfter ) ){
                 attempts.remove(key)
             }
             else{
@@ -304,7 +335,7 @@ internal class Cooldown( val maxUnhinderedAttempts: Int,
             }
         }
 
-        return LoginAttempt()
+        return LoginAttempt( timestamp = timeProvider.now() )
     }
 
     private fun getSleepTime( badAttemptCount: Int ): Long{
@@ -323,18 +354,17 @@ internal class Cooldown( val maxUnhinderedAttempts: Int,
 }
 
 internal data class LoginAttempt(val count: Int = 0,
-                                 val timestamp: Long = System.currentTimeMillis() ){
-    fun hasExpired( expiresAfter: Long ): Boolean{
-        val now = System.currentTimeMillis()
+                                 val timestamp: Long ){
+    fun hasExpired( now: Long, expiresAfter: Long ): Boolean{
         return now >= timestamp + expiresAfter
     }
 
-    fun increment(): LoginAttempt{
-        return LoginAttempt( count = count+1 )
+    fun increment( timestamp: Long): LoginAttempt{
+        return LoginAttempt( count = count+1, timestamp = timestamp )
     }
 }
 
-internal class LoginTokenManager{
+internal class LoginTokenManager( private val timeProvider: TimeProvider ){
     private val concurrencyLock = Object()
     private val loginTokens = mutableMapOf<String, LoginToken>()
 
@@ -352,7 +382,7 @@ internal class LoginTokenManager{
 
     operator fun set( key: String, loginToken: LoginToken ){
         synchronized(concurrencyLock) {
-            if (!loginToken.hasExpired()) {
+            if( !loginToken.hasExpired( timeProvider.now() ) ) {
                 loginTokens[key] = loginToken
             }
         }
@@ -393,9 +423,10 @@ internal class LoginTokenManager{
         synchronized(concurrencyLock){
             val expiredTokens = mutableListOf<LoginToken>()
 
+            val now = timeProvider.now()
             val tokens = loginTokens.values
             for( token in tokens ){
-                if( token.hasExpired() ){
+                if( token.hasExpired(now) ){
                     token.logout()
                     expiredTokens.add(token)
                 }

@@ -110,7 +110,7 @@ class LoginManagerTest{
             loginManager.authenticate(credentials)
             throw Exception("Login manager should have thrown")
         }
-        catch( ex: LoginException ){}
+        catch( ex: LoginError ){}
     }
 
     @Test
@@ -149,7 +149,7 @@ class LoginManagerTest{
                 loginManager.authenticate(credentials)
                 throw Exception( "Login manager should have thrown" )
             }
-            catch(ex: LoginException){
+            catch(ex: LoginError){
                 //no-op
             }
         }
@@ -158,6 +158,7 @@ class LoginManagerTest{
     @Test
     fun should_purge_expired(){
         val (_, userDB, loginManager, roles, count) = testObjects(tokenLifespan=1)
+        val timeProvider = DefaultTimeProvider()
 
         val passwords = mutableListOf<String>()
         for( i in 0..count ){
@@ -190,19 +191,20 @@ class LoginManagerTest{
                 loginManager.authenticate(credentials)
                 throw Exception( "Login manager should have thrown" )
             }
-            catch(ex: LoginException){
+            catch(ex: LoginError){
                 //no-op
             }
         }
 
         for( loginToken in loginTokens ){
-            Assert.assertTrue("Token should have expired", loginToken.hasExpired() )
+            Assert.assertTrue("Token should have expired", loginToken.hasExpired( timeProvider.now() ) )
         }
     }
 
     @Test
     fun should_log_out_concurrent_sessions(){
         val (_, userDB, loginManager, roles, count) = testObjects(allowConcurrentLogins = false)
+        val timeProvider = DefaultTimeProvider()
 
         val user = generateUser(roles)
         userDB.storeUser(user)
@@ -226,11 +228,11 @@ class LoginManagerTest{
         }
 
         for( token in badLogins ){
-            Assert.assertTrue("Token should have been logged out", token.hasExpired() )
+            Assert.assertTrue("Token should have been logged out", token.hasExpired( timeProvider.now() ) )
         }
 
         for( token in goodLogins ){
-            Assert.assertFalse("Token should not have been logged out", token.hasExpired() )
+            Assert.assertFalse("Token should not have been logged out", token.hasExpired( timeProvider.now() ) )
         }
     }
 
@@ -257,7 +259,7 @@ class LoginManagerTest{
                 loginManager.authenticate(credentials)
                 throw Exception( "Should have thrown login exception" )
             }
-            catch( ex: LoginException ){
+            catch( ex: LoginError ){
                 //no-op
             }
         }
@@ -288,7 +290,7 @@ class LoginManagerTest{
                 loginManager.authenticate(credentials)
                 throw Exception( "Should have thrown login exception" )
             }
-            catch( ex: LoginException ){
+            catch( ex: LoginError ){
                 //no-op
             }
         }
@@ -298,7 +300,7 @@ class LoginManagerTest{
             loginManager.authenticate(credentials)
             throw Exception( "Should have thrown login exception" )
         }
-        catch( ex: LoginException ){
+        catch( ex: LoginError ){
             Assert.assertEquals("Unexpected error message", LOGIN_EXCEPTION_MAX_ATTEMPTS_EXCEEDED, ex.message)
         }
 
