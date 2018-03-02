@@ -1102,7 +1102,9 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
         }
 
         synchronized(concurrencyLock) {
-            userDB.storeUser(accountRequest.user)
+            val passwordHash = hash( accountRequest.password )
+            val newUser = accountRequest.user.copy( passwordHash = passwordHash )
+            userDB.storeUser(newUser)
 
             val conn = conn()
 

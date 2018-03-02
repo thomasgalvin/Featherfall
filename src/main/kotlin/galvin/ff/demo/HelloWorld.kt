@@ -59,7 +59,8 @@ class HelloWorld {
 
                 val statics = arrayListOf(
                         //this creates a web page available at http://localhost:8080/html
-                        StaticResource(location = "/galvin/ff/demo/html/", context = "/html")
+                        StaticResource(location = "/galvin/ff/demo/html/", context = "/html"),
+                        StaticResource(location = File("src/main/resources/galvin/ff/demo/html/").absolutePath, context = "/html-live", onClasspath = false)
                 )
                 //val statics = arrayListOf( StaticResource( location="/tmp/dev-html/", context="/dev-html", onClasspath=false ) )
 
