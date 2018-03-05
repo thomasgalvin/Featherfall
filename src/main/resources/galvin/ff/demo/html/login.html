@@ -2,9 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>Log in to Featherfall</title>
+    <script src="featherfall.js"></script>
+    <script>
+        window.onload = function(){
+            Featherfall.onLogin = function(){
+                console.log("Login Token UUID: " + Featherfall.loginToken.uuid)
+                console.log("Username: " + Featherfall.loginToken.user.login)
+                Featherfall.hideLoginForm()
+                Featherfall.showLoggedInAsForm()
+            }
+
+            Featherfall.onLogout = function(){
+                Featherfall.hideLoggedInAsForm()
+                Featherfall.showLoginForm()
+            }
+
+            Featherfall.showLoginForm()
+        }
+    </script>
 </head>
 <body>
-$END$
 </body>
 </html>

@@ -11,15 +11,16 @@ import javax.ws.rs.core.MediaType
 @Consumes( MediaType.APPLICATION_JSON )
 class LogoutResource( private val loginManager: LoginManager ){
 
-    @POST fun logoutPost( @Context httpRequest: HttpServletRequest, @HeaderParam( loginTokenParamName )loginTokenUuid: String ) {
-        logout(httpRequest, loginTokenUuid)
-    }
-
-    @GET fun logoutGet( @Context httpRequest: HttpServletRequest, @HeaderParam( loginTokenParamName )loginTokenUuid: String ) {
+    @POST fun logoutPost( @Context httpRequest: HttpServletRequest, @HeaderParam( loginTokenParamName )loginTokenUuid: String ): String {
         return logout(httpRequest, loginTokenUuid)
     }
 
-    private fun logout(httpRequest: HttpServletRequest, loginTokenUuid: String) {
+    @GET fun logoutGet( @Context httpRequest: HttpServletRequest, @HeaderParam( loginTokenParamName )loginTokenUuid: String ): String {
+        return logout(httpRequest, loginTokenUuid)
+    }
+
+    private fun logout(httpRequest: HttpServletRequest, loginTokenUuid: String): String {
         loginManager.logout(loginTokenUuid)
+        return ""
     }
 }
