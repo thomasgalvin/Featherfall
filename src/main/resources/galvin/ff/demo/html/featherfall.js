@@ -110,7 +110,7 @@ function FeatherfallImp(){
         span.innerHTML =
         "<div id='featherfall-logged-in-as-form'>" +
         "<div id='featherfall-logged-in-as-banner'></div>" +
-        "<div id='featherfall-logged-in-as-username-div' style='display:inline'>Logged in as: " + instance.loginToken.user.login + "</div>"+
+        "<div id='featherfall-logged-in-as-username-div' style='display:inline'>Logged in as: <span id='featherfall-logged-in-as-username-value-span'>" + instance.loginToken.user.login + "</span></div>"+
         " " +
         "<div id='featherfall-logged-in-as-logout-div' style='display:inline'><a href='#' onclick='Featherfall.logout(); return false;'>Logout</a></div>" +
         "</div>"
@@ -128,6 +128,10 @@ function FeatherfallImp(){
             createLoggedInAsForm()
             _loggedInAsForm = true
         }
+
+        var usernameSpan = getByIdOrThrow('featherfall-logged-in-as-username-value-span')
+        usernameSpan.innerHTML = instance.loginToken.user.login
+
         setDisplay("featherfall-logged-in-as-form", "")
     }
 
