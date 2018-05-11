@@ -5,7 +5,7 @@ import org.junit.Assert
 import org.junit.Test
 import java.util.*
 
-class AuditDbTestHarness {
+class AuditDbTest {
     @Test fun should_create_postgres_database() {
         for (database in databases) {
             if (!database.canConnect()) continue

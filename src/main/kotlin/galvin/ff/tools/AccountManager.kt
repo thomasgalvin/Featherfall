@@ -365,7 +365,7 @@ class AccountManager{
         else if( !isBlank(options.psql) ){
             return UserDB.PostgreSQL(maxConnections = options.maxConnections, connectionURL = options.psql, username = options.dbuser, password = options.dbpass )
         }
-        
+
         throw Exception("Unable to connect to user DB: no connection criteria specified")
     }
 }

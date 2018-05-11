@@ -4,7 +4,7 @@ import galvin.ff.*
 import org.junit.Assert
 import org.junit.Test
 
-class UserDbTestHarness{
+class UserDbTest{
     //////////////
     // Roles tests
     //////////////

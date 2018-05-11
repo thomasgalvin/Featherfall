@@ -5,7 +5,7 @@ import org.junit.Assert
 import org.junit.Test
 
 
-class AccountRequestDBTestHarness{
+class AccountRequestDBTest{
     @Test fun should_store_and_retrieve_account_request(){
         for( database in databases ) {
             if (!database.canConnect()) continue
