@@ -34,6 +34,7 @@ interface UserDB {
     fun retrieveUuid(key: String): String?
 
     fun userExists(uuid: String): Boolean
+    fun userExistsByLogin(login: String): Boolean
 
     fun retrieveUsersByLocked( locked: Boolean = true): List<User>
     fun isLocked( uuid: String ): Boolean
@@ -211,6 +212,7 @@ class NoOpUserDB: UserDB {
     override fun retrieveUuid(key: String): String? {return null}
 
     override fun userExists(uuid: String): Boolean {return false}
+    override fun userExistsByLogin(uuid: String): Boolean {return false}
 
     override fun retrieveUsersByLocked( locked: Boolean): List<User> {return listOf() }
     override fun isLocked( uuid: String ): Boolean {return false}
@@ -277,6 +279,7 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     private val sqlStoreUserRole = loadSql("$sqlClasspath/users/store_user_roles.sql")
 
     private val sqlUserExistsByUuid = loadSql("$sqlClasspath/users/user_exists_by_uuid.sql")
+    private val sqlUserExistsByLogin = loadSql("$sqlClasspath/users/user_exists_by_login.sql")
     private val sqlRetrieveUserByUuid = loadSql("$sqlClasspath/users/retrieve_user_by_uuid.sql")
     private val sqlRetrieveUserBySerialNumber = loadSql("$sqlClasspath/users/retrieve_user_by_serial_number.sql")
     private val sqlRetrieveUserByLogin= loadSql("$sqlClasspath/users/retrieve_user_by_login.sql")
@@ -741,11 +744,19 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     }
 
     override fun userExists(uuid: String): Boolean{
+        return userExistsBy(sqlUserExistsByUuid, uuid)
+    }
+
+    override fun userExistsByLogin(login: String): Boolean{
+        return userExistsBy( sqlUserExistsByLogin, login.toLowerCase() )
+    }
+
+    private fun userExistsBy(sql: String, value: String): Boolean{
         val conn = conn()
 
         try {
-            val statement = conn.prepareStatement(sqlUserExistsByUuid)
-            statement.setString(1, uuid)
+            val statement = conn.prepareStatement(sql)
+            statement.setString(1, value)
             val resultSet = statement.executeQuery()
             val exists = resultSet.next()
             close(conn, statement)

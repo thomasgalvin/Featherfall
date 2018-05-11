@@ -187,6 +187,40 @@ class PsqlUserDbTest {
         }
     }
 
+    @Test fun should_exist_by_login(){
+        if( !PSQL.canConnect() ) return
+        val( userDB, _, _, roles ) = testObjects()
+        val expectedCount = 10
+
+        val logins = mutableListOf<String>()
+        for( i in 1..expectedCount ){
+            val user = generateUser(roles)
+            userDB.storeUser(user)
+            logins.add(user.login)
+        }
+
+        for( login in logins ){
+            Assert.assertTrue("User should have existed by login (case match)", userDB.userExistsByLogin(login) )
+            Assert.assertTrue("User should have existed by login (uppercase)", userDB.userExistsByLogin( login.toUpperCase() ) )
+            Assert.assertTrue("User should have existed by login (lowercase)", userDB.userExistsByLogin( login.toLowerCase() ) )
+        }
+    }
+
+    @Test fun should_not_exist_by_login(){
+        if( !PSQL.canConnect() ) return
+        val( userDB, _, _, roles ) = testObjects()
+        val expectedCount = 10
+
+        for( i in 1..expectedCount ){
+            val user = generateUser(roles)
+            userDB.storeUser(user)
+        }
+
+        for( i in 1..10 ){
+            Assert.assertFalse("User should have existed by login", userDB.userExistsByLogin( uuid() ) )
+        }
+    }
+
     @Test fun should_update_user(){
         if( !PSQL.canConnect() ) return
         val( userDB, user ) = testObjects()
@@ -360,7 +394,7 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test fun should_retrive_users_by_locked(){
+    @Test fun should_retrieve_users_by_locked(){
         if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
         val lockedCount = 10
@@ -398,7 +432,7 @@ class PsqlUserDbTest {
         }
     }
 
-    @Test fun should_retrive_users_by_active(){
+    @Test fun should_retrieve_users_by_active(){
         if( !PSQL.canConnect() ) return
         val( userDB, _, _, roles ) = testObjects()
         val activeCount = 10
@@ -507,7 +541,7 @@ class PsqlUserDbTest {
         val (userDB, user) = testObjects()
         userDB.storeUser(user)
 
-        val expected = user.getCredentials()
+        val expected = user.credentials
         val loaded = userDB.retrieveCredentials(user.uuid)
         Assert.assertEquals("Unexpected credentials", expected, loaded)
     }

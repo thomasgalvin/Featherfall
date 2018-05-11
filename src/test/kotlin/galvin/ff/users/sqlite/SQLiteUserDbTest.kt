@@ -6,8 +6,7 @@ import org.junit.Test
 
 class SQLiteUserDbTest {
 
-    @Test
-    fun should_not_create_tables_twice(){
+    @Test fun should_not_create_tables_twice(){
         val userdb = randomUserDB()
         val userdb2 = randomUserDB()
 
@@ -21,8 +20,7 @@ class SQLiteUserDbTest {
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    @Test
-    fun should_store_and_retrieve_roles(){
+    @Test fun should_store_and_retrieve_roles(){
         val userdb = randomUserDB()
 
         val expectedCount = 10
@@ -48,8 +46,7 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_activate_role(){
+    @Test fun should_activate_role(){
         val userdb = randomUserDB()
 
         val inactiveToActive = generateRole( active=false )
@@ -66,8 +63,7 @@ class SQLiteUserDbTest {
         Assert.assertEquals("Role was unintentionally activated", false, shouldBeInactive.active)
     }
 
-    @Test
-    fun should_deactivate_role(){
+    @Test fun should_deactivate_role(){
         val userdb = randomUserDB()
 
         val activeToInactive = generateRole( active=true )
@@ -84,8 +80,7 @@ class SQLiteUserDbTest {
         Assert.assertEquals("Role was unintentionally deactivated", true, shouldBeActive.active)
     }
 
-    @Test
-    fun should_update_role(){
+    @Test fun should_update_role(){
         val userdb = randomUserDB()
 
         val expectedCount = 10
@@ -121,8 +116,7 @@ class SQLiteUserDbTest {
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    @Test
-    fun should_store_and_retrieve_user(){
+    @Test fun should_store_and_retrieve_user(){
         val( userDB, user ) = testObjects()
         userDB.storeUser(user)
 
@@ -130,8 +124,7 @@ class SQLiteUserDbTest {
         Assert.assertEquals("Loaded user did not match expected", user, loaded)
     }
 
-    @Test
-    fun should_store_and_retrieve_all_users(){
+    @Test fun should_store_and_retrieve_all_users(){
         val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
@@ -157,8 +150,7 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_store_and_retrieve_all_users_by_serial_number(){
+    @Test fun should_store_and_retrieve_all_users_by_serial_number(){
         val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
@@ -177,8 +169,7 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_store_and_retrieve_all_users_by_login(){
+    @Test fun should_store_and_retrieve_all_users_by_login(){
         val( userDB, _, _, roles ) = testObjects()
         val expectedCount = 10
 
@@ -197,8 +188,39 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_update_user(){
+    @Test fun should_exist_by_login(){
+        val( userDB, _, _, roles ) = testObjects()
+        val expectedCount = 10
+
+        val logins = mutableListOf<String>()
+        for( i in 1..expectedCount ){
+            val user = generateUser(roles)
+            userDB.storeUser(user)
+            logins.add(user.login)
+        }
+
+        for( login in logins ){
+            Assert.assertTrue("User should have existed by login (case match)", userDB.userExistsByLogin(login) )
+            Assert.assertTrue("User should have existed by login (uppercase)", userDB.userExistsByLogin( login.toUpperCase() ) )
+            Assert.assertTrue("User should have existed by login (lowercase)", userDB.userExistsByLogin( login.toLowerCase() ) )
+        }
+    }
+
+    @Test fun should_not_exist_by_login(){
+        val( userDB, _, _, roles ) = testObjects()
+        val expectedCount = 10
+
+        for( i in 1..expectedCount ){
+            val user = generateUser(roles)
+            userDB.storeUser(user)
+        }
+
+        for( i in 1..10 ){
+            Assert.assertFalse("User should have existed by login", userDB.userExistsByLogin( uuid() ) )
+        }
+    }
+
+    @Test fun should_update_user(){
         val( userDB, user ) = testObjects()
         userDB.storeUser(user)
 
@@ -210,8 +232,7 @@ class SQLiteUserDbTest {
         Assert.assertEquals("Loaded user did not match expected", updated, loaded)
     }
 
-    @Test
-    fun should_update_multiple_users(){
+    @Test fun should_update_multiple_users(){
         val( userDB, _, _, roles ) = testObjects()
 
         val users = mutableListOf<User>()
@@ -247,8 +268,7 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_retrieve_uuid_by_login(){
+    @Test fun should_retrieve_uuid_by_login(){
         val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
         userDB.storeUser(user2)
@@ -260,8 +280,7 @@ class SQLiteUserDbTest {
         Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2)
     }
 
-    @Test
-    fun should_retrieve_uuid_by_serial_number(){
+    @Test fun should_retrieve_uuid_by_serial_number(){
         val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
         userDB.storeUser(user2)
@@ -273,8 +292,7 @@ class SQLiteUserDbTest {
         Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2)
     }
 
-    @Test
-    fun should_retrieve_uuid_by_login_or_serial_number(){
+    @Test fun should_retrieve_uuid_by_login_or_serial_number(){
         val( userDB, user, user2 ) = testObjects()
         userDB.storeUser(user)
         userDB.storeUser(user2)
@@ -290,8 +308,7 @@ class SQLiteUserDbTest {
         Assert.assertEquals("Unexpected UUID", user2.uuid, uuid2B)
     }
 
-    @Test
-    fun should_lock_and_unlock_user_by_uuid(){
+    @Test fun should_lock_and_unlock_user_by_uuid(){
         val( userDB, toBeLocked, neverLocked ) = testObjects()
 
         userDB.storeUser(toBeLocked)
@@ -330,8 +347,7 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_lock_and_unlock_user_by_login(){
+    @Test fun should_lock_and_unlock_user_by_login(){
         val( userDB, toBeLocked, neverLocked ) = testObjects()
 
         userDB.storeUser(toBeLocked)
@@ -370,8 +386,7 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_retrive_users_by_locked(){
+    @Test fun should_retrieve_users_by_locked(){
         val( userDB, _, _, roles ) = testObjects()
         val lockedCount = 10
         val unlockedCount = 5
@@ -408,8 +423,7 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_retrive_users_by_active(){
+    @Test fun should_retrieve_users_by_active(){
         val( userDB, _, _, roles ) = testObjects()
         val activeCount = 10
         val inactiveCount = 5
@@ -446,8 +460,7 @@ class SQLiteUserDbTest {
         }
     }
 
-    @Test
-    fun should_activate_and_deactivate_user_by_login(){
+    @Test fun should_activate_and_deactivate_user_by_login(){
         val( userDB, _, _, roles ) = testObjects()
 
         val toBeActive = generateUser(roles, active=false)
@@ -514,7 +527,7 @@ class SQLiteUserDbTest {
         val (userDB, user) = testObjects()
         userDB.storeUser(user)
 
-        val expected = user.getCredentials()
+        val expected = user.credentials
         val loaded = userDB.retrieveCredentials(user.uuid)
         Assert.assertEquals("Unexpected credentials", expected, loaded)
     }
