@@ -31,7 +31,16 @@ val access = Opt( short = "a", long = "access", desc = "Show events with the spe
 val deltas = Opt( short = "d", long = "deltas", desc = "Show the complete modification history for each event" )
 
 val sqlite = Opt( short = "sqlite",  desc = "Connect to an SQLite audit database", argName = "<sqlite filepath>" )
-val userdb = Opt( short = "userdb",  desc = "Connect to an SQLite user database", argName = "<sqlite userdb filepath>" )
+val psql = Opt( short = "psql",  desc = "Connect to a PostgreSQL audit database", argName = "<postgres connection url>" )
+
+val userdbsqlite = Opt( short = "userdbsqlite",  desc = "Connect to an SQLite user database", argName = "<sqlite userdb filepath>" )
+val userdbpsql = Opt( short = "userdbpsql",  desc = "Connect to a PostgreSQL user database", argName = "<postgres userdb connection url>" )
+
+val dbuser = Opt( short = "dbuser",  desc = "Specify the database username", argName = "<username>" )
+val dbpass = Opt( short = "dbpass",  desc = "Specify the database password", argName = "<password>" )
+
+val useruser = Opt( short = "useruser",  desc = "Specify the user database username", argName = "<username>" )
+val userpass = Opt( short = "userpass",  desc = "Specify the user database password", argName = "<password>" )
 
 
 
@@ -58,7 +67,13 @@ class AuditManager{
         options.addOption( access.build() )
         options.addOption( systemInfo.build() )
         options.addOption( sqlite.build() )
-        options.addOption( userdb.build() )
+        options.addOption( psql.build() )
+        options.addOption( userdbsqlite.build() )
+        options.addOption( userdbpsql.build() )
+        options.addOption( dbuser.build() )
+        options.addOption( dbpass.build() )
+        options.addOption( useruser.build() )
+        options.addOption( userpass.build() )
     }
 
     private fun initDateTimeFormats(): List<DateTimeFormatter>{
@@ -90,8 +105,16 @@ class AuditManager{
                 username = username,
                 showDeltas = deltas.on(cmd),
                 showSystemInfo = systemInfo.on(cmd),
-                sqlite = sqlite.get(cmd),
-                sqliteUserdb = userdb.get(cmd)
+
+                sqliteAuditDB = sqlite.get(cmd),
+                psqlAuditDB = psql.get(cmd),
+                auditUser = dbuser.get(cmd),
+                auditPass = dbpass.get(cmd),
+
+                sqliteUserdb = userdbsqlite.get(cmd),
+                psqlUserdb = userdbpsql.get(cmd),
+                usersUser = useruser.get(cmd),
+                usersPass = userpass.get(cmd)
         )
     }
 
@@ -249,35 +272,27 @@ class AuditManager{
     }
 
     private fun connect( options: AuditManagerOptions ): AuditDB {
-        if( isBlank(options.sqlite) ){
-            throw Exception("Unable to connect to audit DB: no filepath specified")
+        if( !isBlank(options.sqliteAuditDB) ){
+            val file = File(options.sqliteAuditDB)
+            return AuditDB.SQLite(maxConnections = options.maxConnections, databaseFile = file, console = true)
+        }
+        if( !isBlank(options.psqlAuditDB) ){
+            return AuditDB.PostgreSQL(maxConnections = options.maxConnections, connectionURL = options.psqlAuditDB, username = options.auditUser, password = options.auditPass )
         }
 
-        val file = File(options.sqlite)
-//        if( !file.canWrite() ){
-//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be written to" )
-//        }
-//        else if( !file.canRead() ){
-//            throw Exception( "Unable to connect to audit DB: ${file.absolutePath} cannot be read" )
-//        }
-
-        return AuditDB.SQLite(maxConnections = options.maxConnections, databaseFile = file, console = true)
+        throw Exception("Unable to connect to audit DB: no connection criteria specified")
     }
 
     private fun connectUserDB(options: AuditManagerOptions): UserDB{
-        if( isBlank(options.sqlite) ){
-            throw Exception("Unable to connect to user DB: no filepath specified")
+        if( !isBlank(options.sqliteUserdb) ){
+            val file = File(options.sqliteUserdb )
+            return UserDB.SQLite(maxConnections = options.maxConnections, databaseFile = file)
+        }
+        else if( !isBlank(options.psqlUserdb) ){
+            return UserDB.PostgreSQL(maxConnections = options.maxConnections, connectionURL = options.psqlUserdb, username = options.auditUser, password = options.auditPass )
         }
 
-        val file = File(options.sqliteUserdb)
-//        if( !file.canWrite() ){
-//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be written to" )
-//        }
-//        else if( !file.canRead() ){
-//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be read" )
-//        }
-
-        return UserDB.SQLite( options.maxConnections, file, options.timeout )
+        throw Exception("Unable to connect to user DB: no connection criteria specified")
     }
 
     private fun help(){
@@ -345,8 +360,17 @@ data class AuditManagerOptions( val verbose: Boolean = false,
                                 val showSystemInfo: Boolean = false,
                                 val maxConnections: Int = 10,
                                 val timeout: Long = 60_000,
-                                val sqlite: String = "",
-                                val sqliteUserdb: String = ""){
+
+                                val sqliteAuditDB: String = "",
+                                val psqlAuditDB: String = "",
+                                val auditUser: String = "",
+                                val auditPass: String = "",
+
+                                val sqliteUserdb: String = "",
+                                val psqlUserdb: String = "",
+                                val usersUser: String = "",
+                                val usersPass: String = ""
+){
     fun shouldQuery(): Boolean{
         return start != null ||
                 end != null ||

@@ -356,19 +356,17 @@ class AccountManager{
     //
 
     private fun connectUserDB(options: AccountManagerOptions): UserDB {
-        if( isBlank(options.sqlite) ){
-            throw Exception("Unable to connect to user DB: no filepath specified")
+        if( options.userDB != null ) return options.userDB
+
+        if( !isBlank(options.sqlite) ){
+            val file = File(options.sqlite)
+            return UserDB.SQLite(maxConnections = options.maxConnections, databaseFile = file )
         }
-
-        val file = File(options.sqlite)
-//        if( !file.canWrite() ){
-//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be written to" )
-//        }
-//        else if( !file.canRead() ){
-//            throw Exception( "Unable to connect to user DB: ${file.absolutePath} cannot be read" )
-//        }
-
-        return UserDB.SQLite( options.maxConnections, file, options.timeout )
+        else if( !isBlank(options.psql) ){
+            return UserDB.PostgreSQL(maxConnections = options.maxConnections, connectionURL = options.psql, username = options.dbuser, password = options.dbpass )
+        }
+        
+        throw Exception("Unable to connect to user DB: no connection criteria specified")
     }
 }
 
@@ -378,5 +376,9 @@ data class AccountManagerOptions(
         val showManual: Boolean = false,
         val maxConnections: Int = 10,
         val timeout: Long = 60_000,
-        val sqlite: String = "" //path to the sqlite db file
+        val userDB: UserDB? = null,
+        val sqlite: String = "",
+        val psql: String = "",
+        val dbuser: String? = null,
+        val dbpass: String? = null
 )

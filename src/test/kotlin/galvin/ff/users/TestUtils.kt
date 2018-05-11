@@ -13,13 +13,25 @@ import java.util.*
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+val databases = listOf(
+        SqliteDbConnection(),
+        PsqlDbConnection()
+)
+
 interface DbConnection{
     fun canConnect(): Boolean
     fun randomAuditDB() : AuditDB
     fun randomUserDB(): UserDB
     fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB
+
+    fun userDbConnection(): UserDbConnection
+    fun auditDbConnection(): AuditDbConnection
+
     fun cleanup()
 }
+
+data class UserDbConnection(val userDB: UserDB, val connectionURL: String, val userName: String? = null, val password: String? = null)
+data class AuditDbConnection(val auditDB: AuditDB, val connectionURL: String, val userName: String? = null, val password: String? = null)
 
 class SqliteDbConnection: DbConnection{
     private val prefix = "featherfall_unit_test_"
@@ -32,11 +44,21 @@ class SqliteDbConnection: DbConnection{
 
     override fun randomAuditDB() : AuditDB  = AuditDB.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
 
+    override fun userDbConnection(): UserDbConnection{
+        val file = randomDbFile()
+        val userDB = UserDB.SQLite(databaseFile = file, maxConnections = 1)
+        return UserDbConnection(userDB = userDB, connectionURL = file.absolutePath)
+    }
+
+    override fun auditDbConnection(): AuditDbConnection{
+        val file = randomDbFile()
+        val auditDB = AuditDB.SQLite(databaseFile = file, maxConnections = 1)
+        return AuditDbConnection(auditDB = auditDB, connectionURL = file.absolutePath)
+    }
+
     override fun cleanup(){}
 
-    fun randomDbFile(): File {
-        return File( "target/$prefix${uuid()}.dat" )
-    }
+    fun randomDbFile(): File = File( "target/$prefix${uuid()}.dat" )
 }
 
 class PsqlDbConnection: DbConnection{
@@ -85,6 +107,20 @@ class PsqlDbConnection: DbConnection{
         val dbName = createRandom()
         val connectionURL = "jdbc:postgresql://localhost:5432/" + dbName
         return AccountRequestDB.PostgreSQL( userDB = userDB, maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password )
+    }
+
+    override fun userDbConnection(): UserDbConnection{
+        val dbName = createRandom()
+        val connectionURL = "jdbc:postgresql://localhost:5432/$dbName"
+        val userDB = UserDB.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
+        return UserDbConnection(userDB = userDB, connectionURL = connectionURL)
+    }
+
+    override fun auditDbConnection(): AuditDbConnection{
+        val dbName = createRandom()
+        val connectionURL = "jdbc:postgresql://localhost:5432/$dbName"
+        val auditDB = AuditDB.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
+        return AuditDbConnection(auditDB = auditDB, connectionURL = connectionURL, userName = username, password = password)
     }
 
     fun createRandom(): String{
@@ -283,6 +319,8 @@ fun randomSystemInfo(): SystemInfo {
             "uuid:" + uuid()
     )
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //

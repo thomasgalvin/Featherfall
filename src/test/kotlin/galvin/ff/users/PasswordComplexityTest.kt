@@ -1,4 +1,4 @@
-package galvin.ff.users.sqlite
+package galvin.ff.users
 
 import galvin.ff.PasswordRequirements
 import org.junit.Test
