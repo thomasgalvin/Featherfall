@@ -241,7 +241,25 @@ class PsqlAccountRequestDBTest {
         }
     }
 
-    @Test fun should_throw_when_user_already_exists() {
+    @Test fun should_throw_when_user_already_exists_by_login() {
+        if( !PSQL.canConnect() ) return
+        val( userDB, accountRequestDB, roles, _ ) = testObjects()
+
+        val user = generateUser(roles)
+        userDB.storeUser(user)
+
+        val request = generateAccountRequest(roles, uuid() ).withLogin( user.login )
+
+        try {
+            accountRequestDB.storeAccountRequest(request)
+            throw Exception("Error: Account Request database should have thrown an exception")
+        }
+        catch (e: Exception) {
+            Assert.assertEquals("UnexpectedException", e.message, ERROR_USER_WITH_THIS_LOGIN_ALREADY_EXISTS)
+        }
+    }
+
+    @Test fun should_throw_when_user_already_exists_by_uuid() {
         if( !PSQL.canConnect() ) return
         val( userDB, accountRequestDB, roles, _ ) = testObjects()
 

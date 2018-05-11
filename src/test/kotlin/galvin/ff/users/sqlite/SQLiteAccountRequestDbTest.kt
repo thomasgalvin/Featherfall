@@ -7,8 +7,7 @@ import java.io.File
 
 
 class SqliteAccountRequestDBTest {
-    @Test
-    fun should_not_create_tables_twice(){
+    @Test fun should_not_create_tables_twice(){
         val userDB = randomUserDB()
 
         val accountRequestDB = randomAccountRequestDB(userDB)
@@ -18,8 +17,7 @@ class SqliteAccountRequestDBTest {
         Assert.assertNotNull(accountRequestDB2)
     }
 
-    @Test
-    fun should_store_and_retrieve_account_request(){
+    @Test fun should_store_and_retrieve_account_request(){
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -29,8 +27,7 @@ class SqliteAccountRequestDBTest {
         Assert.assertEquals("Loaded account request did not match expected", request, loaded)
     }
 
-    @Test
-    fun should_store_and_retrieve_all_account_requests(){
+    @Test fun should_store_and_retrieve_all_account_requests(){
         val( _, accountRequestDB, roles, count ) = testObjects()
 
         val map = mutableMapOf<String, AccountRequest>()
@@ -53,8 +50,7 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_update_and_retrieve_account_request(){
+    @Test fun should_update_and_retrieve_account_request(){
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -69,8 +65,7 @@ class SqliteAccountRequestDBTest {
         Assert.assertEquals("Loaded account request did not match expected", updatedAccountRequest, loadedUpdate)
     }
 
-    @Test
-    fun should_update_multiple_account_requests(){
+    @Test fun should_update_multiple_account_requests(){
         val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
@@ -106,8 +101,7 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_approve_account_requests(){
+    @Test fun should_approve_account_requests(){
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -124,8 +118,7 @@ class SqliteAccountRequestDBTest {
         Assert.assertEquals( "Unexpected value for approved user", request.user, loaded.user )
     }
 
-    @Test
-    fun should_approve_multiple_account_requests(){
+    @Test fun should_approve_multiple_account_requests(){
         val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
@@ -159,8 +152,7 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_reject_account_requests(){
+    @Test fun should_reject_account_requests(){
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -179,8 +171,7 @@ class SqliteAccountRequestDBTest {
         Assert.assertEquals( "Unexpected value for rejected user", request.user, loaded.user )
     }
 
-    @Test
-    fun should_reject_multiple_account_requests(){
+    @Test fun should_reject_multiple_account_requests(){
         val( _, accountRequestDB, roles, count ) = testObjects()
 
         val requests = mutableListOf<AccountRequest>()
@@ -214,8 +205,7 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_passwords_mismatch() {
+    @Test fun should_throw_when_passwords_mismatch() {
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         try{
@@ -227,8 +217,7 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_no_account_request_exists_to_approve() {
+    @Test fun should_throw_when_no_account_request_exists_to_approve() {
         val( _, accountRequestDB, _, _ ) = testObjects()
 
         try {
@@ -240,8 +229,7 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_no_account_request_exists_to_reject() {
+    @Test fun should_throw_when_no_account_request_exists_to_reject() {
         val( _, accountRequestDB, _, _ ) = testObjects()
 
         try {
@@ -253,8 +241,7 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_user_already_exists() {
+    @Test fun should_throw_when_user_already_exists_by_uuid() {
         val( userDB, accountRequestDB, roles, _ ) = testObjects()
 
         val user = generateUser(roles)
@@ -271,8 +258,24 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_throw_when_rejecting_an_approved_account(){
+    @Test fun should_throw_when_user_already_exists_by_login() {
+        val( userDB, accountRequestDB, roles, _ ) = testObjects()
+
+        val user = generateUser(roles)
+        userDB.storeUser(user)
+
+        val request = generateAccountRequest(roles, uuid() ).withLogin( user.login )
+
+        try {
+            accountRequestDB.storeAccountRequest(request)
+            throw Exception("Error: Account Request database should have thrown an exception")
+        }
+        catch (e: Exception) {
+            Assert.assertEquals("UnexpectedException", e.message, ERROR_USER_WITH_THIS_LOGIN_ALREADY_EXISTS)
+        }
+    }
+
+    @Test fun should_throw_when_rejecting_an_approved_account(){
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val request = generateAccountRequest(roles)
@@ -288,8 +291,7 @@ class SqliteAccountRequestDBTest {
         }
     }
 
-    @Test
-    fun should_retrieve_by_status(){
+    @Test fun should_retrieve_by_status(){
         val( _, accountRequestDB, roles, _ ) = testObjects()
 
         val pending = mutableMapOf<String, AccountRequest>()

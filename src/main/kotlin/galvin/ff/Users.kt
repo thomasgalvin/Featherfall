@@ -9,6 +9,7 @@ import java.util.*
 const val ERROR_PASSWORD_MISMATCH = "Account Request error: password mismatch"
 const val ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID = "Account Request error: no account request with that UUID"
 const val ERROR_USER_WITH_THIS_UUID_ALREADY_EXISTS = "Account Request error: user with this UUID already exists"
+const val ERROR_USER_WITH_THIS_LOGIN_ALREADY_EXISTS = "Account Request error: user with this login already exists"
 const val ERROR_NO_USER_WITH_THIS_UUID_EXISTS = "Account Request error: no user with this UUID exists"
 const val ERROR_ALREADY_APPROVED = "Account Request error: this request was previously approved"
 
@@ -176,7 +177,11 @@ data class AccountRequest(
 
         //uuid
         val uuid: String = uuid()
-)
+){
+    fun withLogin(login: String): AccountRequest{
+        return copy( user = user.copy(login = login) )
+    }
+}
 
 data class Role( val name: String, val permissions: List<String> = listOf(), val active: Boolean = true )
 
@@ -1012,7 +1017,7 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
             throw Exception(ERROR_PASSWORD_MISMATCH)
         }
 
-        verifyNoUserExists(request.uuid)
+        verifyNoUserExists(request)
 
         synchronized(concurrencyLock) {
             accountRequestUserInfoDB.storeUser(request.user, request.uuid)
@@ -1108,12 +1113,12 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
     }
 
     override fun approve( uuid: String, approvedByUuid: String, timestamp: Long ){
-        verifyNoUserExists(uuid)
-
         val accountRequest = retrieveAccountRequest(uuid) ?: throw Exception( ERROR_NO_ACCOUNT_REQUEST_WITH_THAT_UUID )
         if( accountRequest.approved ){
             return
         }
+
+        verifyNoUserExists(accountRequest)
 
         synchronized(concurrencyLock) {
             val passwordHash = hash( accountRequest.password )
@@ -1165,9 +1170,13 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
         }
     }
 
-    private fun verifyNoUserExists( uuid: String ){
-        if( userDB.userExists(uuid) ){
+    private fun verifyNoUserExists( accountRequest: AccountRequest ){
+        if( userDB.userExists( accountRequest.uuid ) ){
             throw Exception( ERROR_USER_WITH_THIS_UUID_ALREADY_EXISTS )
+        }
+
+        if( userDB.userExistsByLogin( accountRequest.user.login ) ){
+            throw Exception( ERROR_USER_WITH_THIS_LOGIN_ALREADY_EXISTS )
         }
     }
 
