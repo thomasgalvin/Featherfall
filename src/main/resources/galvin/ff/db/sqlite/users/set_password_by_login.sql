@@ -1,1 +1,1 @@
-update Users set passwordHash = ? where login = ?
+update Users set passwordHash = ? where loginIgnoreCase = ?

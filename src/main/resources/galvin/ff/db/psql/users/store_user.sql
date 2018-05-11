@@ -1,5 +1,6 @@
 insert into Users(
     login,
+    loginIgnoreCase,
     passwordHash,
 
     name,
@@ -22,9 +23,10 @@ insert into Users(
 
     uuid
 )
-values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 on conflict(uuid) do update set
 login = excluded.login,
+loginIgnoreCase = excluded.loginIgnoreCase,
 passwordHash = excluded.passwordHash,
 
 name = excluded.name,

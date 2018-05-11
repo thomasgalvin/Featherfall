@@ -129,6 +129,8 @@ data class User(
         //roles
         val roles: List<String> = listOf()
 ){
+    val credentials: CertificateData get() = doGetCredentials()
+
     fun withoutPasswordHash(): User{
         return copy( passwordHash = null )
     }
@@ -143,7 +145,7 @@ data class User(
         )
     }
 
-    fun getCredentials(): CertificateData{
+    fun doGetCredentials(): CertificateData{
         return CertificateData(
                 credential = credential,
                 serialNumber = serialNumber,
@@ -500,23 +502,24 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
                 val statement = conn.prepareStatement(sqlStoreUser)
                 statement.setString(1, user.login)
-                statement.setString(2, user.passwordHash)
-                statement.setString(3, user.name)
-                statement.setString(4, user.displayName)
-                statement.setString(5, user.sortName)
-                statement.setString(6, user.prependToName)
-                statement.setString(7, user.appendToName)
-                statement.setString(8, user.credential)
-                statement.setString(9, user.serialNumber)
-                statement.setString(10, user.distinguishedName)
-                statement.setString(11, user.homeAgency)
-                statement.setString(12, user.agency)
-                statement.setString(13, user.countryCode)
-                statement.setString(14, user.citizenship)
-                statement.setLong(15, user.created)
-                statement.setInt(16, active)
-                statement.setInt(17, locked)
-                statement.setString(18, theUuid)
+                statement.setString(2, user.login.toLowerCase() )
+                statement.setString(3, user.passwordHash)
+                statement.setString(4, user.name)
+                statement.setString(5, user.displayName)
+                statement.setString(6, user.sortName)
+                statement.setString(7, user.prependToName)
+                statement.setString(8, user.appendToName)
+                statement.setString(9, user.credential)
+                statement.setString(10, user.serialNumber)
+                statement.setString(11, user.distinguishedName)
+                statement.setString(12, user.homeAgency)
+                statement.setString(13, user.agency)
+                statement.setString(14, user.countryCode)
+                statement.setString(15, user.citizenship)
+                statement.setLong(16, user.created)
+                statement.setInt(17, active)
+                statement.setInt(18, locked)
+                statement.setString(19, theUuid)
 
                 executeAndClose(statement)
 
@@ -600,7 +603,7 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     }
 
     override fun retrieveUserByLogin(login: String): User?{
-        return retrieveUserBy(sqlRetrieveUserByLogin, login)
+        return retrieveUserBy( sqlRetrieveUserByLogin, login.toLowerCase() )
     }
 
     override fun retrieveUserByLoginAndPassword(login: String, password: String): User?{
@@ -698,7 +701,7 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     }
 
     override fun retrieveUuidByLogin(login: String): String?{
-        return retrieveUuidBy(sqlRetrieveUuidByLogin, login)
+        return retrieveUuidBy( sqlRetrieveUuidByLogin, login.toLowerCase() )
     }
 
     override fun retrieveUuidBySerialNumber(serial: String): String?{
@@ -866,7 +869,7 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     }
 
     override fun setPasswordByLogin( login: String, plainTextPassword: String ){
-        setPasswordBy(sqlSetPasswordByLogin, login, plainTextPassword)
+        setPasswordBy(sqlSetPasswordByLogin, login.toLowerCase(), plainTextPassword)
     }
 
     private fun setPasswordBy( sql: String, uuid: String, plainTextPassword: String ){

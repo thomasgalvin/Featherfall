@@ -1,1 +1,1 @@
-select uuid from Users where login = ?
+select uuid from Users where loginIgnoreCase = ?

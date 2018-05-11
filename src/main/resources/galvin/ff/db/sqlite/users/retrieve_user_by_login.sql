@@ -1,1 +1,1 @@
-select * from Users where login = ?
+select * from Users where loginIgnoreCase = ?

@@ -1,5 +1,6 @@
 create table if not exists Users(
     login text not null,
+    loginIgnoreCase text not null,
     passwordHash text,
 
     name text not null,
