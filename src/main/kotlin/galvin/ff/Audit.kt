@@ -1,5 +1,6 @@
 package galvin.ff
 
+import galvin.ff.db.QuietCloser
 import galvin.ff.db.ConnectionManager
 import java.io.File
 import java.sql.Connection
@@ -214,7 +215,7 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
             commitAndClose(conn)
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -225,21 +226,23 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
             try {
                 val statement = conn.prepareStatement(sqlStoreSystemInfo)
 
-                statement.setString(1, systemInfo.serialNumber)
-                statement.setString(2, systemInfo.name)
-                statement.setString(3, systemInfo.version)
-                statement.setString(4, systemInfo.maximumClassification)
-                statement.setString(5, systemInfo.classificationGuide)
-                statement.setString(6, systemInfo.uuid)
+                try {
+                    statement.setString(1, systemInfo.serialNumber)
+                    statement.setString(2, systemInfo.name)
+                    statement.setString(3, systemInfo.version)
+                    statement.setString(4, systemInfo.maximumClassification)
+                    statement.setString(5, systemInfo.classificationGuide)
+                    statement.setString(6, systemInfo.uuid)
 
-                for ((ordinal, network) in systemInfo.networks.withIndex()) {
-                    storeNetwork(conn, systemInfo.uuid, network, ordinal)
-                }
+                    for((ordinal, network) in systemInfo.networks.withIndex()) {
+                        storeNetwork(conn, systemInfo.uuid, network, ordinal)
+                    }
 
-                executeAndClose(statement, conn)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
@@ -251,7 +254,7 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
         statement.setString(2, networkName)
         statement.setInt(3, ordinal)
 
-        executeAndClose( statement )
+        executeUpdateAndClose(statement )
     }
 
     override fun retrieveAllSystemInfo(): List<SystemInfo> {
@@ -259,20 +262,20 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
 
         try {
             val statement = conn.prepareStatement(sqlRetrieveAllSystemInfo)
-            val result = mutableListOf<SystemInfo>()
+            try {
+                val result = mutableListOf<SystemInfo>()
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                while (resultSet.next()) {
-                    result.add(unmarshalSystemInfo(resultSet, conn))
+                val resultSet = statement.executeQuery()
+                if(resultSet != null) {
+                    while(resultSet.next()) {
+                        result.add(unmarshalSystemInfo(resultSet, conn))
+                    }
                 }
-            }
-
-            close(conn, statement)
-            return result
+                return result
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -281,20 +284,20 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
 
         try {
             val statement = conn.prepareStatement(sqlRetrieveSystemInfoByUuid)
-            var result: SystemInfo? = null
+            try {
+                var result: SystemInfo? = null
 
-            statement.setString(1, uuid)
+                statement.setString(1, uuid)
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null && resultSet.next()) {
-                result = unmarshalSystemInfo(resultSet, conn)
-            }
-
-            close(conn, statement)
-            return result
+                val resultSet = statement.executeQuery()
+                if(resultSet != null && resultSet.next()) {
+                    result = unmarshalSystemInfo(resultSet, conn)
+                }
+                return result
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -311,16 +314,19 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                 }
 
                 val deleteStatement = conn.prepareStatement(sqlDeleteCurrentSystemInfo)
-                executeAndClose(deleteStatement)
-
                 val storeStatement = conn.prepareStatement(sqlSetCurrentSystemInfo)
-                storeStatement.setString(1, uuid)
-                executeAndClose(storeStatement)
 
-                commitAndClose(conn)
+                try {
+                    executeUpdateAndClose(deleteStatement)
+
+                    storeStatement.setString(1, uuid)
+                    executeUpdateAndClose(storeStatement)
+
+                    commitAndClose(conn)
+                } finally{ QuietCloser.close(deleteStatement, storeStatement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
@@ -336,18 +342,17 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
 
         try {
             val statement = conn.prepareStatement(sqlRetrieveCurrentSystemInfo)
-            val resultSet = statement.executeQuery()
-            if ( resultSet != null && resultSet.next() ) {
-                val result = resultSet.getString("uuid")
-                close(conn, statement)
-                return result
-            }
-            else{
-                close(conn, statement)
-            }
+            try {
+                val resultSet = statement.executeQuery()
+                try {
+                    if(resultSet != null && resultSet.next()) {
+                        return resultSet.getString("uuid")
+                    }
+                } finally{ QuietCloser.close(resultSet) }
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
 
         return ""
@@ -368,16 +373,19 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
         )
 
         val statement = conn.prepareStatement(sqlRetrieveSystemInfoNetworks)
-        statement.setString(1, uuid)
+        try{
+            statement.setString(1, uuid)
 
-        val networkHits = statement.executeQuery()
-        if( networkHits != null ){
-            while( networkHits.next() ){
-                networks.add( networkHits.getString(1) )
-            }
-        }
+            val networkHits = statement.executeQuery()
+            try {
+                if(networkHits != null) {
+                    while(networkHits.next()) {
+                        networks.add(networkHits.getString(1))
+                    }
+                }
+            } finally{ QuietCloser.close(networkHits) }
+        } finally{ QuietCloser.close(statement) }
 
-        statement.close()
         return result
     }
 
@@ -387,32 +395,34 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
 
             try {
                 val statement = conn.prepareStatement(sqlStoreAccessInfo)
-                val accessGranted = if (access.permissionGranted) 1 else 0
+                try {
+                    val accessGranted = if(access.permissionGranted) 1 else 0
 
-                statement.setString(1, access.userUuid)
-                statement.setString(2, access.loginType.name)
-                statement.setString(3, access.loginProxyUuid)
-                statement.setString(4, access.ipAddress)
-                statement.setLong(5, access.timestamp)
-                statement.setString(6, access.resourceUuid)
-                statement.setString(7, access.resourceName)
-                statement.setString(8, access.classification)
-                statement.setString(9, access.resourceType)
-                statement.setInt(10, access.accessType.ordinal)
-                statement.setInt(11, accessGranted)
-                statement.setString(12, access.systemInfoUuid)
-                statement.setString(13, access.uuid)
+                    statement.setString(1, access.userUuid)
+                    statement.setString(2, access.loginType.name)
+                    statement.setString(3, access.loginProxyUuid)
+                    statement.setString(4, access.ipAddress)
+                    statement.setLong(5, access.timestamp)
+                    statement.setString(6, access.resourceUuid)
+                    statement.setString(7, access.resourceName)
+                    statement.setString(8, access.classification)
+                    statement.setString(9, access.resourceType)
+                    statement.setInt(10, access.accessType.ordinal)
+                    statement.setInt(11, accessGranted)
+                    statement.setString(12, access.systemInfoUuid)
+                    statement.setString(13, access.uuid)
 
-                executeAndClose(statement)
+                    executeUpdateAndClose(statement)
 
-                for ((ordinal, mod) in access.modifications.withIndex()) {
-                    storeMod(conn, access.uuid, mod, ordinal)
-                }
+                    for((ordinal, mod) in access.modifications.withIndex()) {
+                        storeMod(conn, access.uuid, mod, ordinal)
+                    }
 
-                commitAndClose(conn)
+                    commitAndClose(conn)
+                } finally { QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
 
@@ -421,14 +431,16 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
 
     private fun storeMod(conn: Connection, accessInfoUuid: String, mod: Modification, ordinal: Int ){
         val statement = conn.prepareStatement(sqlStoreAccessInfoMod)
+        try {
 
-        statement.setString(1, mod.field)
-        statement.setString(2, mod.oldValue)
-        statement.setString(3, mod.newValue)
-        statement.setString(4, accessInfoUuid)
-        statement.setInt(5, ordinal)
+            statement.setString(1, mod.field)
+            statement.setString(2, mod.oldValue)
+            statement.setString(3, mod.newValue)
+            statement.setString(4, accessInfoUuid)
+            statement.setInt(5, ordinal)
 
-        executeAndClose( statement )
+            executeUpdateAndClose(statement)
+        } finally { QuietCloser.close(statement) }
     }
 
     override fun retrieveAccessInfo( systemInfoUuid: String?,
@@ -474,49 +486,53 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
         val conn = conn()
         try {
             val statement = conn.prepareStatement(sql.toString())
+            try{
 
-            var index = 1
+                var index = 1
 
-            if (systemInfoUuid != null) {
-                statement.setString(index, systemInfoUuid)
-                index++
-            }
+                if (systemInfoUuid != null) {
+                    statement.setString(index, systemInfoUuid)
+                    index++
+                }
 
-            if( userUuid != null ){
-                statement.setString(index, userUuid)
-                index++
-            }
+                if( userUuid != null ){
+                    statement.setString(index, userUuid)
+                    index++
+                }
 
-            if (startTimestamp != null) {
-                statement.setLong(index, startTimestamp)
-                index++
-            }
+                if (startTimestamp != null) {
+                    statement.setLong(index, startTimestamp)
+                    index++
+                }
 
-            if (endTimestamp != null) {
-                statement.setLong(index, endTimestamp)
-                index++
-            }
+                if (endTimestamp != null) {
+                    statement.setLong(index, endTimestamp)
+                    index++
+                }
 
-            if (accessType != null) {
-                statement.setInt(index, accessType.ordinal)
-                index++
-            }
+                if (accessType != null) {
+                    statement.setInt(index, accessType.ordinal)
+                    index++
+                }
 
-            if (permissionGranted != null) {
-                statement.setInt(index, if (permissionGranted) 1 else 0)
-            }
+                if (permissionGranted != null) {
+                    statement.setInt(index, if (permissionGranted) 1 else 0)
+                }
 
-            val result = mutableListOf<AccessInfo>()
-            val resultSet = statement.executeQuery()
-            while (resultSet.next()) {
-                result.add(unmarshalAccessInfo(resultSet, conn))
-            }
+                val result = mutableListOf<AccessInfo>()
+                val resultSet = statement.executeQuery()
+                try {
+                    while(resultSet.next()) {
+                        result.add(unmarshalAccessInfo(resultSet, conn))
+                    }
+                } finally { QuietCloser.close(resultSet) }
 
-            close(conn, statement)
-            return result
+                return result
+            } finally { QuietCloser.close(statement) }
+
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
 
     }
@@ -532,35 +548,39 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
         val mods = mutableListOf<Modification>()
 
         val statement = conn.prepareStatement(sqlRetrieveAccessInfoMods)
-        statement.setString(1, uuid)
+        try {
+            statement.setString(1, uuid)
 
-        val modHits = statement.executeQuery()
-        if( modHits != null){
-            while( modHits.next() ){
-                mods.add( Modification(
-                        modHits.getString("field"),
-                        modHits.getString("oldValue"),
-                        modHits.getString("newValue")
-                ))
-            }
-        }
+            val modHits = statement.executeQuery()
+            try {
+                if(modHits != null) {
+                    while(modHits.next()) {
+                        mods.add(Modification(
+                                modHits.getString("field"),
+                                modHits.getString("oldValue"),
+                                modHits.getString("newValue")
+                        ))
+                    }
+                }
+            } finally{ QuietCloser.close(modHits) }
 
-        return AccessInfo(
-                hit.getString("userUuid"),
-                loginType,
-                hit.getString("loginProxyUuid"),
-                hit.getString("ipAddress"),
-                hit.getLong("timestamp"),
-                hit.getString("resourceUuid"),
-                hit.getString("resourceName"),
-                hit.getString("classification"),
-                hit.getString("resourceType"),
-                accessType,
-                permissionGranted,
-                hit.getString("systemInfoUuid"),
-                mods,
-                uuid
-        )
+            return AccessInfo(
+                    hit.getString("userUuid"),
+                    loginType,
+                    hit.getString("loginProxyUuid"),
+                    hit.getString("ipAddress"),
+                    hit.getLong("timestamp"),
+                    hit.getString("resourceUuid"),
+                    hit.getString("resourceName"),
+                    hit.getString("classification"),
+                    hit.getString("resourceType"),
+                    accessType,
+                    permissionGranted,
+                    hit.getString("systemInfoUuid"),
+                    mods,
+                    uuid
+            )
+        } finally{ QuietCloser.close(statement) }
     }
 
     override fun toAuditEvent( userDB: UserDB, accessInfo: List<AccessInfo> ): List<AuditEvent>{

@@ -40,9 +40,9 @@ class ConnectionManager(val maxConnections: Int,
         conn.autoCommit = true
         try {
             val statement = conn.prepareStatement(sql)
-            statement.executeUpdate()
-            statement.close()
-            conn.close()
+
+            try{ statement.executeUpdate() }
+            finally{ QuietCloser.close(statement, conn) }
         }
         finally{
             release(conn)
@@ -68,9 +68,7 @@ class ConnectionManager(val maxConnections: Int,
 
     fun release(conn: Connection?) {
         try {
-            if (conn != null && !conn.isClosed) {
-                conn.close()
-            }
+            QuietCloser.close(conn)
         } catch (t: Throwable) {
             logger.debug(t.message, t)
             throw DatabaseError("Error returning database connection", t)

@@ -1,5 +1,6 @@
 package galvin.ff
 
+import galvin.ff.db.QuietCloser
 import galvin.ff.db.ConnectionManager
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormatter
@@ -56,7 +57,6 @@ fun loadFromClasspathOrThrow(classpathEntry: String ): String{
     return result
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Database utility code
@@ -65,39 +65,43 @@ fun loadFromClasspathOrThrow(classpathEntry: String ): String{
 
 fun executeUpdate(conn: Connection, sql: String ){
     val statement = conn.prepareStatement(sql)
-    statement.executeUpdate()
+    try{ statement.executeUpdate() }
+    finally{ QuietCloser.close(statement) }
 }
 
-fun executeAndClose(statement: PreparedStatement? = null, conn: Connection? = null){
+fun executeUpdateAndClose(statement: PreparedStatement? = null, conn: Connection? = null){
     if( statement != null ) {
-        statement.executeUpdate()
-        statement.close()
+        try{ statement.executeUpdate() }
+        finally{ QuietCloser.close(statement) }
     }
 
     if( conn != null ) {
-        conn.commit()
-        conn.close()
+        try{ conn.commit() }
+        finally{ QuietCloser.close(conn) }
     }
 }
 
-fun commitAndClose(conn: Connection){
-    conn.commit()
-    conn.close()
+fun commitAndClose(conn: Connection, rollbackOnError: Boolean = true){
+    try{ conn.commit() }
+    catch(t: Throwable){
+        if(rollbackOnError){ conn.rollback() }
+        throw t
+    }
+    finally{ QuietCloser.close(conn) }
 }
 
-fun close( conn: Connection, statement: PreparedStatement){
-    statement.close()
-    conn.close()
-}
+//fun close( conn: Connection, statement: PreparedStatement ){
+//    QuietCloser.close(statement, conn)
+//}
 
 /**
  * If the connection is not null and is still open,
  * calls rollback() and then close()
  */
-fun rollbackAndClose( conn: Connection?, connectionManager: ConnectionManager? = null ){
+fun rollbackCloseAndRelease(conn: Connection?, connectionManager: ConnectionManager? = null ){
     if( conn != null && !conn.isClosed ){
-        conn.rollback()
-        conn.close()
+        try{ conn.rollback() }
+        finally{ QuietCloser.close(conn) }
     }
 
     if( connectionManager != null ){

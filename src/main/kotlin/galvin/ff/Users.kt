@@ -1,5 +1,6 @@
 package galvin.ff
 
+import galvin.ff.db.QuietCloser
 import galvin.ff.db.ConnectionManager
 import java.io.File
 import java.sql.Connection
@@ -331,7 +332,7 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
             commitAndClose(conn)
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -345,33 +346,37 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
             try {
                 val deletePermissionsStatement = conn.prepareStatement(sqlDeleteRolePermissions)
-                deletePermissionsStatement.setString(1, role.name)
-                executeAndClose(deletePermissionsStatement)
-
                 val deleteRoleStatement = conn.prepareStatement(sqlDeleteRole)
-                deleteRoleStatement.setString(1, role.name)
-                executeAndClose(deleteRoleStatement)
+                val storeStatement = conn.prepareStatement(sqlStoreRole)
 
-                val active = if (role.active) 1 else 0
+                try {
+                    deletePermissionsStatement.setString(1, role.name)
+                    executeUpdateAndClose(deletePermissionsStatement)
 
-                val statement = conn.prepareStatement(sqlStoreRole)
-                statement.setString(1, role.name)
-                statement.setInt(2, active)
-                executeAndClose(statement)
 
-                for ((ordinal, permission) in role.permissions.withIndex()) {
-                    val permStatement = conn.prepareStatement(sqlStoreRolePermission)
-                    permStatement.setString(1, role.name)
-                    permStatement.setString(2, permission)
-                    permStatement.setInt(3, ordinal)
+                    deleteRoleStatement.setString(1, role.name)
+                    executeUpdateAndClose(deleteRoleStatement)
 
-                    executeAndClose(permStatement)
-                }
+                    val active = if(role.active) 1 else 0
+                    storeStatement.setString(1, role.name)
+                    storeStatement.setInt(2, active)
+                    executeUpdateAndClose(storeStatement)
 
-                commitAndClose(conn)
+                    for((ordinal, permission) in role.permissions.withIndex()) {
+                        val permStatement = conn.prepareStatement(sqlStoreRolePermission)
+                        try {
+                            permStatement.setString(1, role.name)
+                            permStatement.setString(2, permission)
+                            permStatement.setInt(3, ordinal)
+                            executeUpdateAndClose(permStatement)
+                        } finally{ QuietCloser.close(permStatement) }
+                    }
+
+                    commitAndClose(conn)
+                } finally{ QuietCloser.close(deletePermissionsStatement, deleteRoleStatement, storeStatement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
@@ -390,62 +395,63 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
             try {
                 val statement = conn.prepareStatement(sqlSetRoleActive)
+                try {
+                    val value = if(active) 1 else 0
+                    statement.setInt(1, value)
+                    statement.setString(2, roleName)
 
-                val value = if (active) 1 else 0
-                statement.setInt(1, value)
-                statement.setString(2, roleName)
-
-                executeAndClose(statement, conn)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
 
     override fun listRoles(): List<Role>{
         val conn = conn()
-
         try{
-            val statement = conn.prepareStatement(sqlRetrieveAllRoles)
             val result = mutableListOf<Role>()
-
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                while (resultSet.next()) {
-                    result.add(unmarshalRole(resultSet, conn))
+            val statement = conn.prepareStatement(sqlRetrieveAllRoles)
+            try {
+                val resultSet = statement.executeQuery()
+                if(resultSet != null) {
+                    while(resultSet.next()) {
+                        result.add(unmarshalRole(resultSet, conn))
+                    }
                 }
-            }
-
-            close(conn, statement)
-            return result
+                return result
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
     override fun retrieveRole(name: String): Role?{
         val conn = conn()
-
         try{
             val statement = conn.prepareStatement(sqlRetrieveRoleByUuid)
-            statement.setString(1, name)
+            try {
+                statement.setString(1, name)
 
-            var result: Role? = null
+                var result: Role? = null
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                if (resultSet.next()) {
-                    result = unmarshalRole(resultSet, conn)
-                }
-            }
+                val resultSet = statement.executeQuery()
+                try {
+                    if(resultSet != null) {
+                        if(resultSet.next()) {
+                            result = unmarshalRole(resultSet, conn)
+                        }
+                    }
+                } finally{ QuietCloser.close(resultSet) }
 
-            close(conn, statement)
-            return result
+                return result
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -455,24 +461,27 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
         val permissions = mutableListOf<String>()
 
         val statement = conn.prepareStatement(sqlRetrieveRolePermissions)
-        statement.setString(1, name)
+        try {
+            statement.setString(1, name)
 
-        val permissionHits = statement.executeQuery()
-        if( permissionHits != null ){
-            while( permissionHits.next() ){
-                permissions.add( permissionHits.getString(1) )
-            }
-        }
+            val permissionHits = statement.executeQuery()
+            try {
+                if(permissionHits != null) {
+                    while(permissionHits.next()) {
+                        permissions.add(permissionHits.getString(1))
+                    }
+                }
+            } finally{ QuietCloser.close(permissionHits) }
 
-        statement.close()
-        return Role(name, permissions, active)
+            return Role(name, permissions, active)
+        } finally{ QuietCloser.close(statement) }
     }
 
     override fun retrievePermissions( roleNames: List<String>): List<String>{
         val result = mutableListOf<String>()
 
         for( roleName in roleNames ){
-            val role = retrieveRole(roleName)
+            val role = retrieveRole(roleName) //TODO: reuse a single connection for this
             if( role != null ){
                 for( permission in role.permissions ){
                     if( !isBlank(permission) ){
@@ -498,66 +507,70 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
             try {
                 val delContactStatement = conn.prepareStatement(sqlDeleteContactInfoForUser)
-                delContactStatement.setString(1, theUuid)
-                executeAndClose(delContactStatement)
-
                 val delRolesStatement = conn.prepareStatement(sqlDeleteRolesForUser)
-                delRolesStatement.setString(1, theUuid)
-                executeAndClose(delRolesStatement)
+                val storeStatement = conn.prepareStatement(sqlStoreUser)
 
-                val active = if (user.active) 1 else 0
-                val locked = if (user.locked) 1 else 0
+                try {
+                    delContactStatement.setString(1, theUuid)
+                    executeUpdateAndClose(delContactStatement)
 
-                val statement = conn.prepareStatement(sqlStoreUser)
-                statement.setString(1, user.login)
-                statement.setString(2, user.login.toLowerCase() )
-                statement.setString(3, user.passwordHash)
-                statement.setString(4, user.name)
-                statement.setString(5, user.displayName)
-                statement.setString(6, user.sortName)
-                statement.setString(7, user.prependToName)
-                statement.setString(8, user.appendToName)
-                statement.setString(9, user.credential)
-                statement.setString(10, user.serialNumber)
-                statement.setString(11, user.distinguishedName)
-                statement.setString(12, user.homeAgency)
-                statement.setString(13, user.agency)
-                statement.setString(14, user.countryCode)
-                statement.setString(15, user.citizenship)
-                statement.setLong(16, user.created)
-                statement.setInt(17, active)
-                statement.setInt(18, locked)
-                statement.setString(19, theUuid)
+                    delRolesStatement.setString(1, theUuid)
+                    executeUpdateAndClose(delRolesStatement)
 
-                executeAndClose(statement)
+                    val active = if (user.active) 1 else 0
+                    val locked = if (user.locked) 1 else 0
 
-                for ((ordinal, contact) in user.contact.withIndex()) {
-                    val isPrimary = if (contact.primary) 1 else 0
+                    storeStatement.setString(1, user.login)
+                    storeStatement.setString(2, user.login.toLowerCase())
+                    storeStatement.setString(3, user.passwordHash)
+                    storeStatement.setString(4, user.name)
+                    storeStatement.setString(5, user.displayName)
+                    storeStatement.setString(6, user.sortName)
+                    storeStatement.setString(7, user.prependToName)
+                    storeStatement.setString(8, user.appendToName)
+                    storeStatement.setString(9, user.credential)
+                    storeStatement.setString(10, user.serialNumber)
+                    storeStatement.setString(11, user.distinguishedName)
+                    storeStatement.setString(12, user.homeAgency)
+                    storeStatement.setString(13, user.agency)
+                    storeStatement.setString(14, user.countryCode)
+                    storeStatement.setString(15, user.citizenship)
+                    storeStatement.setLong(16, user.created)
+                    storeStatement.setInt(17, active)
+                    storeStatement.setInt(18, locked)
+                    storeStatement.setString(19, theUuid)
+                    executeUpdateAndClose(storeStatement)
 
-                    val contactStatement = conn.prepareStatement(sqlStoreUserContactInfo)
-                    contactStatement.setString(1, contact.type)
-                    contactStatement.setString(2, contact.description)
-                    contactStatement.setString(3, contact.contact)
-                    contactStatement.setInt(4, isPrimary)
-                    contactStatement.setString(5, theUuid)
-                    contactStatement.setInt(6, ordinal)
+                    for ((ordinal, contact) in user.contact.withIndex()) {
+                        val isPrimary = if (contact.primary) 1 else 0
 
-                    executeAndClose(contactStatement)
-                }
+                        val contactStatement = conn.prepareStatement(sqlStoreUserContactInfo)
+                        try {
+                            contactStatement.setString(1, contact.type)
+                            contactStatement.setString(2, contact.description)
+                            contactStatement.setString(3, contact.contact)
+                            contactStatement.setInt(4, isPrimary)
+                            contactStatement.setString(5, theUuid)
+                            contactStatement.setInt(6, ordinal)
+                            executeUpdateAndClose(contactStatement)
+                        } finally{ QuietCloser.close(contactStatement) }
+                    }
 
-                for ((ordinal, role) in user.roles.withIndex()) {
-                    val roleStatement = conn.prepareStatement(sqlStoreUserRole)
-                    roleStatement.setString(1, role)
-                    roleStatement.setString(2, theUuid)
-                    roleStatement.setInt(3, ordinal)
+                    for ((ordinal, role) in user.roles.withIndex()) {
+                        val roleStatement = conn.prepareStatement(sqlStoreUserRole)
+                        try {
+                            roleStatement.setString(1, role)
+                            roleStatement.setString(2, theUuid)
+                            roleStatement.setInt(3, ordinal)
+                            executeUpdateAndClose(roleStatement)
+                        } finally{ QuietCloser.close(roleStatement) }
+                    }
 
-                    executeAndClose(roleStatement)
-                }
-
-                commitAndClose(conn)
+                    commitAndClose(conn)
+                } finally{ QuietCloser.close(delContactStatement, delRolesStatement, storeStatement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
@@ -583,22 +596,24 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
             val result = mutableListOf<User>()
 
             val statement = conn.prepareStatement(sql)
-            if( intFlag != null){
-                statement.setInt(1, intFlag)
-            }
-
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                while (resultSet.next()) {
-                    result.add(unmarshalUser(resultSet, conn))
+            try {
+                if(intFlag != null) {
+                    statement.setInt(1, intFlag)
                 }
-            }
 
-            close(conn, statement)
-            return result
+                val resultSet = statement.executeQuery()
+                try {
+                    if(resultSet != null) {
+                        while(resultSet.next()) {
+                            result.add(unmarshalUser(resultSet, conn))
+                        }
+                    }
+                    return result
+                } finally{ QuietCloser.close(resultSet) }
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -629,22 +644,24 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
         val conn = conn()
 
         try {
-            var result: User? = null
             val statement = conn.prepareStatement(sql)
-            statement.setString(1, value)
+            try {
+                statement.setString(1, value)
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                if (resultSet.next()) {
-                    result = unmarshalUser(resultSet, conn)
-                }
-            }
+                val resultSet = statement.executeQuery()
+                try {
+                    if(resultSet != null) {
+                        if(resultSet.next()) {
+                            return unmarshalUser(resultSet, conn)
+                        }
+                    }
+                } finally{ QuietCloser.close(resultSet) }
 
-            close(conn, statement)
-            return result
+                return null
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -657,47 +674,52 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
         val locked = hit.getInt("locked") != 0
 
         val contactStatement = conn.prepareStatement(sqlRetrieveContactInfoForUser )
-        contactStatement.setString(1, uuid)
-        val conHits = contactStatement.executeQuery()
-        if( conHits != null ){
-            while( conHits.next() ){
-                contact.add( unmarshalContact(conHits) )
-            }
-        }
-        contactStatement.close()
-
         val roleStatement = conn.prepareStatement(sqlRetrieveRolesForUser)
-        roleStatement.setString(1, uuid)
-        val roleHits = roleStatement.executeQuery()
-        if( roleHits != null ){
-            while( roleHits.next() ){
-                roles.add( roleHits.getString(1) )
-            }
-        }
-        roleStatement.close()
+        try {
 
-        return User(
-                login = hit.getString("login"),
-                passwordHash = hit.getString("passwordHash"),
-                name = hit.getString("name"),
-                displayName = hit.getString("displayName"),
-                sortName = hit.getString("sortName"),
-                prependToName = hit.getString("prependToName"),
-                appendToName = hit.getString("appendToName"),
-                credential = hit.getString("credential"),
-                serialNumber = hit.getString("serialNumber"),
-                distinguishedName = hit.getString("distinguishedName"),
-                homeAgency = hit.getString("homeAgency"),
-                agency = hit.getString("agency"),
-                countryCode = hit.getString("countryCode"),
-                citizenship = hit.getString("citizenship"),
-                created = hit.getLong("created"),
-                active = active,
-                locked = locked,
-                uuid = uuid,
-                contact = contact,
-                roles = roles
-        )
+            contactStatement.setString(1, uuid)
+            val conHits = contactStatement.executeQuery()
+            try {
+                if(conHits != null) {
+                    while(conHits.next()) {
+                        contact.add(unmarshalContact(conHits))
+                    }
+                }
+            } finally{ QuietCloser.close(conHits) }
+
+            roleStatement.setString(1, uuid)
+            val roleHits = roleStatement.executeQuery()
+            try {
+                if(roleHits != null) {
+                    while(roleHits.next()) {
+                        roles.add(roleHits.getString(1))
+                    }
+                }
+            } finally{ QuietCloser.close(conHits) }
+
+            return User(
+                    login = hit.getString("login"),
+                    passwordHash = hit.getString("passwordHash"),
+                    name = hit.getString("name"),
+                    displayName = hit.getString("displayName"),
+                    sortName = hit.getString("sortName"),
+                    prependToName = hit.getString("prependToName"),
+                    appendToName = hit.getString("appendToName"),
+                    credential = hit.getString("credential"),
+                    serialNumber = hit.getString("serialNumber"),
+                    distinguishedName = hit.getString("distinguishedName"),
+                    homeAgency = hit.getString("homeAgency"),
+                    agency = hit.getString("agency"),
+                    countryCode = hit.getString("countryCode"),
+                    citizenship = hit.getString("citizenship"),
+                    created = hit.getLong("created"),
+                    active = active,
+                    locked = locked,
+                    uuid = uuid,
+                    contact = contact,
+                    roles = roles
+            )
+        } finally{ QuietCloser.close(contactStatement, roleStatement ) }
     }
 
     override fun retrieveUuid(key: String): String?{
@@ -720,21 +742,21 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
         val conn = conn()
 
         try {
-            var result: String? = null
-
             val statement = conn.prepareStatement(sql)
-            statement.setString(1, key)
+            try {
+                statement.setString(1, key)
+                val results = statement.executeQuery()
+                try {
+                    if(results.next()) {
+                        return results.getString("uuid")
+                    }
+                } finally{ QuietCloser.close(results) }
 
-            val results = statement.executeQuery()
-            if (results.next()) {
-                result = results.getString("uuid")
-            }
-
-            close(conn, statement)
-            return result
+                return null
+            }finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -761,14 +783,15 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
         try {
             val statement = conn.prepareStatement(sql)
-            statement.setString(1, value)
-            val resultSet = statement.executeQuery()
-            val exists = resultSet.next()
-            close(conn, statement)
-            return exists
+            try {
+                statement.setString(1, value)
+                val resultSet = statement.executeQuery()
+                try{ return resultSet.next() }
+                finally{ QuietCloser.close(resultSet) }
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -786,13 +809,15 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
             try {
                 val statement = conn.prepareStatement(sql)
-                val lockedValue = if (locked) 1 else 0
-                statement.setInt(1, lockedValue)
-                statement.setString(2, key)
-                executeAndClose(statement, conn)
+                try {
+                    val lockedValue = if(locked) 1 else 0
+                    statement.setInt(1, lockedValue)
+                    statement.setString(2, key)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
@@ -809,20 +834,22 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
         val conn = conn()
 
         try {
-            var result = false
             val statement = conn.prepareStatement(sql)
-            statement.setString(1, key)
-            val results = statement.executeQuery()
-            if (results.next()) {
-                val locked = results.getInt("locked")
-                result = locked != 0
-            }
+            try {
+                statement.setString(1, key)
+                val results = statement.executeQuery()
+                try {
+                    if(results.next()) {
+                        val locked = results.getInt("locked")
+                        return locked != 0
+                    }
+                } finally{ QuietCloser.close(results) }
 
-            close(conn, statement)
-            return result
+                return false
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -840,13 +867,15 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
             try {
                 val statement = conn.prepareStatement(sql)
-                val activeValue = if (active) 1 else 0
-                statement.setInt(1, activeValue)
-                statement.setString(2, key)
-                executeAndClose(statement, conn)
+                try {
+                    val activeValue = if(active) 1 else 0
+                    statement.setInt(1, activeValue)
+                    statement.setString(2, key)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
@@ -863,20 +892,22 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
         val conn = conn()
 
         try {
-            var result = false
             val statement = conn.prepareStatement(sql)
-            statement.setString(1, key)
-            val results = statement.executeQuery()
-            if (results.next()) {
-                val active = results.getInt("active")
-                result = active != 0
-            }
+            try {
+                statement.setString(1, key)
+                val results = statement.executeQuery()
+                try {
+                    if(results.next()) {
+                        val active = results.getInt("active")
+                        return active != 0
+                    }
+                } finally{ QuietCloser.close(results) }
 
-            close(conn, statement)
-            return result
+                return false
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -895,33 +926,36 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
             try {
                 val statement = conn.prepareStatement(sql)
-                statement.setString(1, hash)
-                statement.setString(2, uuid)
-                executeAndClose(statement, conn)
+                try {
+                    statement.setString(1, hash)
+                    statement.setString(2, uuid)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
 
     override fun retrievePasswordHash(uuid: String): String{
         val conn = conn()
-
         try {
-            var result = ""
             val statement = conn.prepareStatement(sqlRetrievePasswordHashByUuid)
-            statement.setString(1, uuid)
-            val results = statement.executeQuery()
-            if (results.next()) {
-                result = results.getString("passwordHash")
-            }
+            try {
+                statement.setString(1, uuid)
+                val results = statement.executeQuery()
+                try {
+                    if(results.next()) {
+                        return results.getString("passwordHash")
+                    }
+                } finally{ QuietCloser.close(results) }
+            } finally{ QuietCloser.close(statement) }
 
-            close(conn, statement)
-            return result
+            return ""
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -937,47 +971,48 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sqlUpdateCredentialsByUuid)
-                statement.setString(1, credentials.credential)
-                statement.setString(2, credentials.serialNumber)
-                statement.setString(3, credentials.distinguishedName)
-                statement.setString(4, credentials.countryCode)
-                statement.setString(5, credentials.citizenship)
-                statement.setString(6, uuid)
-                executeAndClose(statement, conn)
+                try {
+                    statement.setString(1, credentials.credential)
+                    statement.setString(2, credentials.serialNumber)
+                    statement.setString(3, credentials.distinguishedName)
+                    statement.setString(4, credentials.countryCode)
+                    statement.setString(5, credentials.citizenship)
+                    statement.setString(6, uuid)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
 
     override fun retrieveCredentials( uuid: String ): CertificateData?{
         val conn = conn()
-
         try {
-            var result: CertificateData? = null
-
             val statement = conn.prepareStatement(sqlRetrieveCredentialsByUuid)
-            statement.setString(1, uuid)
-            val results = statement.executeQuery()
-            if (results.next()) {
-                result = CertificateData(
-                        credential = results.getString("credential"),
-                        serialNumber = results.getString("serialNumber"),
-                        distinguishedName = results.getString("distinguishedName"),
-                        countryCode = results.getString("countryCode"),
-                        citizenship = results.getString("citizenship")
-                )
-            }
+            try {
+                statement.setString(1, uuid)
+                val results = statement.executeQuery()
+                try {
+                    if(results.next()) {
+                        return CertificateData(
+                                credential = results.getString("credential"),
+                                serialNumber = results.getString("serialNumber"),
+                                distinguishedName = results.getString("distinguishedName"),
+                                countryCode = results.getString("countryCode"),
+                                citizenship = results.getString("citizenship")
+                        )
+                    }
+                } finally{ QuietCloser.close(results) }
 
-            close(conn, statement)
-            return result
+                return null
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 }
@@ -1008,7 +1043,7 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
             commitAndClose(conn)
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -1023,53 +1058,54 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
             accountRequestUserInfoDB.storeUser(request.user, request.uuid)
 
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sqlStoreAccountRequest)
-                val approved = if (request.approved) 1 else 0
-                val rejected = if (request.rejected) 1 else 0
+                try {
+                    val approved = if(request.approved) 1 else 0
+                    val rejected = if(request.rejected) 1 else 0
 
-                statement.setString(1, request.password)
-                statement.setString(2, request.reasonForAccount)
-                statement.setString(3, request.vouchName)
-                statement.setString(4, request.vouchContactInfo)
-                statement.setInt(5, approved)
-                statement.setString(6, request.approvedByUuid)
-                statement.setLong(7, request.approvedTimestamp)
-                statement.setInt(8, rejected)
-                statement.setString(9, request.rejectedByUuid)
-                statement.setLong(10, request.rejectedTimestamp)
-                statement.setString(11, request.rejectedReason)
-                statement.setString(12, request.uuid)
-
-                executeAndClose(statement, conn)
+                    statement.setString(1, request.password)
+                    statement.setString(2, request.reasonForAccount)
+                    statement.setString(3, request.vouchName)
+                    statement.setString(4, request.vouchContactInfo)
+                    statement.setInt(5, approved)
+                    statement.setString(6, request.approvedByUuid)
+                    statement.setLong(7, request.approvedTimestamp)
+                    statement.setInt(8, rejected)
+                    statement.setString(9, request.rejectedByUuid)
+                    statement.setLong(10, request.rejectedTimestamp)
+                    statement.setString(11, request.rejectedReason)
+                    statement.setString(12, request.uuid)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
 
     override fun retrieveAccountRequest(uuid: String): AccountRequest? {
         val conn = conn()
-
         try {
-            var result: AccountRequest? = null
             val statement = conn.prepareStatement(sqlRetrieveAccountRequestByUuid)
-            statement.setString(1, uuid)
+            try {
+                statement.setString(1, uuid)
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                if (resultSet.next()) {
-                    result = unmarshalAccountRequest(resultSet)
-                }
-            }
+                val resultSet = statement.executeQuery()
+                try {
+                    if(resultSet != null) {
+                        if(resultSet.next()) {
+                            return unmarshalAccountRequest(resultSet)
+                        }
+                    }
+                } finally{ QuietCloser.close(resultSet) }
 
-            close(conn, statement)
-            return result
+                return null
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -1092,23 +1128,25 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
 
     private fun retrieveAccountRequests( sql: String ): List<AccountRequest> {
         val conn = conn()
-
         try {
             val result = mutableListOf<AccountRequest>()
+
             val statement = conn.prepareStatement(sql)
+            try {
+                val resultSet = statement.executeQuery()
+                try {
+                    if(resultSet != null) {
+                        while(resultSet.next()) {
+                            result.add(unmarshalAccountRequest(resultSet))
+                        }
+                    }
+                } finally{ QuietCloser.close(resultSet) }
 
-            val resultSet = statement.executeQuery()
-            if (resultSet != null) {
-                while (resultSet.next()) {
-                    result.add(unmarshalAccountRequest(resultSet))
-                }
-            }
-
-            close(conn, statement)
-            return result
+                return result
+            } finally{ QuietCloser.close(statement) }
         }
         finally{
-            rollbackAndClose(conn, connectionManager)
+            rollbackCloseAndRelease(conn, connectionManager)
         }
     }
 
@@ -1126,17 +1164,17 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
             userDB.storeUser(newUser)
 
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sqlApproveAccountRequest)
-                statement.setString(1, approvedByUuid)
-                statement.setLong(2, timestamp)
-                statement.setString(3, uuid)
-
-                executeAndClose(statement, conn)
+                try {
+                    statement.setString(1, approvedByUuid)
+                    statement.setLong(2, timestamp)
+                    statement.setString(3, uuid)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
@@ -1154,18 +1192,18 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
 
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sqlRejectAccountRequest)
-                statement.setString(1, rejectedByUuid)
-                statement.setLong(2, timestamp)
-                statement.setString(3, reason)
-                statement.setString(4, uuid)
-
-                executeAndClose(statement, conn)
+                try {
+                    statement.setString(1, rejectedByUuid)
+                    statement.setLong(2, timestamp)
+                    statement.setString(3, reason)
+                    statement.setString(4, uuid)
+                    executeUpdateAndClose(statement, conn)
+                } finally{ QuietCloser.close(statement) }
             }
             finally{
-                rollbackAndClose(conn, connectionManager)
+                rollbackCloseAndRelease(conn, connectionManager)
             }
         }
     }
