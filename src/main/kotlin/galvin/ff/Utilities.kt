@@ -69,14 +69,23 @@ fun executeUpdate(conn: Connection, sql: String ){
     finally{ QuietCloser.close(statement) }
 }
 
-fun executeUpdateAndClose(statement: PreparedStatement? = null, conn: Connection? = null){
+fun executeUpdateAndClose(statement: PreparedStatement? = null, conn: Connection? = null, rollbackOnError: Boolean = true ){
     if( statement != null ) {
-        try{ statement.executeUpdate() }
+        try{
+            statement.executeUpdate()
+        }
+        catch( t: Throwable ){
+            if( rollbackOnError ){ conn?.rollback() }
+            throw t
+        }
         finally{ QuietCloser.close(statement) }
     }
 
     if( conn != null ) {
         try{ conn.commit() }
+        catch( t: Throwable ){
+            if( rollbackOnError ){ conn.rollback() }
+        }
         finally{ QuietCloser.close(conn) }
     }
 }
@@ -90,19 +99,19 @@ fun commitAndClose(conn: Connection, rollbackOnError: Boolean = true){
     finally{ QuietCloser.close(conn) }
 }
 
-//fun close( conn: Connection, statement: PreparedStatement ){
-//    QuietCloser.close(statement, conn)
-//}
-
-/**
- * If the connection is not null and is still open,
- * calls rollback() and then close()
- */
-fun rollbackCloseAndRelease(conn: Connection?, connectionManager: ConnectionManager? = null ){
+fun rollbackAndRelease(conn: Connection?, connectionManager: ConnectionManager? = null ){
     if( conn != null && !conn.isClosed ){
         try{ conn.rollback() }
         finally{ QuietCloser.close(conn) }
     }
+
+    if( connectionManager != null ){
+        connectionManager.release(conn)
+    }
+}
+
+fun closeAndRelease(conn: Connection?, connectionManager: ConnectionManager? = null ){
+    QuietCloser.close(conn)
 
     if( connectionManager != null ){
         connectionManager.release(conn)

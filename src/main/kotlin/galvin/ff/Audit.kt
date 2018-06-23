@@ -214,18 +214,15 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
             executeUpdate(conn, sqlCreateTableCurrentSystemInfo)
             commitAndClose(conn)
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun storeSystemInfo(systemInfo: SystemInfo) {
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sqlStoreSystemInfo)
-
                 try {
                     statement.setString(1, systemInfo.serialNumber)
                     statement.setString(2, systemInfo.name)
@@ -241,25 +238,23 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
     private fun storeNetwork(conn: Connection, systemInfoUuid: String, networkName: String, ordinal: Int ){
         val statement = conn.prepareStatement(sqlStoreSystemInfoNetwork )
-
-        statement.setString(1, systemInfoUuid)
-        statement.setString(2, networkName)
-        statement.setInt(3, ordinal)
-
-        executeUpdateAndClose(statement )
+        try {
+            statement.setString(1, systemInfoUuid)
+            statement.setString(2, networkName)
+            statement.setInt(3, ordinal)
+            executeUpdateAndClose(statement)
+        } finally{ QuietCloser.close(statement) }
     }
 
     override fun retrieveAllSystemInfo(): List<SystemInfo> {
         val conn = conn()
-
         try {
             val statement = conn.prepareStatement(sqlRetrieveAllSystemInfo)
             try {
@@ -274,14 +269,12 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                 return result
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun retrieveSystemInfo(uuid: String): SystemInfo? {
         val conn = conn()
-
         try {
             val statement = conn.prepareStatement(sqlRetrieveSystemInfoByUuid)
             try {
@@ -296,15 +289,13 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                 return result
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun storeCurrentSystemInfo(uuid: String) {
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val existsStatement = conn.prepareStatement(sqlCurrentSystemInfoExistsByUuid)
                 existsStatement.setString(1, uuid)
@@ -325,9 +316,8 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                     commitAndClose(conn)
                 } finally{ QuietCloser.close(deleteStatement, storeStatement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -339,7 +329,6 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
 
     override fun retrieveCurrentSystemInfoUuid(): String{
         val conn = conn()
-
         try {
             val statement = conn.prepareStatement(sqlRetrieveCurrentSystemInfo)
             try {
@@ -351,9 +340,8 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                 } finally{ QuietCloser.close(resultSet) }
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
 
         return ""
     }
@@ -392,7 +380,6 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
     override fun log(access: AccessInfo) {
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sqlStoreAccessInfo)
                 try {
@@ -421,9 +408,8 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                     commitAndClose(conn)
                 } finally { QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
 
         if(console) println( access )
@@ -432,13 +418,11 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
     private fun storeMod(conn: Connection, accessInfoUuid: String, mod: Modification, ordinal: Int ){
         val statement = conn.prepareStatement(sqlStoreAccessInfoMod)
         try {
-
             statement.setString(1, mod.field)
             statement.setString(2, mod.oldValue)
             statement.setString(3, mod.newValue)
             statement.setString(4, accessInfoUuid)
             statement.setInt(5, ordinal)
-
             executeUpdateAndClose(statement)
         } finally { QuietCloser.close(statement) }
     }
@@ -531,9 +515,8 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
             } finally { QuietCloser.close(statement) }
 
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
 
     }
 

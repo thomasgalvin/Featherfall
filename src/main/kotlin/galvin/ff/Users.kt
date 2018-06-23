@@ -331,9 +331,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
             executeUpdate(conn, sqlCreateTableUserRoles)
             commitAndClose(conn)
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     //
@@ -343,7 +342,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     override fun storeRole(role: Role){
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val deletePermissionsStatement = conn.prepareStatement(sqlDeleteRolePermissions)
                 val deleteRoleStatement = conn.prepareStatement(sqlDeleteRole)
@@ -375,9 +373,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     commitAndClose(conn)
                 } finally{ QuietCloser.close(deletePermissionsStatement, deleteRoleStatement, storeStatement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -392,7 +389,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     private fun doSetRoleActive( roleName: String, active: Boolean ){
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sqlSetRoleActive)
                 try {
@@ -403,9 +399,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -424,9 +419,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 return result
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun retrieveRole(name: String): Role?{
@@ -436,23 +430,20 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
             try {
                 statement.setString(1, name)
 
-                var result: Role? = null
-
                 val resultSet = statement.executeQuery()
                 try {
                     if(resultSet != null) {
                         if(resultSet.next()) {
-                            result = unmarshalRole(resultSet, conn)
+                            return unmarshalRole(resultSet, conn)
                         }
                     }
                 } finally{ QuietCloser.close(resultSet) }
 
-                return result
+                return null
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     private fun unmarshalRole(hit: ResultSet, conn: Connection): Role {
@@ -569,9 +560,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     commitAndClose(conn)
                 } finally{ QuietCloser.close(delContactStatement, delRolesStatement, storeStatement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -591,7 +581,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
     private fun retrieveUsersBy( sql: String, intFlag: Int? = null ): List<User>{
         val conn = conn()
-
         try {
             val result = mutableListOf<User>()
 
@@ -612,9 +601,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 } finally{ QuietCloser.close(resultSet) }
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun retrieveUser(uuid: String): User?{
@@ -642,7 +630,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
     private fun retrieveUserBy(sql: String, value: String): User? {
         val conn = conn()
-
         try {
             val statement = conn.prepareStatement(sql)
             try {
@@ -660,9 +647,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 return null
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     private fun unmarshalUser(hit: ResultSet, conn: Connection): User {
@@ -676,7 +662,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
         val contactStatement = conn.prepareStatement(sqlRetrieveContactInfoForUser )
         val roleStatement = conn.prepareStatement(sqlRetrieveRolesForUser)
         try {
-
             contactStatement.setString(1, uuid)
             val conHits = contactStatement.executeQuery()
             try {
@@ -740,7 +725,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
     private fun retrieveUuidBy(sql: String, key: String): String?{
         val conn = conn()
-
         try {
             val statement = conn.prepareStatement(sql)
             try {
@@ -755,9 +739,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 return null
             }finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     private fun unmarshalContact( hit: ResultSet): ContactInfo {
@@ -780,7 +763,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
     private fun userExistsBy(sql: String, value: String): Boolean{
         val conn = conn()
-
         try {
             val statement = conn.prepareStatement(sql)
             try {
@@ -790,9 +772,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 finally{ QuietCloser.close(resultSet) }
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun setLocked( uuid: String, locked: Boolean ){
@@ -806,7 +787,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     private fun setLockedBy(sql: String, key: String, locked: Boolean){
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sql)
                 try {
@@ -816,9 +796,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -832,7 +811,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
     private fun isLockedBy( sql: String, key: String): Boolean{
         val conn = conn()
-
         try {
             val statement = conn.prepareStatement(sql)
             try {
@@ -848,9 +826,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 return false
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun setActive( uuid: String, active: Boolean ){
@@ -864,7 +841,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
     private fun setActiveBy(sql: String, key: String, active: Boolean){
         synchronized(concurrencyLock) {
             val conn = conn()
-
             try {
                 val statement = conn.prepareStatement(sql)
                 try {
@@ -874,9 +850,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -890,7 +865,6 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
     private fun isActiveBy( sql: String, key: String): Boolean{
         val conn = conn()
-
         try {
             val statement = conn.prepareStatement(sql)
             try {
@@ -906,9 +880,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 return false
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun setPasswordByUuid( uuid: String, plainTextPassword: String ){
@@ -921,9 +894,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
     private fun setPasswordBy( sql: String, uuid: String, plainTextPassword: String ){
         synchronized(concurrencyLock) {
-            val conn = conn()
             val hash = hash(plainTextPassword)
-
+            val conn = conn()
             try {
                 val statement = conn.prepareStatement(sql)
                 try {
@@ -932,9 +904,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -954,9 +925,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
             return ""
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun validatePassword( uuid: String, plainTextPassword: String ): Boolean{
@@ -983,9 +953,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -1011,9 +980,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 return null
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 }
 
@@ -1042,9 +1010,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
             executeUpdate(conn, sqlCreateTableAccountRequests)
             commitAndClose(conn)
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun storeAccountRequest(request: AccountRequest) {
@@ -1079,9 +1046,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -1104,9 +1070,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
                 return null
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
 
@@ -1145,9 +1110,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
                 return result
             } finally{ QuietCloser.close(statement) }
         }
-        finally{
-            rollbackCloseAndRelease(conn, connectionManager)
-        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
     }
 
     override fun approve( uuid: String, approvedByUuid: String, timestamp: Long ){
@@ -1173,9 +1137,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
@@ -1202,9 +1165,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
                     executeUpdateAndClose(statement, conn)
                 } finally{ QuietCloser.close(statement) }
             }
-            finally{
-                rollbackCloseAndRelease(conn, connectionManager)
-            }
+            catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+            finally{ closeAndRelease(conn, connectionManager) }
         }
     }
 
