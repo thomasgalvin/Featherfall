@@ -5,7 +5,6 @@ import java.io.File
 import java.sql.Connection
 import java.sql.ResultSet
 import java.util.stream.Collectors
-import javax.xml.crypto.Data
 
 const val ERROR_CURRENT_SYSTEM_INFO_UUID_NOT_PRESENT = "Audit Error: unable to store current system info: UUID did not match an existing system info"
 const val ERROR_CURRENT_SYSTEM_INFO_NOT_PRESENT = "Audit Error: no current System Info exists"
@@ -180,27 +179,27 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                    private val console: Boolean = false ): AuditDB {
     private val concurrencyLock = Object()
 
-    private val sqlCreateTableSystemInfo = loadSql("$sqlClasspath/audit/create_table_system_info.sql")
-    private val sqlCreateTableSystemInfoNetworks = loadSql("$sqlClasspath/audit/create_table_system_info_networks.sql")
-    private val sqlStoreSystemInfo = loadSql("$sqlClasspath/audit/store_system_info.sql")
-    private val sqlStoreSystemInfoNetwork = loadSql("$sqlClasspath/audit/store_system_info_network.sql")
-    private val sqlRetrieveAllSystemInfo = loadSql("$sqlClasspath/audit/retrieve_all_system_info.sql")
-    private val sqlRetrieveSystemInfoByUuid = loadSql("$sqlClasspath/audit/retrieve_system_info_by_uuid.sql")
-    private val sqlRetrieveSystemInfoNetworks = loadSql("$sqlClasspath/audit/retrieve_system_info_networks.sql")
+    private val sqlCreateTableSystemInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/create_table_system_info.sql")
+    private val sqlCreateTableSystemInfoNetworks = loadFromClasspathOrThrow("$sqlClasspath/audit/create_table_system_info_networks.sql")
+    private val sqlStoreSystemInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/store_system_info.sql")
+    private val sqlStoreSystemInfoNetwork = loadFromClasspathOrThrow("$sqlClasspath/audit/store_system_info_network.sql")
+    private val sqlRetrieveAllSystemInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/retrieve_all_system_info.sql")
+    private val sqlRetrieveSystemInfoByUuid = loadFromClasspathOrThrow("$sqlClasspath/audit/retrieve_system_info_by_uuid.sql")
+    private val sqlRetrieveSystemInfoNetworks = loadFromClasspathOrThrow("$sqlClasspath/audit/retrieve_system_info_networks.sql")
 
-    private val sqlCreateTableAccessInfo = loadSql("$sqlClasspath/audit/create_table_access_info.sql")
-    private val sqlCreateTableAccessInfoMods = loadSql("$sqlClasspath/audit/create_table_access_info_mods.sql")
+    private val sqlCreateTableAccessInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/create_table_access_info.sql")
+    private val sqlCreateTableAccessInfoMods = loadFromClasspathOrThrow("$sqlClasspath/audit/create_table_access_info_mods.sql")
 
-    private val sqlStoreAccessInfo = loadSql("$sqlClasspath/audit/store_access_info.sql")
-    private val sqlStoreAccessInfoMod = loadSql("$sqlClasspath/audit/store_access_info_mod.sql")
+    private val sqlStoreAccessInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/store_access_info.sql")
+    private val sqlStoreAccessInfoMod = loadFromClasspathOrThrow("$sqlClasspath/audit/store_access_info_mod.sql")
 
-    private val sqlRetrieveAccessInfoMods = loadSql("$sqlClasspath/audit/retrieve_access_info_mods.sql")
+    private val sqlRetrieveAccessInfoMods = loadFromClasspathOrThrow("$sqlClasspath/audit/retrieve_access_info_mods.sql")
 
-    private val sqlCreateTableCurrentSystemInfo = loadSql("$sqlClasspath/audit/create_table_current_system_info.sql")
-    private val sqlDeleteCurrentSystemInfo = loadSql("$sqlClasspath/audit/delete_current_system_info.sql")
-    private val sqlSetCurrentSystemInfo = loadSql("$sqlClasspath/audit/store_current_system_info.sql")
-    private val sqlRetrieveCurrentSystemInfo = loadSql("$sqlClasspath/audit/retrieve_current_system_info.sql")
-    private val sqlCurrentSystemInfoExistsByUuid = loadSql("$sqlClasspath/audit/current_system_info_exists_by_uuid.sql")
+    private val sqlCreateTableCurrentSystemInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/create_table_current_system_info.sql")
+    private val sqlDeleteCurrentSystemInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/delete_current_system_info.sql")
+    private val sqlSetCurrentSystemInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/store_current_system_info.sql")
+    private val sqlRetrieveCurrentSystemInfo = loadFromClasspathOrThrow("$sqlClasspath/audit/retrieve_current_system_info.sql")
+    private val sqlCurrentSystemInfoExistsByUuid = loadFromClasspathOrThrow("$sqlClasspath/audit/current_system_info_exists_by_uuid.sql")
 
     fun conn(): Connection = connectionManager.connect()
 

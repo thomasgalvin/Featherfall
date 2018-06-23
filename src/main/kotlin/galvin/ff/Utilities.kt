@@ -55,13 +55,12 @@ fun elseIfNull( one: String?, two: String? ): String{
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fun loadSql( classpathEntry: String ): String{
-    val resource = Utilities::class.java.getResource(classpathEntry) ?: throw IOException( "Unable to load SQL: $classpathEntry" )
+fun loadFromClasspathOrThrow(classpathEntry: String ): String{
+    val resource = Utilities::class.java.getResource(classpathEntry) ?: throw IOException( "Unable to load classpath entry: $classpathEntry" )
 
-    val sql = resource.readText()
-    if( isBlank(sql) ) throw IOException( "Loaded empty SQL: $classpathEntry" )
-
-    return sql
+    val result = resource.readText()
+    if( isBlank(result) ) throw IOException("Loaded empty classpath entry: $classpathEntry" )
+    return result
 }
 
 fun executeUpdate(conn: Connection, sql: String ){
