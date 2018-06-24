@@ -15,8 +15,9 @@ const val MAX_FAILED_LOGIN_ATTEMPTS_PER_IP_ADDRESS = 15
 class LoginManager( private val userDB: UserDB,
                     private val auditDB: AuditDB = NoOpAuditDB(),
                     private val timeProvider: TimeProvider = DefaultTimeProvider(),
-                    private val config: LoginManagerConfig = LoginManagerConfig() ){
-    private val loginTokens = LoginTokenManager(timeProvider)
+                    private val config: LoginManagerConfig = LoginManagerConfig(),
+                    private val loginTokens: LoginTokenManager = InMemLoginTokenManager(timeProvider)
+){
     private val usernameCooldown = Cooldown(
             config.loginMaxUnhindered,
             config.loginMaxFailed,
@@ -99,7 +100,7 @@ class LoginManager( private val userDB: UserDB,
                 loginProxyUuid = loginProxyUuid,
                 timestamp = timeProvider.now()
         )
-        loginTokens[loginToken.uuid] = loginToken
+        loginTokens.add(loginToken)
 
         if( !config.allowConcurrentLogins ){
             loginTokens.logoutExcept( ipAddress, user.uuid )
@@ -350,46 +351,59 @@ internal data class LoginAttempt(val count: Int = 0,
     }
 }
 
-internal class LoginTokenManager( private val timeProvider: TimeProvider ){
-    private val concurrencyLock = Object()
-    private val loginTokens = mutableMapOf<String, LoginToken>()
-
+interface LoginTokenManager{
     /**
      * Returns a login token iff a token with that
      * uuid exists, and the token has not expired
      */
-    operator fun get( key: String ): LoginToken?{
-        purgeExpired()
+    operator fun get( loginTokenUuid: String ): LoginToken?
 
-        synchronized(concurrencyLock) {
-            return loginTokens[key]
-        }
-    }
+    /**
+     * Adds a login token to the database.
+     */
+    fun add( loginToken: LoginToken )
 
-    operator fun set( key: String, loginToken: LoginToken ){
-        synchronized(concurrencyLock) {
-            if( !loginToken.hasExpired( timeProvider.now() ) ) {
-                loginTokens[key] = loginToken
-            }
-        }
-    }
-
-    fun remove( key: String ){
-        //in case someone has cached this for some (bad) reason
-        val loginToken = get(key)
-        loginToken?.logout()
-
-        synchronized(concurrencyLock) {
-            loginTokens.remove(key)
-        }
-    }
+    fun remove( loginTokenUuid: String )
 
     /**
      * Used to disable concurrent logins. This method will
      * expire and remove any tokens that belong to the user
      * (userUuid) but do *not* correspond to the given ip address.
      */
-    fun logoutExcept( ipAddress: String, userUuid: String ){
+    fun logoutExcept( ipAddress: String, userUuid: String )
+}
+
+class InMemLoginTokenManager( private val timeProvider: TimeProvider ): LoginTokenManager{
+    private val concurrencyLock = Object()
+    private val loginTokens = mutableMapOf<String, LoginToken>()
+
+    override operator fun get( loginTokenUuid: String ): LoginToken?{
+        purgeExpired()
+
+        synchronized(concurrencyLock) {
+            return loginTokens[loginTokenUuid]
+        }
+    }
+
+    override fun add( loginToken: LoginToken ){
+        synchronized(concurrencyLock) {
+            if( !loginToken.hasExpired( timeProvider.now() ) ) {
+                loginTokens[loginToken.uuid] = loginToken
+            }
+        }
+    }
+
+    override fun remove( loginTokenUuid: String ){
+        //in case someone has cached this for some (bad) reason
+        val loginToken = get(loginTokenUuid)
+        loginToken?.logout()
+
+        synchronized(concurrencyLock) {
+            loginTokens.remove(loginTokenUuid)
+        }
+    }
+
+    override fun logoutExcept( ipAddress: String, userUuid: String ){
         purgeExpired()
 
         synchronized(concurrencyLock){
@@ -402,6 +416,8 @@ internal class LoginTokenManager( private val timeProvider: TimeProvider ){
                     expiredTokens.add(token)
                 }
             }
+
+            for( loginToken in expiredTokens ) invalidate(loginToken)
         }
     }
 
@@ -418,10 +434,13 @@ internal class LoginTokenManager( private val timeProvider: TimeProvider ){
                 }
             }
 
-            for( loginToken in expiredTokens ){
-                loginTokens.remove(loginToken.uuid)
-            }
+            for( loginToken in expiredTokens ) invalidate(loginToken)
         }
+    }
+
+    private fun invalidate( loginToken: LoginToken ){
+        loginToken.logout()
+        loginTokens.remove(loginToken.uuid)
     }
 }
 
