@@ -212,7 +212,7 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
             executeUpdate(conn, sqlCreateTableAccessInfo)
             executeUpdate(conn, sqlCreateTableAccessInfoMods)
             executeUpdate(conn, sqlCreateTableCurrentSystemInfo)
-            commitAndClose(conn)
+            conn.commit()
         }
         catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
         finally{ closeAndRelease(conn, connectionManager) }
@@ -235,7 +235,8 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                         storeNetwork(conn, systemInfo.uuid, network, ordinal)
                     }
 
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -249,7 +250,7 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
             statement.setString(1, systemInfoUuid)
             statement.setString(2, networkName)
             statement.setInt(3, ordinal)
-            executeUpdateAndClose(statement)
+            statement.executeUpdate()
         } finally{ QuietCloser.close(statement) }
     }
 
@@ -308,12 +309,12 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                 val storeStatement = conn.prepareStatement(sqlSetCurrentSystemInfo)
 
                 try {
-                    executeUpdateAndClose(deleteStatement)
+                    deleteStatement.executeUpdate()
 
                     storeStatement.setString(1, uuid)
-                    executeUpdateAndClose(storeStatement)
+                    storeStatement.executeUpdate()
 
-                    commitAndClose(conn)
+                    conn.commit()
                 } finally{ QuietCloser.close(deleteStatement, storeStatement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -398,14 +399,13 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
                     statement.setInt(11, accessGranted)
                     statement.setString(12, access.systemInfoUuid)
                     statement.setString(13, access.uuid)
-
-                    executeUpdateAndClose(statement)
+                    statement.executeUpdate()
 
                     for((ordinal, mod) in access.modifications.withIndex()) {
                         storeMod(conn, access.uuid, mod, ordinal)
                     }
 
-                    commitAndClose(conn)
+                    conn.commit()
                 } finally { QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -423,7 +423,7 @@ class AuditDBImpl( private val connectionManager: ConnectionManager,
             statement.setString(3, mod.newValue)
             statement.setString(4, accessInfoUuid)
             statement.setInt(5, ordinal)
-            executeUpdateAndClose(statement)
+            statement.executeUpdate()
         } finally { QuietCloser.close(statement) }
     }
 

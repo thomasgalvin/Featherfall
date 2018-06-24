@@ -10,7 +10,7 @@ class AuditDbTest {
         for (database in databases) {
             if (!database.canConnect()) continue
 
-            val audit = database.randomAuditDB()
+            database.randomAuditDB()
             database.cleanup()
         }
     }

@@ -291,17 +291,11 @@ class AuditManagerQueryTest{
 
         if( setup.auditDB.connectionURL.endsWith(".dat") ) {
             list.addAll( arrayOf("-sqlite", setup.auditDB.connectionURL, "-userdb", setup.userDB.connectionURL) )
-
-            if( setup.userDB.connectionURL!= null ){
-                list.addAll( arrayOf( "-userdbsqlite", setup.userDB.connectionURL ) )
-            }
+            list.addAll( arrayOf( "-userdbsqlite", setup.userDB.connectionURL ) )
         }
         else{
             list.addAll( arrayOf("-psql", setup.auditDB.connectionURL, "-userdb", setup.userDB.connectionURL) )
-
-            if( setup.userDB.connectionURL!= null ){
-                list.addAll( arrayOf( "-userdbpsql", setup.userDB.connectionURL ) )
-            }
+            list.addAll( arrayOf( "-userdbpsql", setup.userDB.connectionURL ) )
         }
 
         if( setup.auditDB.userName != null ){

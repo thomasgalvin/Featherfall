@@ -329,7 +329,7 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
             executeUpdate(conn, sqlCreateTableUsers)
             executeUpdate(conn, sqlCreateTableContactInfo)
             executeUpdate(conn, sqlCreateTableUserRoles)
-            commitAndClose(conn)
+            conn.commit()
         }
         catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
         finally{ closeAndRelease(conn, connectionManager) }
@@ -349,16 +349,16 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
                 try {
                     deletePermissionsStatement.setString(1, role.name)
-                    executeUpdateAndClose(deletePermissionsStatement)
+                    deletePermissionsStatement.executeUpdate()
 
 
                     deleteRoleStatement.setString(1, role.name)
-                    executeUpdateAndClose(deleteRoleStatement)
+                    deleteRoleStatement.executeUpdate()
 
                     val active = if(role.active) 1 else 0
                     storeStatement.setString(1, role.name)
                     storeStatement.setInt(2, active)
-                    executeUpdateAndClose(storeStatement)
+                    storeStatement.executeUpdate()
 
                     for((ordinal, permission) in role.permissions.withIndex()) {
                         val permStatement = conn.prepareStatement(sqlStoreRolePermission)
@@ -366,11 +366,11 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                             permStatement.setString(1, role.name)
                             permStatement.setString(2, permission)
                             permStatement.setInt(3, ordinal)
-                            executeUpdateAndClose(permStatement)
+                            permStatement.executeUpdate()
                         } finally{ QuietCloser.close(permStatement) }
                     }
 
-                    commitAndClose(conn)
+                    conn.commit()
                 } finally{ QuietCloser.close(deletePermissionsStatement, deleteRoleStatement, storeStatement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -395,8 +395,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     val value = if(active) 1 else 0
                     statement.setInt(1, value)
                     statement.setString(2, roleName)
-
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -503,10 +503,10 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
 
                 try {
                     delContactStatement.setString(1, theUuid)
-                    executeUpdateAndClose(delContactStatement)
+                    delContactStatement.executeUpdate()
 
                     delRolesStatement.setString(1, theUuid)
-                    executeUpdateAndClose(delRolesStatement)
+                    delRolesStatement.executeUpdate()
 
                     val active = if (user.active) 1 else 0
                     val locked = if (user.locked) 1 else 0
@@ -530,7 +530,7 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     storeStatement.setInt(17, active)
                     storeStatement.setInt(18, locked)
                     storeStatement.setString(19, theUuid)
-                    executeUpdateAndClose(storeStatement)
+                    storeStatement.executeUpdate()
 
                     for ((ordinal, contact) in user.contact.withIndex()) {
                         val isPrimary = if (contact.primary) 1 else 0
@@ -543,7 +543,7 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                             contactStatement.setInt(4, isPrimary)
                             contactStatement.setString(5, theUuid)
                             contactStatement.setInt(6, ordinal)
-                            executeUpdateAndClose(contactStatement)
+                            contactStatement.executeUpdate()
                         } finally{ QuietCloser.close(contactStatement) }
                     }
 
@@ -553,11 +553,11 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                             roleStatement.setString(1, role)
                             roleStatement.setString(2, theUuid)
                             roleStatement.setInt(3, ordinal)
-                            executeUpdateAndClose(roleStatement)
+                            roleStatement.executeUpdate()
                         } finally{ QuietCloser.close(roleStatement) }
                     }
 
-                    commitAndClose(conn)
+                    conn.commit()
                 } finally{ QuietCloser.close(delContactStatement, delRolesStatement, storeStatement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -793,7 +793,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     val lockedValue = if(locked) 1 else 0
                     statement.setInt(1, lockedValue)
                     statement.setString(2, key)
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -847,7 +848,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     val activeValue = if(active) 1 else 0
                     statement.setInt(1, activeValue)
                     statement.setString(2, key)
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -901,7 +903,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                 try {
                     statement.setString(1, hash)
                     statement.setString(2, uuid)
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -950,7 +953,8 @@ class UserDBImpl(private val connectionManager: ConnectionManager,
                     statement.setString(4, credentials.countryCode)
                     statement.setString(5, credentials.citizenship)
                     statement.setString(6, uuid)
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -1008,7 +1012,7 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
         val conn = conn()
         try {
             executeUpdate(conn, sqlCreateTableAccountRequests)
-            commitAndClose(conn)
+            conn.commit()
         }
         catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
         finally{ closeAndRelease(conn, connectionManager) }
@@ -1043,7 +1047,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
                     statement.setLong(10, request.rejectedTimestamp)
                     statement.setString(11, request.rejectedReason)
                     statement.setString(12, request.uuid)
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -1134,7 +1139,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
                     statement.setString(1, approvedByUuid)
                     statement.setLong(2, timestamp)
                     statement.setString(3, uuid)
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
@@ -1162,7 +1168,8 @@ class AccountRequestDBImpl( private val connectionManager: ConnectionManager,
                     statement.setLong(2, timestamp)
                     statement.setString(3, reason)
                     statement.setString(4, uuid)
-                    executeUpdateAndClose(statement, conn)
+                    statement.executeUpdate()
+                    conn.commit()
                 } finally{ QuietCloser.close(statement) }
             }
             catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }

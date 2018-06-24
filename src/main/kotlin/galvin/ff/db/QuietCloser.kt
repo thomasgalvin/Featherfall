@@ -7,7 +7,7 @@ import java.sql.Statement
 object QuietCloser{
     fun close( vararg closeables: Closeable? ){
         for( closeable in closeables ){
-            if( closeable != null && !isClosed(closeable as Object) ){
+            if( closeable != null && !isClosed(closeable) ){
                 try{
                     closeable.close()
                 } catch( ignored: Throwable ){}
@@ -17,7 +17,7 @@ object QuietCloser{
 
     fun close( vararg closeables: AutoCloseable? ){
         for( closeable in closeables ){
-            if( closeable != null && !isClosed(closeable as Object) ){
+            if( closeable != null && !isClosed(closeable) ){
                 try{
                     closeable.close()
                 } catch( ignored: Throwable ){}
@@ -25,7 +25,7 @@ object QuietCloser{
         }
     }
 
-    fun isClosed( target: Object? ): Boolean{
+    fun isClosed( target: Any? ): Boolean{
         if( target == null ) return true
 
         if( target is Connection ){

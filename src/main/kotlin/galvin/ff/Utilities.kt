@@ -69,36 +69,6 @@ fun executeUpdate(conn: Connection, sql: String ){
     finally{ QuietCloser.close(statement) }
 }
 
-fun executeUpdateAndClose(statement: PreparedStatement? = null, conn: Connection? = null, rollbackOnError: Boolean = true ){
-    if( statement != null ) {
-        try{
-            statement.executeUpdate()
-        }
-        catch( t: Throwable ){
-            if( rollbackOnError ){ conn?.rollback() }
-            throw t
-        }
-        finally{ QuietCloser.close(statement) }
-    }
-
-    if( conn != null ) {
-        try{ conn.commit() }
-        catch( t: Throwable ){
-            if( rollbackOnError ){ conn.rollback() }
-        }
-        finally{ QuietCloser.close(conn) }
-    }
-}
-
-fun commitAndClose(conn: Connection, rollbackOnError: Boolean = true){
-    try{ conn.commit() }
-    catch(t: Throwable){
-        if(rollbackOnError){ conn.rollback() }
-        throw t
-    }
-    finally{ QuietCloser.close(conn) }
-}
-
 fun rollbackAndRelease(conn: Connection?, connectionManager: ConnectionManager? = null ){
     if( conn != null && !conn.isClosed ){
         try{ conn.rollback() }
