@@ -5,11 +5,21 @@ import org.junit.Assert
 import org.junit.Test
 
 class LoginManagerTest{
-    @Test fun should_login_successfully_by_password() {
-        for (database in databases) {
-            if (!database.canConnect()) continue
+    private fun loginTokenManagers(): List<LoginTokenManager>{
+        val list = mutableListOf<LoginTokenManager>()
+        list.add( InMemLoginTokenManager() )
 
-            val (auditDB, userDB, loginManager, roles, count) = testObjects(database)
+        for (database in databases) {
+            if(!database.canConnect()) continue
+            list.add( database.randomLoginTokenManager() )
+        }
+
+        return list.toList()
+    }
+
+    @Test fun should_login_successfully_by_password() {
+        for( loginTokenManager in loginTokenManagers() ){
+            val (auditDB, userDB, loginManager, roles, count) = testObjects(loginTokenManager)
 
             val passwords = mutableListOf<String>()
             for (i in 0..count) {
@@ -53,10 +63,8 @@ class LoginManagerTest{
     }
 
     @Test fun should_login_successfully_by_serial_number() {
-        for (database in databases) {
-            if (!database.canConnect()) continue
-
-            val (_, userDB, loginManager, roles, count) = testObjects(database)
+        for( loginTokenManager in loginTokenManagers() ){
+            val (_, userDB, loginManager, roles, count) = testObjects(loginTokenManager)
 
             val passwords = mutableListOf<String>()
             for (i in 0..count) {
@@ -80,10 +88,8 @@ class LoginManagerTest{
     }
 
     @Test fun should_login_successfully_by_login_token() {
-        for (database in databases) {
-            if (!database.canConnect()) continue
-
-            val (_, userDB, loginManager, roles, count) = testObjects(database)
+        for( loginTokenManager in loginTokenManagers() ){
+            val (_, userDB, loginManager, roles, count) = testObjects(loginTokenManager)
 
             val passwords = mutableListOf<String>()
             for (i in 0..count) {
@@ -124,10 +130,8 @@ class LoginManagerTest{
 
     @Test
     fun should_log_out() {
-        for (database in databases) {
-            if (!database.canConnect()) continue
-
-            val (_, userDB, loginManager, roles, count) = testObjects(database)
+        for( loginTokenManager in loginTokenManagers() ){
+            val (_, userDB, loginManager, roles, count) = testObjects(loginTokenManager)
 
             val passwords = mutableListOf<String>()
             for (i in 0..count) {
@@ -169,10 +173,8 @@ class LoginManagerTest{
 
     @Test
     fun should_purge_expired() {
-        for (database in databases) {
-            if (!database.canConnect()) continue
-
-            val (_, userDB, loginManager, roles, count) = testObjects(database = database, tokenLifespan = 1)
+        for( loginTokenManager in loginTokenManagers() ){
+            val (_, userDB, loginManager, roles, count) = testObjects(loginTokenManager = loginTokenManager, tokenLifespan = 1)
             val timeProvider = DefaultTimeProvider()
 
             val passwords = mutableListOf<String>()
@@ -218,10 +220,8 @@ class LoginManagerTest{
 
     @Test
     fun should_log_out_concurrent_sessions() {
-        for (database in databases) {
-            if (!database.canConnect()) continue
-
-            val (_, userDB, loginManager, roles, count) = testObjects(database = database, allowConcurrentLogins = false)
+        for( loginTokenManager in loginTokenManagers() ){
+            val (_, userDB, loginManager, roles, count) = testObjects(loginTokenManager = loginTokenManager, allowConcurrentLogins = false)
             val timeProvider = DefaultTimeProvider()
 
             val user = generateUser(roles)
@@ -257,10 +257,8 @@ class LoginManagerTest{
 
     @Test
     fun should_fail_login_by_password() {
-        for (database in databases) {
-            if (!database.canConnect()) continue
-
-            val (auditDB, userDB, loginManager, roles, count) = testObjects(database)
+        for( loginTokenManager in loginTokenManagers() ){
+            val (auditDB, userDB, loginManager, roles, count) = testObjects(loginTokenManager)
 
             val passwords = mutableListOf<String>()
             for (i in 0..count) {
@@ -299,10 +297,8 @@ class LoginManagerTest{
 
     @Test
     fun should_lock_and_throw_on_max_failures() {
-        for (database in databases) {
-            if (!database.canConnect()) continue
-
-            val (_, userDB, loginManager, roles, _) = testObjects(database)
+        for( loginTokenManager in loginTokenManagers() ){
+            val (_, userDB, loginManager, roles, _) = testObjects(loginTokenManager)
 
             val user = generateUser(roles)
             userDB.storeUser(user)
@@ -347,15 +343,16 @@ class LoginManagerTest{
         operator fun component5(): Int{ return count }
     }
 
-    private fun testObjects( database: DbConnection, allowConcurrentLogins: Boolean = true, tokenLifespan: Long = 1_000_000): LoginManagerTestObjects {
-        val auditDB = database.randomAuditDB()
-        val userDB = database.randomUserDB()
+    private fun testObjects(loginTokenManager: LoginTokenManager, allowConcurrentLogins: Boolean = true, tokenLifespan: Long = 1_000_000): LoginManagerTestObjects {
+        val dbConnection = SqliteDbConnection()
+        val auditDB = dbConnection.randomAuditDB()
+        val userDB = dbConnection.randomUserDB()
         val roles = generateRoles(userdb = userDB)
 
         val config = LoginManagerConfig( tokenLifespan = tokenLifespan,
                                          sleepBetweenAttempts = false,
                                          allowConcurrentLogins = allowConcurrentLogins)
-        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB, config = config )
+        val loginManager = LoginManager( userDB = userDB, auditDB = auditDB, config = config, loginTokens = loginTokenManager )
 
         return LoginManagerTestObjects(auditDB, userDB, loginManager, roles)
     }

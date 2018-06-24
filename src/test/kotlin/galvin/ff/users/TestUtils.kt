@@ -23,6 +23,7 @@ interface DbConnection{
     fun randomAuditDB() : AuditDB
     fun randomUserDB(): UserDB
     fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB
+    fun randomLoginTokenManager(): LoginTokenManager
 
     fun userDbConnection(): UserDbConnection
     fun auditDbConnection(): AuditDbConnection
@@ -43,6 +44,8 @@ class SqliteDbConnection: DbConnection{
     override fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB  = AccountRequestDB.SQLite( userDB, 1, randomDbFile(), randomDbFile() )
 
     override fun randomAuditDB() : AuditDB  = AuditDB.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
+
+    override fun randomLoginTokenManager(): LoginTokenManager = LoginTokenManager.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
 
     override fun userDbConnection(): UserDbConnection{
         val file = randomDbFile()
@@ -101,6 +104,12 @@ class PsqlDbConnection: DbConnection{
         val dbName = createRandom()
         val connectionURL = "jdbc:postgresql://localhost:5432/$dbName"
         return UserDB.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
+    }
+
+    override fun randomLoginTokenManager(): LoginTokenManager{
+        val dbName = createRandom()
+        val connectionURL = "jdbc:postgresql://localhost:5432/$dbName"
+        return LoginTokenManager.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
     }
 
     override fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {

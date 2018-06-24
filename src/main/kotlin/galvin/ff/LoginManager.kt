@@ -1,6 +1,9 @@
 package galvin.ff
 
+import galvin.ff.db.ConnectionManager
+import java.io.File
 import java.security.cert.X509Certificate
+import java.sql.Connection
 import javax.servlet.http.HttpServletRequest
 
 const val TOKEN_LIFESPAN: Long = 1000 * 60 * 60 * 24 * 5 //five days in milliseconds
@@ -371,9 +374,25 @@ interface LoginTokenManager{
      * (userUuid) but do *not* correspond to the given ip address.
      */
     fun logoutExcept( ipAddress: String, userUuid: String )
+
+    companion object {
+        fun InMem( timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager = InMemLoginTokenManager(timeProvider)
+
+        fun SQLite(maxConnections: Int, databaseFile: File, console: Boolean = false, timeout: Long = 60_000, timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager{
+            val connectionManager = ConnectionManager.SQLite(maxConnections, databaseFile, timeout)
+            val classpath = "/galvin/ff/db/sqlite/"
+            return DBLoginTokenManager( connectionManager, classpath, timeProvider)
+        }
+
+        fun PostgreSQL( maxConnections: Int, connectionURL: String, timeout: Long = 60_000, username: String? = null, password: String? = null, timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager{
+            val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout, username, password)
+            val classpath = "/galvin/ff/db/psql/"
+            return DBLoginTokenManager( connectionManager, classpath, timeProvider)
+        }
+    }
 }
 
-class InMemLoginTokenManager( private val timeProvider: TimeProvider ): LoginTokenManager{
+class InMemLoginTokenManager( private val timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager{
     private val concurrencyLock = Object()
     private val loginTokens = mutableMapOf<String, LoginToken>()
 
@@ -444,3 +463,37 @@ class InMemLoginTokenManager( private val timeProvider: TimeProvider ): LoginTok
     }
 }
 
+class DBLoginTokenManager(private val connectionManager: ConnectionManager,
+                          sqlClasspath: String,
+                          private val timeProvider: TimeProvider = DefaultTimeProvider()
+): LoginTokenManager{
+    private val concurrencyLock = Object()
+
+    private val sqlCreateTableLoginTokens = loadFromClasspathOrThrow("$sqlClasspath/login/create_table_login_tokens.sql")
+
+    fun conn(): Connection = connectionManager.connect()
+
+    init{
+        val conn = conn()
+        try {
+            executeUpdate(conn, sqlCreateTableLoginTokens)
+            conn.commit()
+        }
+        catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
+        finally{ closeAndRelease(conn, connectionManager) }
+    }
+
+    override fun get(loginTokenUuid: String): LoginToken? {
+        return null
+    }
+
+    override fun add(loginToken: LoginToken) {
+    }
+
+    override fun remove(loginTokenUuid: String) {
+    }
+
+    override fun logoutExcept(ipAddress: String, userUuid: String) {
+    }
+
+}
