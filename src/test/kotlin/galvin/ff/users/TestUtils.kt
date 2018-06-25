@@ -23,7 +23,7 @@ interface DbConnection{
     fun randomAuditDB() : AuditDB
     fun randomUserDB(): UserDB
     fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB
-    fun randomLoginTokenManager(): LoginTokenManager
+    //fun randomLoginTokenManager(): LoginTokenManager
 
     fun userDbConnection(): UserDbConnection
     fun auditDbConnection(): AuditDbConnection
@@ -35,8 +35,6 @@ data class UserDbConnection(val userDB: UserDB, val connectionURL: String, val u
 data class AuditDbConnection(val auditDB: AuditDB, val connectionURL: String, val userName: String? = null, val password: String? = null)
 
 class SqliteDbConnection: DbConnection{
-    private val prefix = "featherfall_unit_test_"
-
     override fun canConnect(): Boolean = true
 
     override fun randomUserDB(): UserDB = UserDB.SQLite( 1, randomDbFile() )
@@ -45,7 +43,7 @@ class SqliteDbConnection: DbConnection{
 
     override fun randomAuditDB() : AuditDB  = AuditDB.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
 
-    override fun randomLoginTokenManager(): LoginTokenManager = LoginTokenManager.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
+    //override fun randomLoginTokenManager(): LoginTokenManager = LoginTokenManager.SQLite( maxConnections = 1, databaseFile = randomDbFile() )
 
     override fun userDbConnection(): UserDbConnection{
         val file = randomDbFile()
@@ -61,7 +59,11 @@ class SqliteDbConnection: DbConnection{
 
     override fun cleanup(){}
 
-    fun randomDbFile(): File = File( "target/$prefix${uuid()}.dat" )
+    companion object {
+        private val prefix = "featherfall_unit_test_"
+        fun randomDbFile(): File = File( "target/$prefix${uuid()}.dat" )
+    }
+
 }
 
 class PsqlDbConnection: DbConnection{
@@ -106,11 +108,11 @@ class PsqlDbConnection: DbConnection{
         return UserDB.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
     }
 
-    override fun randomLoginTokenManager(): LoginTokenManager{
-        val dbName = createRandom()
-        val connectionURL = "jdbc:postgresql://localhost:5432/$dbName"
-        return LoginTokenManager.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
-    }
+//    override fun randomLoginTokenManager(): LoginTokenManager{
+//        val dbName = createRandom()
+//        val connectionURL = "jdbc:postgresql://localhost:5432/$dbName"
+//        return LoginTokenManager.PostgreSQL(maxConnections = maxConnections, connectionURL = connectionURL, username = username, password = password)
+//    }
 
     override fun randomAccountRequestDB(userDB: UserDB ): AccountRequestDB {
         val dbName = createRandom()

@@ -1,6 +1,7 @@
 package galvin.ff
 
 import galvin.ff.db.ConnectionManager
+import galvin.ff.db.QuietCloser
 import java.io.File
 import java.security.cert.X509Certificate
 import java.sql.Connection
@@ -378,16 +379,16 @@ interface LoginTokenManager{
     companion object {
         fun InMem( timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager = InMemLoginTokenManager(timeProvider)
 
-        fun SQLite(maxConnections: Int, databaseFile: File, console: Boolean = false, timeout: Long = 60_000, timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager{
+        fun SQLite(userDB: UserDB, maxConnections: Int, databaseFile: File, timeout: Long = 60_000, timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager{
             val connectionManager = ConnectionManager.SQLite(maxConnections, databaseFile, timeout)
             val classpath = "/galvin/ff/db/sqlite/"
-            return DBLoginTokenManager( connectionManager, classpath, timeProvider)
+            return DBLoginTokenManager( connectionManager, classpath, userDB, timeProvider)
         }
 
-        fun PostgreSQL( maxConnections: Int, connectionURL: String, timeout: Long = 60_000, username: String? = null, password: String? = null, timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager{
+        fun PostgreSQL( userDB: UserDB, maxConnections: Int, connectionURL: String, timeout: Long = 60_000, username: String? = null, password: String? = null, timeProvider: TimeProvider = DefaultTimeProvider() ): LoginTokenManager{
             val connectionManager = ConnectionManager.PostgreSQL(maxConnections, connectionURL, timeout, username, password)
             val classpath = "/galvin/ff/db/psql/"
-            return DBLoginTokenManager( connectionManager, classpath, timeProvider)
+            return DBLoginTokenManager( connectionManager, classpath, userDB, timeProvider)
         }
     }
 }
@@ -465,11 +466,17 @@ class InMemLoginTokenManager( private val timeProvider: TimeProvider = DefaultTi
 
 class DBLoginTokenManager(private val connectionManager: ConnectionManager,
                           sqlClasspath: String,
+                          private val userDB: UserDB,
                           private val timeProvider: TimeProvider = DefaultTimeProvider()
 ): LoginTokenManager{
     private val concurrencyLock = Object()
 
     private val sqlCreateTableLoginTokens = loadFromClasspathOrThrow("$sqlClasspath/login/create_table_login_tokens.sql")
+    private val sqlDeleteLoginTokenByUuid = loadFromClasspathOrThrow("$sqlClasspath/login/delete_login_token_by_uuid.sql")
+    private val sqlStoreLoginToken = loadFromClasspathOrThrow("$sqlClasspath/login/store_login_token.sql")
+    private val sqlRetrieveLoginTokenByUuid = loadFromClasspathOrThrow("$sqlClasspath/login/retrieve_login_token_by_uuid.sql")
+    private val sqlLogoutExceptIpAddress = loadFromClasspathOrThrow("$sqlClasspath/login/logout_except_ip_address.sql")
+    private val sqlPurgeExpired = loadFromClasspathOrThrow("$sqlClasspath/login/purge_expired.sql")
 
     fun conn(): Connection = connectionManager.connect()
 
@@ -481,19 +488,145 @@ class DBLoginTokenManager(private val connectionManager: ConnectionManager,
         }
         catch( t: Throwable ){ rollbackAndRelease(conn, connectionManager); throw t }
         finally{ closeAndRelease(conn, connectionManager) }
+
+        purgeExpired()
     }
 
     override fun get(loginTokenUuid: String): LoginToken? {
-        return null
+        purgeExpired()
+
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            try {
+                val statement = conn.prepareStatement(sqlRetrieveLoginTokenByUuid)
+                try {
+                    statement.setString(1, loginTokenUuid)
+                    val results = statement.executeQuery()
+                    try {
+                        if(!results.next()) return null
+
+                        val expires = results.getLong("expiresTimestamp")
+                        if(expires <= timeProvider.now()) {
+                            return null
+                        }
+
+                        val userUuid = results.getString("userUuid")
+                        val user = userDB.retrieveUser(userUuid) ?: return null
+                        val permissions = userDB.retrievePermissions(user.roles)
+
+                        return LoginToken(
+                                uuid = results.getString("uuid"),
+                                ipAddress = results.getString("ipAddress"),
+                                tokenLifespan = results.getLong("tokenLifespan"),
+                                timestamp = results.getLong("createdTimestamp"),
+                                expires = expires,
+                                user = user.withoutPasswordHash(),
+                                username = user.login,
+                                permissions = permissions,
+                                loginType = LoginType.valueOf(results.getString("loginType")),
+                                loginProxyUuid = results.getString("loginProxyUuid")
+                        )
+                    }
+                    finally { QuietCloser.close(results) }
+                }
+                finally { QuietCloser.close(statement) }
+
+            }
+            finally { closeAndRelease(conn, connectionManager) }
+        }
     }
 
     override fun add(loginToken: LoginToken) {
+        purgeExpired()
+
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            try {
+                val statement = conn.prepareStatement(sqlStoreLoginToken)
+                try {
+                    statement.setString(1, loginToken.uuid)
+                    statement.setString(2, loginToken.ipAddress)
+                    statement.setLong(3, loginToken.tokenLifespan)
+                    statement.setLong(4, loginToken.timestamp)
+                    statement.setLong(5, loginToken.expires)
+                    statement.setString(6, loginToken.user.uuid)
+                    statement.setString(7, loginToken.loginType.name)
+                    statement.setString(8, loginToken.loginProxyUuid)
+                    statement.executeUpdate()
+                    conn.commit()
+                }
+                finally {
+                    QuietCloser.close(statement)
+                }
+
+            }
+            catch(t: Throwable) { rollbackAndRelease(conn, connectionManager); throw t }
+            finally { closeAndRelease(conn, connectionManager) }
+        }
     }
 
     override fun remove(loginTokenUuid: String) {
+        purgeExpired()
+
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            try {
+                val statement = conn.prepareStatement(sqlDeleteLoginTokenByUuid)
+                try {
+                    statement.setString(1, loginTokenUuid)
+                    statement.executeUpdate()
+                    conn.commit()
+                }
+                finally {
+                    QuietCloser.close(statement)
+                }
+
+            }
+            catch(t: Throwable) { rollbackAndRelease(conn, connectionManager); throw t }
+            finally { closeAndRelease(conn, connectionManager) }
+        }
     }
 
     override fun logoutExcept(ipAddress: String, userUuid: String) {
+        purgeExpired()
+
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            try {
+                val statement = conn.prepareStatement(sqlLogoutExceptIpAddress)
+                try {
+                    statement.setString(1, userUuid)
+                    statement.setString(2, ipAddress)
+                    statement.executeUpdate()
+                    conn.commit()
+                }
+                finally {
+                    QuietCloser.close(statement)
+                }
+
+            }
+            catch(t: Throwable) { rollbackAndRelease(conn, connectionManager); throw t }
+            finally { closeAndRelease(conn, connectionManager) }
+        }
     }
 
+    private fun purgeExpired(){
+        synchronized(concurrencyLock) {
+            val conn = conn()
+            try {
+                val statement = conn.prepareStatement(sqlPurgeExpired)
+                try {
+                    statement.setLong(1, timeProvider.now() )
+                    statement.executeUpdate()
+                    conn.commit()
+                }
+                finally {
+                    QuietCloser.close(statement)
+                }
+
+            }
+            catch(t: Throwable) { rollbackAndRelease(conn, connectionManager); throw t }
+            finally { closeAndRelease(conn, connectionManager) }
+        }
+    }
 }

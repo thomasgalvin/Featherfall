@@ -3,11 +3,20 @@ package galvin.ff.users
 import galvin.ff.*
 import galvin.ff.tools.AccountManager
 import galvin.ff.tools.AccountManagerOptions
+import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Test
 import java.io.File
 
 class AccountManagerQueryTest{
+    companion object {
+        @AfterClass fun cleanup(){
+            for (database in databases) {
+                database.cleanup()
+            }
+        }
+    }
+
     @Test fun should_list_all_accounts() {
         for (database in databases) {
             if (!database.canConnect()) continue

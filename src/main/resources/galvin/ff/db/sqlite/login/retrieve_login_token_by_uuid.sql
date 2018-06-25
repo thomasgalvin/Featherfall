@@ -1,0 +1,1 @@
+select * from LoginTokens where uuid = ?

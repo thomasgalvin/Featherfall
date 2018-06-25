@@ -1,11 +1,20 @@
 package galvin.ff.users
 
 import galvin.ff.*
+import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Test
 import java.util.*
 
 class AuditDbTest {
+    companion object {
+        @AfterClass fun cleanup(){
+            for (database in databases) {
+                database.cleanup()
+            }
+        }
+    }
+
     @Test fun should_create_postgres_database() {
         for (database in databases) {
             if (!database.canConnect()) continue

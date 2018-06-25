@@ -4,10 +4,19 @@ import galvin.ff.*
 import galvin.ff.tools.AuditManager
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
+import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Test
 
 class AuditManagerQueryTest{
+    companion object {
+        @AfterClass fun cleanup(){
+            for (database in databases) {
+                database.cleanup()
+            }
+        }
+    }
+
     @Test fun should_execute_query_by_user_uuid() {
         for (database in databases) {
             if (!database.canConnect()) continue

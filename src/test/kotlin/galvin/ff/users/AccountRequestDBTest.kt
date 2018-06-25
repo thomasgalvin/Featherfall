@@ -1,11 +1,20 @@
 package galvin.ff.users
 
 import galvin.ff.*
+import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Test
 
 
 class AccountRequestDBTest{
+    companion object {
+        @AfterClass fun cleanup(){
+            for (database in databases) {
+                database.cleanup()
+            }
+        }
+    }
+
     @Test fun should_store_and_retrieve_account_request(){
         for( database in databases ) {
             if (!database.canConnect()) continue

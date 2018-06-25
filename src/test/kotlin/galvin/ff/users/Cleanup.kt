@@ -2,7 +2,7 @@ package galvin.ff.users
 
 import org.junit.Test
 
-class XCleanupTest{
+class Cleanup{
     @Test fun cleanup(){
         for (database in databases) {
             if (!database.canConnect()) continue

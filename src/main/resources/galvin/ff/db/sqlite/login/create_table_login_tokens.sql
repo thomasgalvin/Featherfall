@@ -1,5 +1,5 @@
 create table if not exists LoginTokens(
-    uuid text not null,
+    uuid text primary key not null,
     ipAddress text not null,
     tokenLifespan bigint not null,
     createdTimestamp bigint not null,

@@ -218,7 +218,7 @@ class NoOpUserDB: UserDB {
     override fun retrieveUuid(key: String): String? {return null}
 
     override fun userExists(uuid: String): Boolean {return false}
-    override fun userExistsByLogin(uuid: String): Boolean {return false}
+    override fun userExistsByLogin(login: String): Boolean {return false}
 
     override fun retrieveUsersByLocked( locked: Boolean): List<User> {return listOf() }
     override fun isLocked( uuid: String ): Boolean {return false}
