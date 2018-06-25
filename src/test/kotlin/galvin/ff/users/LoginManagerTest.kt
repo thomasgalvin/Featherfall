@@ -2,11 +2,20 @@ package galvin.ff.users
 
 import galvin.ff.*
 import galvin.ff.db.ConnectionManager
+import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Test
 
 class LoginManagerTest{
-    enum class LoginTokenManagerType{ inmem, sqlite }
+    private enum class LoginTokenManagerType{ inmem, sqlite, psql }
+
+    companion object {
+        @AfterClass @JvmStatic fun cleanup(){
+            for (database in databases) {
+                database.cleanup()
+            }
+        }
+    }
 
     @Test fun should_login_successfully_by_password() {
         for( type in LoginTokenManagerType.values() ){
@@ -352,6 +361,7 @@ class LoginManagerTest{
         val tokens = when(type){
             LoginTokenManagerType.inmem -> InMemLoginTokenManager()
             LoginTokenManagerType.sqlite -> LoginTokenManager.SQLite( userDB, 1, SqliteDbConnection.randomDbFile() )
+            LoginTokenManagerType.psql -> LoginTokenManager.PostgreSQL( userDB, 1, "jdbc:postgresql://localhost:5432/" + PsqlDbConnection().createRandom() )
         }
 
         val loginManager = LoginManager( userDB = userDB, auditDB = auditDB, config = config, loginTokens = tokens )

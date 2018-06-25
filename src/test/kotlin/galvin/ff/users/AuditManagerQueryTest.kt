@@ -10,7 +10,7 @@ import org.junit.Test
 
 class AuditManagerQueryTest{
     companion object {
-        @AfterClass fun cleanup(){
+        @AfterClass @JvmStatic fun cleanup(){
             for (database in databases) {
                 database.cleanup()
             }

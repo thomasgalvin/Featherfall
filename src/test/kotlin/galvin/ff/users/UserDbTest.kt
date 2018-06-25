@@ -1,10 +1,19 @@
 package galvin.ff.users
 
 import galvin.ff.*
+import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.Test
 
 class UserDbTest{
+    companion object {
+        @AfterClass @JvmStatic fun cleanup(){
+            for (database in databases) {
+                database.cleanup()
+            }
+        }
+    }
+
     //////////////
     // Roles tests
     //////////////

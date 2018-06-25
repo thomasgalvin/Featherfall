@@ -8,7 +8,7 @@ import org.junit.Test
 
 class AccountRequestDBTest{
     companion object {
-        @AfterClass fun cleanup(){
+        @AfterClass @JvmStatic fun cleanup(){
             for (database in databases) {
                 database.cleanup()
             }

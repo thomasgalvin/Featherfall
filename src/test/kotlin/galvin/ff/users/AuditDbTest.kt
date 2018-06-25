@@ -8,7 +8,7 @@ import java.util.*
 
 class AuditDbTest {
     companion object {
-        @AfterClass fun cleanup(){
+        @AfterClass @JvmStatic fun cleanup(){
             for (database in databases) {
                 database.cleanup()
             }

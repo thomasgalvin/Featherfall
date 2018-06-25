@@ -1,0 +1,1 @@
+delete from LoginTokens where userUuid = ? and ipAddress != ?
